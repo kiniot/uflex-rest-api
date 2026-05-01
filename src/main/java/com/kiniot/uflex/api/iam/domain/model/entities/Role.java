@@ -5,22 +5,21 @@ import com.kiniot.uflex.api.iam.domain.model.valueobjects.RoleName;
 import com.kiniot.uflex.api.shared.domain.model.entities.AuditableModel;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.domain.Persistable;
 
 import java.util.List;
 
 /**
  * Role entity representing a user role within the IAM system.
  * <p>
- * Each role maintains its identity through a {@link RoleId} and a {@link RoleName} enum value,
- * and implements {@link Persistable} for proper Spring Data JPA integration.
+ * This entity inherits auditing capabilities and optimized persistence state
+ * management from {@link AuditableModel}.
  */
 @Entity
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @With
-public class Role extends AuditableModel implements Persistable<RoleId> {
+public class Role extends AuditableModel<RoleId> {
 
     /**
      * The unique identifier for this role, represented as a UUID v7 value object.
@@ -28,12 +27,12 @@ public class Role extends AuditableModel implements Persistable<RoleId> {
     @EmbeddedId
     private RoleId id;
 
+    /**
+     * The name of the role stored as a string in the database.
+     */
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
     private RoleName name;
-
-    @Transient
-    private boolean isNew = true;
 
     /**
      * Creates a new Role with the specified name and an auto-generated UUID v7 identifier.
@@ -45,6 +44,11 @@ public class Role extends AuditableModel implements Persistable<RoleId> {
         this.name = name;
     }
 
+    /**
+     * Returns the string representation of the role name.
+     *
+     * @return the name of the role as a String
+     */
     public String getStringName() {
         return name.name();
     }
@@ -58,6 +62,12 @@ public class Role extends AuditableModel implements Persistable<RoleId> {
         return new Role(RoleName.ROLE_USER);
     }
 
+    /**
+     * Converts a string name to a Role instance.
+     *
+     * @param name the name of the role
+     * @return a new Role instance
+     */
     public static Role toRoleFromName(String name) {
         return new Role(RoleName.valueOf(name));
     }
@@ -76,31 +86,13 @@ public class Role extends AuditableModel implements Persistable<RoleId> {
     }
 
     /**
-     * JPA lifecycle callback that marks the entity as persisted after loading or creation.
-     */
-    @PostLoad
-    @PostPersist
-    void markNotNew() {
-        this.isNew = false;
-    }
-
-    /**
      * Returns the role's unique identifier.
+     * Satisfies the contract defined in {@link AuditableModel}.
      *
      * @return the RoleId value object
      */
     @Override
     public RoleId getId() {
         return id;
-    }
-
-    /**
-     * Indicates whether this entity is newly created and not yet persisted.
-     *
-     * @return true if the entity is new, false if it has been persisted
-     */
-    @Override
-    public boolean isNew() {
-        return isNew;
     }
 }
