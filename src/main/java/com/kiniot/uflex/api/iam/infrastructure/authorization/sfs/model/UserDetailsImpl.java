@@ -18,17 +18,19 @@ public class UserDetailsImpl implements UserDetails {
     @JsonIgnore
     private final String password;
     private final String email;
+    private final String tenant;
     private final boolean accountNonExpired;
     private final boolean accountNonLocked;
     private final boolean credentialsNonExpired;
     private final boolean enabled;
     private final Collection<? extends GrantedAuthority> authorities;
 
-    public UserDetailsImpl(String username, String password, String email,
+    public UserDetailsImpl(String username, String password, String email, String tenant,
                            Collection<? extends GrantedAuthority> authorities) {
         this.username = username;
         this.password = password;
         this.email = email;
+        this.tenant = tenant;
         this.authorities = authorities;
         this.accountNonExpired = true;
         this.accountNonLocked = true;
@@ -45,6 +47,7 @@ public class UserDetailsImpl implements UserDetails {
                 user.getId().id().toString(),
                 user.getPassword().password(),
                 user.getEmail().email(),
+                user.getTenantId() != null ? user.getTenantId().tenantId().toString() : null,
                 authorities);
     }
 }
