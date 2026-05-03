@@ -3,7 +3,9 @@ package com.kiniot.uflex.api.iam.application.internal.commandservices;
 import com.kiniot.uflex.api.iam.application.internal.outboundservices.hashing.HashingService;
 import com.kiniot.uflex.api.iam.application.internal.outboundservices.tokens.TokenService;
 import com.kiniot.uflex.api.iam.domain.exceptions.UserWithEmailNotFound;
+import com.kiniot.uflex.api.iam.domain.exceptions.UserWithIdNotFoundException;
 import com.kiniot.uflex.api.iam.domain.model.aggregates.User;
+import com.kiniot.uflex.api.iam.domain.model.commands.AssignUserTenantId;
 import com.kiniot.uflex.api.iam.domain.model.commands.SignInCommand;
 import com.kiniot.uflex.api.iam.domain.model.commands.SignUpCommand;
 import com.kiniot.uflex.api.iam.domain.model.entities.Role;
@@ -67,5 +69,17 @@ public class UserCommandServiceImpl implements UserCommandService {
         var roles = user.getRoles().stream().map(role -> role.getName().name()).toList();
         var token = tokenService.generateToken(Objects.requireNonNull(user.getId()).id().toString(), user.getEmail().email(), roles);
         return Optional.of(ImmutablePair.of(user, token));
+    }
+
+    @Override
+    public void handle(AssignUserTenantId command) {
+        var user = userRepository.findById(command.userId())
+                .orElseThrow(() -> new UserWithIdNotFoundException(command.userId().toString()));
+        try {
+            user.associateTenant(command.tenantId());
+            userRepository.save(user);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to assign tenant to user: %s".formatted(e.getMessage()));
+        }
     }
 }
