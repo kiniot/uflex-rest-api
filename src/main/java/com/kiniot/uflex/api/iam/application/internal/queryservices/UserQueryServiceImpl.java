@@ -5,6 +5,7 @@ import com.kiniot.uflex.api.iam.domain.model.aggregates.User;
 import com.kiniot.uflex.api.iam.domain.model.queries.GetAuthenticatedUserIdQuery;
 import com.kiniot.uflex.api.iam.domain.model.queries.GetAuthenticatedUserTenantIdQuery;
 import com.kiniot.uflex.api.iam.domain.model.queries.GetUserByEmailQuery;
+import com.kiniot.uflex.api.iam.domain.model.queries.GetUserByIdQuery;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.TenantId;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.iam.domain.services.UserQueryService;
@@ -26,6 +27,11 @@ public class UserQueryServiceImpl implements UserQueryService {
     ) {
         this.userRepository = userRepository;
         this.identityService = identityService;
+    }
+
+    @Override
+    public Optional<User> handle(GetUserByIdQuery query) {
+        return userRepository.findByIdWithRoles(query.userId());
     }
 
     @Override
