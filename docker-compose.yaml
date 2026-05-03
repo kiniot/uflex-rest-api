@@ -1,0 +1,17 @@
+name: uflex-dev-env
+
+services:
+  db:
+    image: postgres:18.3-alpine3.23
+    container_name: uflex-postgres
+    environment:
+      POSTGRES_DB: uflex_db_dev
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - uflex_data:/var/lib/postgresql
+
+volumes:
+  uflex_data:
