@@ -15,12 +15,20 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-
-documentation:
-  application:
-    title: @project.name@
-    description: @project.description@
-    version: @project.version@
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${EMAIL_USER:}
+    password: ${EMAIL_PASS:}
+    from:
+      address: ${EMAIL_FROM_ADDRESS:}
+      name: ${EMAIL_FROM_NAME:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 authorization:
   jwt:
@@ -31,3 +39,15 @@ authorization:
 scalar:
   enabled: true
   theme: kepler
+
+documentation:
+  application:
+    title: @project.name@
+    description: @project.description@
+    version: @project.version@
+
+otp:
+  verification:
+    expiration-minutes: 15
+    code-length: 6
+    password-length: 12
