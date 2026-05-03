@@ -2,6 +2,7 @@ package com.kiniot.uflex.api.iam.application.internal.commandservices;
 
 import com.kiniot.uflex.api.iam.application.internal.outboundservices.hashing.HashingService;
 import com.kiniot.uflex.api.iam.application.internal.outboundservices.tokens.TokenService;
+import com.kiniot.uflex.api.iam.domain.exceptions.UserWithEmailNotFound;
 import com.kiniot.uflex.api.iam.domain.model.aggregates.User;
 import com.kiniot.uflex.api.iam.domain.model.commands.SignInCommand;
 import com.kiniot.uflex.api.iam.domain.model.commands.SignUpCommand;
@@ -60,7 +61,7 @@ public class UserCommandServiceImpl implements UserCommandService {
     @Transactional
     public Optional<ImmutablePair<User, String>> handle(SignInCommand command) {
         var user = userRepository.findByEmailWithRoles(command.email())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new UserWithEmailNotFound(command.email().email()));
         if (!hashingService.matches(command.password().password(), user.getPassword().password()))
             throw new IllegalArgumentException("Invalid password");
         var roles = user.getRoles().stream().map(role -> role.getName().name()).toList();
