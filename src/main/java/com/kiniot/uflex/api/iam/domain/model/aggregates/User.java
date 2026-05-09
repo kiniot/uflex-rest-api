@@ -98,6 +98,14 @@ public class User extends AuditableAbstractAggregateRoot<User, UserId> {
     }
 
     /**
+     * Replaces the user's password with the supplied (already hashed) one.
+     * Hashing and current-password verification must be done by the caller.
+     */
+    public void changePassword(Password newHashedPassword) {
+        this.password = newHashedPassword;
+    }
+
+    /**
      * Publishes a {@link UserCreatedEvent} domain event.
      */
     public void registerUserCreatedEvent() {

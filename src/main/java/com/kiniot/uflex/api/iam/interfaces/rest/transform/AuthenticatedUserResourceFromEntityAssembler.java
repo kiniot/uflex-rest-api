@@ -5,7 +5,13 @@ import com.kiniot.uflex.api.iam.interfaces.rest.resources.AuthenticatedUserResou
 
 public class AuthenticatedUserResourceFromEntityAssembler {
     public static AuthenticatedUserResource toResourceFromEntity(User user, String token) {
-        var userId = user.getId() != null ? user.getId().id().toString() : null;
-        return new AuthenticatedUserResource(user.getId().id().toString(), user.getEmail().email(), token);
+        var roles = user.getRoles().stream()
+                .map(role -> role.getName().name())
+                .toList();
+        return new AuthenticatedUserResource(
+                user.getId().id().toString(),
+                user.getEmail().email(),
+                roles,
+                token);
     }
 }

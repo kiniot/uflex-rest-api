@@ -6,7 +6,7 @@ spring:
     hibernate:
       ddl-auto: update
   datasource:
-    url: jdbc:postgresql://${UFLEX_DB_HOST:localhost}:${UFLEX_DB_PORT:5432}/${UFLEX_DB_NAME:uflex_db_dev}
+    url: jdbc:postgresql://${UFLEX_DB_HOST:localhost}:${UFLEX_DB_PORT:5432}/${UFLEX_DB_NAME:uflex_db_dev}?sslmode=${UFLEX_DB_SSLMODE:disable}
     username: ${UFLEX_DB_USERNAME:admin}
     password: ${UFLEX_DB_PASSWORD:password}
 
