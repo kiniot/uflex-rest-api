@@ -1,10 +1,9 @@
 package com.kiniot.uflex.api.organization.domain.model.entities;
 
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.AdminScope;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.ClinicAdminId;
+import com.kiniot.uflex.api.organization.domain.model.commands.RegisterClinicAdminCommand;
+import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.PersonalInfo;
 import com.kiniot.uflex.api.shared.domain.model.entities.AuditableModel;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.EmbeddedId;
@@ -25,20 +24,49 @@ public class ClinicAdmin extends AuditableModel<ClinicAdminId> {
     private ClinicId clinicId;
 
     @Embedded
-    private PersonalInfo personalInfo;
+    private FirstName firstName;
 
     @Embedded
-    private AdminScope scope;
+    private LastName lastName;
+
+    @Embedded
+    private Dni dni;
+
+    @Embedded
+    private BirthDate birthDate;
+
+    @Embedded
+    private Gender gender;
+
+    @Embedded
+    private EmailAddress emailAddress;
+
+    @Embedded
+    private PhoneNumber phoneNumber;
 
     protected ClinicAdmin() {}
 
     public ClinicAdmin(ClinicAdminId id, UserId userId, ClinicId clinicId,
-                       PersonalInfo personalInfo, AdminScope scope) {
+                       FirstName firstName, LastName lastName, Dni dni,
+                       BirthDate birthDate, Gender gender,
+                       EmailAddress emailAddress, PhoneNumber phoneNumber) {
         this.id = id;
         this.userId = userId;
         this.clinicId = clinicId;
-        this.personalInfo = personalInfo;
-        this.scope = scope;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.dni = dni;
+        this.birthDate = birthDate;
+        this.gender = gender;
+        this.emailAddress = emailAddress;
+        this.phoneNumber = phoneNumber;
+    }
+
+    public ClinicAdmin(RegisterClinicAdminCommand command, UserId userId, ClinicId clinicId) {
+        this(new ClinicAdminId(), userId, clinicId,
+                command.firstName(), command.lastName(), command.dni(),
+                command.birthDate(), command.gender(),
+                command.emailAddress(), command.phoneNumber());
     }
 
     @Override

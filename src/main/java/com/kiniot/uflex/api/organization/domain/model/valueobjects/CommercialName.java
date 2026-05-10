@@ -6,13 +6,13 @@ import jakarta.persistence.Embeddable;
 @Embeddable
 public record CommercialName(
         @Column(nullable = false, length = 150)
-        String value
+        String commercialName
 ) {
     public CommercialName {
-        if (value == null || value.isBlank()) {
+        if (commercialName == null || commercialName.isBlank()) {
             throw new IllegalArgumentException("Commercial name cannot be null or blank");
         }
-        if (value.length() > 150) {
+        if (commercialName.length() > 150) {
             throw new IllegalArgumentException("Commercial name cannot exceed 150 characters");
         }
     }

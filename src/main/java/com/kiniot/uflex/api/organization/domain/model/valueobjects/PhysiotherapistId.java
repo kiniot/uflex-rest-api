@@ -10,10 +10,10 @@ import java.util.UUID;
 @Embeddable
 public record PhysiotherapistId(
         @Column(columnDefinition = "UUID", nullable = false, unique = true)
-        UUID id
+        UUID physiotherapistId
 ) implements Serializable {
     public PhysiotherapistId {
-        if (id == null) {
+        if (physiotherapistId == null) {
             throw new IllegalArgumentException("Physiotherapist ID cannot be null");
         }
     }

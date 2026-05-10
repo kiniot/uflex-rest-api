@@ -6,16 +6,16 @@ import jakarta.persistence.Embeddable;
 @Embeddable
 public record Ruc(
         @Column(nullable = false, unique = true, length = 11)
-        String value
+        String ruc
 ) {
     public Ruc {
-        if (value == null || value.isBlank()) {
+        if (ruc == null || ruc.isBlank()) {
             throw new IllegalArgumentException("RUC cannot be null or blank");
         }
-        if (!value.matches("\\d{11}")) {
+        if (!ruc.matches("\\d{11}")) {
             throw new IllegalArgumentException("RUC must be exactly 11 digits");
         }
-        if (!isValidRuc(value)) {
+        if (!isValidRuc(ruc)) {
             throw new IllegalArgumentException("RUC has invalid checksum digit");
         }
     }

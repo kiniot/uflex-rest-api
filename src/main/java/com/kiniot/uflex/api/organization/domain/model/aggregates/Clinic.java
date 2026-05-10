@@ -1,17 +1,14 @@
 package com.kiniot.uflex.api.organization.domain.model.aggregates;
 
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
+import com.kiniot.uflex.api.organization.domain.model.commands.RegisterClinicCommand;
 import com.kiniot.uflex.api.organization.domain.model.events.ClinicActivatedEvent;
 import com.kiniot.uflex.api.organization.domain.model.events.ClinicArchivedEvent;
 import com.kiniot.uflex.api.organization.domain.model.events.ClinicRegisteredEvent;
 import com.kiniot.uflex.api.organization.domain.model.events.ClinicSuspendedEvent;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.ClinicStatus;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.CommercialName;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.ContactInfo;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.LegalName;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.Ruc;
 import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
+import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
@@ -34,7 +31,10 @@ public class Clinic extends AuditableAbstractAggregateRoot<Clinic, ClinicId> {
     private Ruc ruc;
 
     @Embedded
-    private ContactInfo contactInfo;
+    private EmailAddress emailAddress;
+
+    @Embedded
+    private PhoneNumber phoneNumber;
 
     @Embedded
     private ClinicStatus status;
@@ -45,22 +45,28 @@ public class Clinic extends AuditableAbstractAggregateRoot<Clinic, ClinicId> {
     protected Clinic() {}
 
     public Clinic(LegalName legalName, CommercialName commercialName, Ruc ruc,
-                 ContactInfo contactInfo, UserId createdBy) {
+                 EmailAddress emailAddress, PhoneNumber phoneNumber, UserId createdBy) {
         this.id = new ClinicId();
         this.legalName = legalName;
         this.commercialName = commercialName;
         this.ruc = ruc;
-        this.contactInfo = contactInfo;
+        this.emailAddress = emailAddress;
+        this.phoneNumber = phoneNumber;
         this.createdBy = createdBy;
         this.status = ClinicStatus.PENDING_ACTIVATION;
+    }
+
+    public Clinic(RegisterClinicCommand command) {
+        this(command.legalName(), command.commercialName(), command.ruc(),
+                command.emailAddress(), command.phoneNumber(), command.createdBy());
     }
 
     public void register() {
         this.addDomainEvent(new ClinicRegisteredEvent(
                 this,
                 this.id,
-                this.legalName.value(),
-                this.ruc.value(),
+                this.legalName.legalName(),
+                this.ruc.ruc(),
                 this.createdBy.id().toString()
         ));
     }
@@ -87,6 +93,14 @@ public class Clinic extends AuditableAbstractAggregateRoot<Clinic, ClinicId> {
         }
         this.status = ClinicStatus.ARCHIVED;
         this.addDomainEvent(new ClinicArchivedEvent(this, this.id));
+    }
+
+    public void updateContactInfo(EmailAddress emailAddress, PhoneNumber phoneNumber) {
+        if (this.status == ClinicStatus.ARCHIVED) {
+            throw new IllegalStateException("Cannot update archived clinic");
+        }
+        this.emailAddress = emailAddress;
+        this.phoneNumber = phoneNumber;
     }
 
     @Override

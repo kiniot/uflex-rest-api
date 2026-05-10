@@ -1,16 +1,11 @@
 package com.kiniot.uflex.api.organization.domain.model.aggregates;
 
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
+import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPatientCommand;
 import com.kiniot.uflex.api.organization.domain.model.events.PatientAssignedToPhysiotherapistEvent;
 import com.kiniot.uflex.api.organization.domain.model.events.PatientProfileRegisteredEvent;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.ClinicalSummary;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.EmergencyContact;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.InsuranceInfo;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.PatientId;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.PersonalInfo;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhysiotherapistId;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.ProfileStatus;
+import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
 import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.EmbeddedId;
@@ -31,35 +26,62 @@ public class Patient extends AuditableAbstractAggregateRoot<Patient, PatientId> 
     private ClinicId clinicId;
 
     @Embedded
-    private PersonalInfo personalInfo;
+    private FirstName firstName;
 
     @Embedded
-    private EmergencyContact emergencyContact;
+    private LastName lastName;
 
     @Embedded
-    private InsuranceInfo insurance;
+    private Dni dni;
 
     @Embedded
-    private ClinicalSummary clinicalSummary;
+    private BirthDate birthDate;
+
+    @Embedded
+    private Gender gender;
+
+    @Embedded
+    private EmailAddress emailAddress;
+
+    @Embedded
+    private PhoneNumber phoneNumber;
+
+    @Embedded
+    private MedicalCondition medicalCondition;
 
     @Embedded
     private PhysiotherapistId assignedPhysiotherapistId;
 
     @Embedded
-    private ProfileStatus status;
+    private PatientStatus status;
 
     protected Patient() {}
 
-    public Patient(UserId userId, ClinicId clinicId, PersonalInfo personalInfo,
-                   EmergencyContact emergencyContact, InsuranceInfo insurance) {
+    public Patient(UserId userId, ClinicId clinicId,
+                   FirstName firstName, LastName lastName, Dni dni,
+                   BirthDate birthDate, Gender gender,
+                   EmailAddress emailAddress, PhoneNumber phoneNumber,
+                   MedicalCondition medicalCondition) {
         this.id = new PatientId();
         this.userId = userId;
         this.clinicId = clinicId;
-        this.personalInfo = personalInfo;
-        this.emergencyContact = emergencyContact;
-        this.insurance = insurance;
-        this.clinicalSummary = new ClinicalSummary();
-        this.status = ProfileStatus.ACTIVE;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.dni = dni;
+        this.birthDate = birthDate;
+        this.gender = gender;
+        this.emailAddress = emailAddress;
+        this.phoneNumber = phoneNumber;
+        this.medicalCondition = medicalCondition;
+        this.status = PatientStatus.UNASSIGNED;
+    }
+
+    public Patient(RegisterPatientCommand command, UserId userId, ClinicId clinicId) {
+        this(userId, clinicId,
+                command.firstName(), command.lastName(), command.dni(),
+                command.birthDate(), command.gender(),
+                command.emailAddress(), command.phoneNumber(),
+                command.medicalCondition());
     }
 
     public void register() {
@@ -75,7 +97,11 @@ public class Patient extends AuditableAbstractAggregateRoot<Patient, PatientId> 
         if (!this.clinicId.equals(physiotherapistClinicId)) {
             throw new IllegalStateException("Cannot assign patient to a physiotherapist from a different clinic");
         }
+        if (this.status != PatientStatus.UNASSIGNED) {
+            throw new IllegalStateException("Patient can only be assigned from UNASSIGNED status");
+        }
         this.assignedPhysiotherapistId = physiotherapistId;
+        this.status = PatientStatus.IN_TREATMENT;
         this.addDomainEvent(new PatientAssignedToPhysiotherapistEvent(
                 this,
                 this.id,
@@ -84,29 +110,39 @@ public class Patient extends AuditableAbstractAggregateRoot<Patient, PatientId> 
         ));
     }
 
-    public void updateClinicalSummary(ClinicalSummary summary) {
-        if (this.status != ProfileStatus.ACTIVE) {
-            throw new IllegalStateException("Cannot update clinical summary of inactive patient");
+    public void updateMedicalCondition(MedicalCondition condition) {
+        if (this.status != PatientStatus.IN_TREATMENT) {
+            throw new IllegalStateException("Cannot update medical condition of patient not in treatment");
         }
-        this.clinicalSummary = summary;
+        this.medicalCondition = condition;
     }
 
-    public void updateInsurance(InsuranceInfo insurance) {
-        this.insurance = insurance;
+    public void markInactive() {
+        if (this.status != PatientStatus.IN_TREATMENT) {
+            throw new IllegalStateException("Only patients in treatment can be marked inactive");
+        }
+        this.status = PatientStatus.INACTIVE;
     }
 
-    public void discharge(String reason) {
-        if (this.status != ProfileStatus.ACTIVE) {
-            throw new IllegalStateException("Only active patients can be discharged");
+    public void reactivate() {
+        if (this.status != PatientStatus.INACTIVE) {
+            throw new IllegalStateException("Only inactive patients can be reactivated");
         }
-        this.status = ProfileStatus.DISCHARGED;
+        this.status = PatientStatus.IN_TREATMENT;
     }
 
-    public void archive() {
-        if (this.status == ProfileStatus.ARCHIVED) {
-            throw new IllegalStateException("Patient profile is already archived");
+    public void complete() {
+        if (this.status != PatientStatus.IN_TREATMENT) {
+            throw new IllegalStateException("Only patients in treatment can be completed");
         }
-        this.status = ProfileStatus.ARCHIVED;
+        this.status = PatientStatus.COMPLETED;
+    }
+
+    public void discharge() {
+        if (this.status != PatientStatus.COMPLETED && this.status != PatientStatus.INACTIVE) {
+            throw new IllegalStateException("Only completed or inactive patients can be discharged");
+        }
+        this.status = PatientStatus.DISCHARGED;
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.kiniot.uflex.api.organization.domain.model.aggregates;
 
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
+import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPhysiotherapistCommand;
 import com.kiniot.uflex.api.organization.domain.model.events.PhysiotherapistProfileActivatedEvent;
 import com.kiniot.uflex.api.organization.domain.model.events.PhysiotherapistProfileRegisteredEvent;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
@@ -9,7 +10,7 @@ import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhoneNumber;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhotoUrl;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhysiotherapistId;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.ProfessionalSummary;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.ProfileStatus;
+import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhysiotherapistStatus;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.Specialty;
 import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.EmailAddress;
@@ -58,7 +59,7 @@ public class Physiotherapist extends AuditableAbstractAggregateRoot<Physiotherap
     private LocalDate hireDate;
 
     @Embedded
-    private ProfileStatus status;
+    private PhysiotherapistStatus status;
 
     protected Physiotherapist() {}
 
@@ -77,7 +78,13 @@ public class Physiotherapist extends AuditableAbstractAggregateRoot<Physiotherap
         this.photoUrl = photoUrl;
         this.yearsOfExperience = yearsOfExperience;
         this.hireDate = LocalDate.now();
-        this.status = ProfileStatus.PENDING_VALIDATION;
+        this.status = PhysiotherapistStatus.INACTIVE;
+    }
+
+    public Physiotherapist(RegisterPhysiotherapistCommand command, UserId userId, ClinicId clinicId) {
+        this(userId, clinicId, command.fullName(), command.specialty(),
+                command.emailAddress(), command.phoneNumber(), command.licenseNumber(),
+                command.professionalSummary(), command.photoUrl(), command.yearsOfExperience());
     }
 
     public void register() {
@@ -89,11 +96,11 @@ public class Physiotherapist extends AuditableAbstractAggregateRoot<Physiotherap
         ));
     }
 
-    public void validate() {
-        if (this.status != ProfileStatus.PENDING_VALIDATION) {
-            throw new IllegalStateException("Profile can only be validated from PENDING_VALIDATION status");
+    public void activate() {
+        if (this.status != PhysiotherapistStatus.INACTIVE) {
+            throw new IllegalStateException("Profile can only be activated from INACTIVE status");
         }
-        this.status = ProfileStatus.ACTIVE;
+        this.status = PhysiotherapistStatus.ACTIVE;
         this.addDomainEvent(new PhysiotherapistProfileActivatedEvent(
                 this,
                 this.id,
@@ -102,18 +109,11 @@ public class Physiotherapist extends AuditableAbstractAggregateRoot<Physiotherap
         ));
     }
 
-    public void suspend(String reason) {
-        if (this.status != ProfileStatus.ACTIVE) {
+    public void suspend() {
+        if (this.status != PhysiotherapistStatus.ACTIVE) {
             throw new IllegalStateException("Only active profiles can be suspended");
         }
-        this.status = ProfileStatus.SUSPENDED;
-    }
-
-    public void archive() {
-        if (this.status == ProfileStatus.ARCHIVED) {
-            throw new IllegalStateException("Profile is already archived");
-        }
-        this.status = ProfileStatus.ARCHIVED;
+        this.status = PhysiotherapistStatus.SUSPENDED;
     }
 
     @Override
