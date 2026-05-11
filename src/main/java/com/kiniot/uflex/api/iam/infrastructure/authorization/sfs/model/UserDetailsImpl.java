@@ -47,7 +47,9 @@ public class UserDetailsImpl implements UserDetails {
                 user.getId().id().toString(),
                 user.getPassword().password(),
                 user.getEmail().email(),
-                user.getTenantId() != null ? user.getTenantId().tenantId().toString() : null,
+                user.getTenantId() != null && user.getTenantId().tenantId() != null
+                        ? user.getTenantId().tenantId().toString()
+                        : null,
                 authorities);
     }
 }

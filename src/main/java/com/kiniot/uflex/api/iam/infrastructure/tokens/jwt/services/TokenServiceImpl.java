@@ -41,10 +41,10 @@ public class TokenServiceImpl implements BearerTokenService {
         var roles = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .toList();
-        var email = authentication.getPrincipal() instanceof UserDetailsImpl userDetails
-                ? userDetails.getEmail()
-                : null;
-        return buildTokenWithClaims(authentication.getName(), email, roles);
+        var principal = authentication.getPrincipal();
+        var email = principal instanceof UserDetailsImpl userDetails ? userDetails.getEmail() : null;
+        var tenantId = principal instanceof UserDetailsImpl userDetails ? userDetails.getTenant() : null;
+        return buildTokenWithClaims(authentication.getName(), email, roles, tenantId);
     }
 
     public String generateToken(String username) {
@@ -52,15 +52,15 @@ public class TokenServiceImpl implements BearerTokenService {
     }
 
     @Override
-    public String generateToken(String userId, String email, List<String> roles) {
-        return buildTokenWithClaims(userId, email, roles);
+    public String generateToken(String userId, String email, List<String> roles, String tenantId) {
+        return buildTokenWithClaims(userId, email, roles, tenantId);
     }
 
     private String buildTokenWithDefaultParameters(String username) {
-        return buildTokenWithClaims(username, null, null);
+        return buildTokenWithClaims(username, null, null, null);
     }
 
-    private String buildTokenWithClaims(String username, String email, List<String> roles) {
+    private String buildTokenWithClaims(String username, String email, List<String> roles, String tenantId) {
         var issuedAt = new Date();
         var expiration = DateUtils.addDays(issuedAt, expirationDays);
         var key = getSigningKey();
@@ -68,6 +68,7 @@ public class TokenServiceImpl implements BearerTokenService {
         builder.subject(username);
         builder.claim("email", email);
         builder.claim("roles", roles);
+        builder.claim("tenantId", tenantId);
         return builder
                 .issuedAt(issuedAt)
                 .expiration(expiration)

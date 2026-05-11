@@ -54,6 +54,7 @@ public class User extends AuditableAbstractAggregateRoot<User, UserId> {
      * {@link #associateTenant(TenantId)} and {@link #disassociateTenant(TenantId)} methods.
      */
     @Embedded
+    @AttributeOverride(name = "tenantId", column = @Column(name = "tenant_id", columnDefinition = "UUID"))
     private TenantId tenantId;
 
     protected User() {}
