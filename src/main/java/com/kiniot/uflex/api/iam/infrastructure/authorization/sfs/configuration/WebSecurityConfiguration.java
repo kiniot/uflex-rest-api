@@ -112,7 +112,8 @@ public class WebSecurityConfiguration {
                                 "/scalar",
                                 "/scalar/**",
                                 "/actuator",
-                                "/actuator/**"
+                                "/actuator/**",
+                                "/api/v1/webhooks/stripe/**"
                         ).permitAll()
                         .anyRequest().authenticated());
         http.authenticationProvider(authenticationProvider());
