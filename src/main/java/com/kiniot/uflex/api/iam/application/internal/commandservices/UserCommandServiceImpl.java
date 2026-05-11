@@ -68,7 +68,10 @@ public class UserCommandServiceImpl implements UserCommandService {
         if (!hashingService.matches(command.password().password(), user.getPassword().password()))
             throw new IllegalArgumentException("Invalid password");
         var roles = user.getRoles().stream().map(role -> role.getName().name()).toList();
-        var token = tokenService.generateToken(Objects.requireNonNull(user.getId()).id().toString(), user.getEmail().email(), roles);
+        var tenantId = user.getTenantId() != null && user.getTenantId().tenantId() != null
+                ? user.getTenantId().tenantId().toString()
+                : null;
+        var token = tokenService.generateToken(Objects.requireNonNull(user.getId()).id().toString(), user.getEmail().email(), roles, tenantId);
         return Optional.of(ImmutablePair.of(user, token));
     }
 

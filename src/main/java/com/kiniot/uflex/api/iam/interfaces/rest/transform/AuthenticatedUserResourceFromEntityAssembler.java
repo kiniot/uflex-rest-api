@@ -8,10 +8,14 @@ public class AuthenticatedUserResourceFromEntityAssembler {
         var roles = user.getRoles().stream()
                 .map(role -> role.getName().name())
                 .toList();
+        var tenantId = user.getTenantId() != null && user.getTenantId().tenantId() != null
+                ? user.getTenantId().tenantId().toString()
+                : null;
         return new AuthenticatedUserResource(
                 user.getId().id().toString(),
                 user.getEmail().email(),
                 roles,
+                tenantId,
                 token);
     }
 }

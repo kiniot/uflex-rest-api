@@ -8,6 +8,9 @@ public class UserResourceFromEntityAssembler {
     public static UserResource toResourceFromEntity(User entity) {
         var roles = entity.getRoles().stream().map(Role::getStringName).toList();
         var userId = entity.getId() != null ? entity.getId().id().toString() : null;
-        return new UserResource(userId, entity.getEmail().email(), roles);
+        var tenantId = entity.getTenantId() != null && entity.getTenantId().tenantId() != null
+                ? entity.getTenantId().tenantId().toString()
+                : null;
+        return new UserResource(userId, entity.getEmail().email(), roles, tenantId);
     }
 }
