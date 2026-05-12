@@ -79,6 +79,7 @@ public class UserCommandServiceImpl implements UserCommandService {
     }
 
     @Override
+    @Transactional
     public Optional<User> handle(SignUpVerifiedUserCommand command) {
         if (userRepository.existsByEmail(command.emailAddress()))
             throw new RuntimeException("Username already exists");
@@ -95,6 +96,7 @@ public class UserCommandServiceImpl implements UserCommandService {
                 roles,
                 tenantId
         );
+        user.notifySignedUpAndActivated(command.emailAddress().email(), command.password());
         userRepository.save(user);
         return userRepository.findByEmail(command.emailAddress());
     }
