@@ -15,12 +15,12 @@ import java.util.Optional;
 public interface TreatmentPlanRepository extends JpaRepository<TreatmentPlan, TreatmentPlanId> {
 
     @EntityGraph(attributePaths = {"routines", "routines.exerciseSeries"})
-    Optional<TreatmentPlan> findByIdWithRoutinesAndExerciseSeries(TreatmentPlanId id);
+    Optional<TreatmentPlan> findWithRoutinesAndExerciseSeriesById(TreatmentPlanId id);
 
     List<TreatmentPlan> findAllByClinicId(ClinicId clinicId);
 
     @EntityGraph(attributePaths = {"routines", "routines.exerciseSeries"})
-    List<TreatmentPlan> findAllByClinicIdWithRoutinesAndExerciseSeries(ClinicId clinicId);
+    List<TreatmentPlan> findAllWithRoutinesAndExerciseSeriesByClinicId(ClinicId clinicId);
 
     boolean existsByClinicIdAndPlanName(ClinicId clinicId, PlanName planName);
 }

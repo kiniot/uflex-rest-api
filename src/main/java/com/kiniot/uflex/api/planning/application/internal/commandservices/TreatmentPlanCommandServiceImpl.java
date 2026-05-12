@@ -81,7 +81,7 @@ public class TreatmentPlanCommandServiceImpl implements TreatmentPlanCommandServ
     }
 
     private TreatmentPlan getTreatmentPlanOrThrow(TreatmentPlanId treatmentPlanId) {
-        return treatmentPlanRepository.findByIdWithRoutinesAndExerciseSeries(treatmentPlanId)
+        return treatmentPlanRepository.findWithRoutinesAndExerciseSeriesById(treatmentPlanId)
                 .orElseThrow(() -> new TreatmentPlanWithIdNotFoundException(treatmentPlanId.id().toString()));
     }
 }

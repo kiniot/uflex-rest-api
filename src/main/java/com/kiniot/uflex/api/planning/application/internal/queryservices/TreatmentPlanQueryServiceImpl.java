@@ -28,13 +28,13 @@ public class TreatmentPlanQueryServiceImpl implements TreatmentPlanQueryService 
 
     @Override
     public Optional<TreatmentPlan> handle(GetTreatmentPlanByIdQuery query) {
-        return treatmentPlanRepository.findByIdWithRoutinesAndExerciseSeries(query.treatmentPlanId());
+        return treatmentPlanRepository.findWithRoutinesAndExerciseSeriesById(query.treatmentPlanId());
     }
 
     @Override
     public List<TreatmentPlan> handle(GetAllTreatmentPlansQuery query) {
         var clinicId = externalIamService.fetchCurrentAcademyId()
                 .orElseThrow(AuthenticatedUserClinicNotFoundException::new);
-        return treatmentPlanRepository.findAllByClinicIdWithRoutinesAndExerciseSeries(clinicId);
+        return treatmentPlanRepository.findAllWithRoutinesAndExerciseSeriesByClinicId(clinicId);
     }
 }
