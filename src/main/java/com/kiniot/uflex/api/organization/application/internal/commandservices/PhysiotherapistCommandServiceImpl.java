@@ -31,8 +31,8 @@ public class PhysiotherapistCommandServiceImpl implements PhysiotherapistCommand
     @Override
     @Transactional
     public Optional<Physiotherapist> handle(RegisterPhysiotherapistCommand command) {
-        var userId = externalIamService.fetchCurrentUserId()
-                .orElseThrow(() -> new UserNotFoundException("Current user not found"));
+        var userId = externalIamService.registerPhysiotherapist(command.emailAddress().email())
+                .orElseThrow(() -> new RuntimeException("Failed to register physiotherapist in IAM"));
         var clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(() -> new ClinicNotFoundException("Current clinic not found"));
 

@@ -1,6 +1,7 @@
 package com.kiniot.uflex.api.organization.domain.model.commands;
 
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
 
 public record RegisterPatientCommand(
         FirstName firstName,
@@ -8,7 +9,7 @@ public record RegisterPatientCommand(
         Dni dni,
         BirthDate birthDate,
         Gender gender,
-        EmailAddress emailAddress,
+        Email emailAddress,
         PhoneNumber phoneNumber,
         MedicalCondition medicalCondition,
         PhysiotherapistId assignedPhysiotherapistId

@@ -13,7 +13,7 @@ import com.kiniot.uflex.api.organization.domain.model.valueobjects.ProfessionalS
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhysiotherapistStatus;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.Specialty;
 import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.EmailAddress;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -38,7 +38,7 @@ public class Physiotherapist extends AuditableAbstractAggregateRoot<Physiotherap
     private Specialty specialty;
 
     @Embedded
-    private EmailAddress emailAddress;
+    private Email emailAddress;
 
     @Embedded
     private PhoneNumber phoneNumber;
@@ -62,7 +62,7 @@ public class Physiotherapist extends AuditableAbstractAggregateRoot<Physiotherap
     protected Physiotherapist() {}
 
     public Physiotherapist(UserId userId, ClinicId clinicId, String fullName, Specialty specialty,
-                           EmailAddress emailAddress, PhoneNumber phoneNumber, LicenseNumber licenseNumber,
+                           Email emailAddress, PhoneNumber phoneNumber, LicenseNumber licenseNumber,
                            ProfessionalSummary professionalSummary, PhotoUrl photoUrl, int yearsOfExperience) {
         this.id = new PhysiotherapistId();
         this.userId = userId;

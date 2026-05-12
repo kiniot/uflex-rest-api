@@ -1,16 +1,16 @@
 package com.kiniot.uflex.api.organization.domain.model.commands;
 
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.EmailAddress;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.LicenseNumber;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhoneNumber;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhotoUrl;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.ProfessionalSummary;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.Specialty;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
 
 public record RegisterPhysiotherapistCommand(
         String fullName,
         Specialty specialty,
-        EmailAddress emailAddress,
+        Email emailAddress,
         PhoneNumber phoneNumber,
         LicenseNumber licenseNumber,
         ProfessionalSummary professionalSummary,

@@ -5,6 +5,8 @@ import java.util.List;
 public interface IamContextFacade {
     String fetchUserEmailAddressByUserId(String userId);
 
+    String signUpVerifiedUser(String email, List<String> roles);
+
     String fetchAuthenticatedUserId();
 
     String fetchAuthenticatedUserTenantId();

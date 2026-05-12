@@ -7,6 +7,7 @@ import com.kiniot.uflex.api.organization.domain.model.events.PatientProfileRegis
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
 import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -39,7 +40,7 @@ public class Patient extends AuditableAbstractAggregateRoot<Patient, PatientId> 
     private Gender gender;
 
     @Embedded
-    private EmailAddress emailAddress;
+    private Email emailAddress;
 
     @Embedded
     private PhoneNumber phoneNumber;
@@ -61,7 +62,7 @@ public class Patient extends AuditableAbstractAggregateRoot<Patient, PatientId> 
     public Patient(UserId userId, ClinicId clinicId,
                    FirstName firstName, LastName lastName, Dni dni,
                    BirthDate birthDate, Gender gender,
-                   EmailAddress emailAddress, PhoneNumber phoneNumber,
+                   Email emailAddress, PhoneNumber phoneNumber,
                    MedicalCondition medicalCondition) {
         this.id = new PatientId();
         this.userId = userId;

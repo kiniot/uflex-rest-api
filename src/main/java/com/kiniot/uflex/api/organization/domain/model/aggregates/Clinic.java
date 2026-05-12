@@ -6,6 +6,7 @@ import com.kiniot.uflex.api.organization.domain.model.commands.RegisterClinicCom
 import com.kiniot.uflex.api.organization.domain.model.events.ClinicRegisteredEvent;
 import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.EmbeddedId;
@@ -29,7 +30,7 @@ public class Clinic extends AuditableAbstractAggregateRoot<Clinic, ClinicId> {
     private Ruc ruc;
 
     @Embedded
-    private EmailAddress emailAddress;
+    private Email emailAddress;
 
     @Embedded
     private PhoneNumber phoneNumber;
@@ -40,7 +41,7 @@ public class Clinic extends AuditableAbstractAggregateRoot<Clinic, ClinicId> {
     protected Clinic() {}
 
     public Clinic(LegalName legalName, CommercialName commercialName, Ruc ruc,
-                 EmailAddress emailAddress, PhoneNumber phoneNumber, UserId createdBy) {
+                 Email emailAddress, PhoneNumber phoneNumber, UserId createdBy) {
         this.id = new ClinicId(Generators.timeBasedEpochGenerator().generate());
         this.legalName = legalName;
         this.commercialName = commercialName;
@@ -63,7 +64,7 @@ public class Clinic extends AuditableAbstractAggregateRoot<Clinic, ClinicId> {
         ));
     }
 
-    public void updateContactInfo(EmailAddress emailAddress, PhoneNumber phoneNumber) {
+    public void updateContactInfo(Email emailAddress, PhoneNumber phoneNumber) {
         this.emailAddress = emailAddress;
         this.phoneNumber = phoneNumber;
     }

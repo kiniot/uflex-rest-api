@@ -5,6 +5,7 @@ import com.kiniot.uflex.api.organization.domain.model.commands.RegisterClinicCom
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
 import com.kiniot.uflex.api.organization.interfaces.rest.resources.RegisterClinicResource;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.ClinicId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
 
 public class RegisterClinicCommandFromResourceAssembler {
 
@@ -13,7 +14,7 @@ public class RegisterClinicCommandFromResourceAssembler {
                 new LegalName(resource.legalName()),
                 new CommercialName(resource.commercialName()),
                 new Ruc(resource.ruc()),
-                new EmailAddress(resource.email()),
+                new Email(resource.email()),
                 new PhoneNumber(resource.countryCode(), resource.phoneNumber()),
                 createdBy
         );
