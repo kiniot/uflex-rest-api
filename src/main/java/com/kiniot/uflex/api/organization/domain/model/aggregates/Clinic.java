@@ -1,5 +1,6 @@
 package com.kiniot.uflex.api.organization.domain.model.aggregates;
 
+import com.fasterxml.uuid.Generators;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterClinicCommand;
 import com.kiniot.uflex.api.organization.domain.model.events.ClinicRegisteredEvent;
@@ -40,7 +41,7 @@ public class Clinic extends AuditableAbstractAggregateRoot<Clinic, ClinicId> {
 
     public Clinic(LegalName legalName, CommercialName commercialName, Ruc ruc,
                  EmailAddress emailAddress, PhoneNumber phoneNumber, UserId createdBy) {
-        this.id = new ClinicId();
+        this.id = new ClinicId(Generators.timeBasedEpochGenerator().generate());
         this.legalName = legalName;
         this.commercialName = commercialName;
         this.ruc = ruc;

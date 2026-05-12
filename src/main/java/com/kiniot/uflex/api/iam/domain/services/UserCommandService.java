@@ -1,6 +1,7 @@
 package com.kiniot.uflex.api.iam.domain.services;
 
 import com.kiniot.uflex.api.iam.domain.model.aggregates.User;
+import com.kiniot.uflex.api.iam.domain.model.commands.AssignUserRoleCommand;
 import com.kiniot.uflex.api.iam.domain.model.commands.AssignUserTenantId;
 import com.kiniot.uflex.api.iam.domain.model.commands.ChangePasswordCommand;
 import com.kiniot.uflex.api.iam.domain.model.commands.SignInCommand;
@@ -16,6 +17,8 @@ public interface UserCommandService {
     Optional<ImmutablePair<User, String>> handle(SignInCommand command);
 
     void handle(AssignUserTenantId command);
+
+    void handle(AssignUserRoleCommand command);
 
     void handle(ChangePasswordCommand command);
 }

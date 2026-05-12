@@ -5,6 +5,7 @@ import com.kiniot.uflex.api.iam.application.internal.outboundservices.tokens.Tok
 import com.kiniot.uflex.api.iam.domain.exceptions.UserWithEmailNotFound;
 import com.kiniot.uflex.api.iam.domain.exceptions.UserWithIdNotFoundException;
 import com.kiniot.uflex.api.iam.domain.model.aggregates.User;
+import com.kiniot.uflex.api.iam.domain.model.commands.AssignUserRoleCommand;
 import com.kiniot.uflex.api.iam.domain.model.commands.AssignUserTenantId;
 import com.kiniot.uflex.api.iam.domain.model.commands.ChangePasswordCommand;
 import com.kiniot.uflex.api.iam.domain.model.commands.SignInCommand;
@@ -87,6 +88,7 @@ public class UserCommandServiceImpl implements UserCommandService {
     }
 
     @Override
+    @Transactional
     public void handle(AssignUserTenantId command) {
         var user = userRepository.findById(command.userId())
                 .orElseThrow(() -> new UserWithIdNotFoundException(command.userId().toString()));
@@ -96,5 +98,21 @@ public class UserCommandServiceImpl implements UserCommandService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to assign tenant to user: %s".formatted(e.getMessage()));
         }
+    }
+
+    @Override
+    @Transactional
+    public void handle(AssignUserRoleCommand command) {
+        var user = userRepository.findByIdWithRoles(command.userId())
+                .orElseThrow(() -> new UserWithIdNotFoundException(command.userId().toString()));
+        var role = roleRepository.findByName(command.roleName())
+                .orElseThrow(() -> new IllegalArgumentException("Role not found: %s".formatted(command.roleName().name())));
+        var alreadyAssigned = user.getRoles().stream()
+                .anyMatch(userRole -> userRole.getName().equals(command.roleName()));
+        if (alreadyAssigned) {
+            return;
+        }
+        user.addRole(role);
+        userRepository.save(user);
     }
 }
