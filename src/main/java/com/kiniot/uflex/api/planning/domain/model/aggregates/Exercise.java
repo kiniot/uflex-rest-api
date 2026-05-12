@@ -1,4 +1,4 @@
-package com.kiniot.uflex.api.planning.domain.model.entities;
+package com.kiniot.uflex.api.planning.domain.model.aggregates;
 
 import com.kiniot.uflex.api.planning.domain.model.commands.CreateExerciseCommand;
 import com.kiniot.uflex.api.planning.domain.model.commands.UpdateExerciseCommand;
@@ -6,13 +6,14 @@ import com.kiniot.uflex.api.planning.domain.model.valueobjects.BodyPart;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseDescription;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseId;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseName;
-import com.kiniot.uflex.api.shared.domain.model.entities.AuditableModel;
+import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import jakarta.persistence.*;
 import lombok.Getter;
 
 @Getter
 @Entity
-public class Exercise extends AuditableModel<ExerciseId> {
+public class Exercise extends AuditableAbstractAggregateRoot<Exercise, ExerciseId> {
 
     @EmbeddedId
     private ExerciseId id;
@@ -27,13 +28,17 @@ public class Exercise extends AuditableModel<ExerciseId> {
     @AttributeOverride(name = "name", column = @Column(name = "body_part", nullable = false, length = 40))
     private BodyPart bodyPart;
 
+    @Embedded
+    private ClinicId clinicId;
+
     protected Exercise() {}
 
-    public Exercise(CreateExerciseCommand command) {
+    public Exercise(CreateExerciseCommand command, ClinicId clinicId) {
         this.id = new ExerciseId();
         this.name = command.name();
         this.description = command.description();
         this.bodyPart = command.bodyPart();
+        this.clinicId = clinicId;
     }
 
     public void update(UpdateExerciseCommand command) {

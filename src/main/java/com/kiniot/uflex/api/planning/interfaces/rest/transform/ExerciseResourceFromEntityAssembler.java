@@ -1,6 +1,6 @@
 package com.kiniot.uflex.api.planning.interfaces.rest.transform;
 
-import com.kiniot.uflex.api.planning.domain.model.entities.Exercise;
+import com.kiniot.uflex.api.planning.domain.model.aggregates.Exercise;
 import com.kiniot.uflex.api.planning.interfaces.rest.resources.ExerciseResource;
 
 public class ExerciseResourceFromEntityAssembler {

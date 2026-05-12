@@ -28,7 +28,9 @@ public class TreatmentPlanQueryServiceImpl implements TreatmentPlanQueryService 
 
     @Override
     public Optional<TreatmentPlan> handle(GetTreatmentPlanByIdQuery query) {
-        return treatmentPlanRepository.findWithRoutinesAndExerciseSeriesById(query.treatmentPlanId());
+        var clinicId = externalIamService.fetchCurrentAcademyId()
+                .orElseThrow(AuthenticatedUserClinicNotFoundException::new);
+        return treatmentPlanRepository.findWithRoutinesAndExerciseSeriesByIdAndClinicId(query.treatmentPlanId(), clinicId);
     }
 
     @Override

@@ -17,6 +17,9 @@ public interface TreatmentPlanRepository extends JpaRepository<TreatmentPlan, Tr
     @EntityGraph(attributePaths = {"routines", "routines.exerciseSeries"})
     Optional<TreatmentPlan> findWithRoutinesAndExerciseSeriesById(TreatmentPlanId id);
 
+    @EntityGraph(attributePaths = {"routines", "routines.exerciseSeries"})
+    Optional<TreatmentPlan> findWithRoutinesAndExerciseSeriesByIdAndClinicId(TreatmentPlanId id, ClinicId clinicId);
+
     List<TreatmentPlan> findAllByClinicId(ClinicId clinicId);
 
     @EntityGraph(attributePaths = {"routines", "routines.exerciseSeries"})

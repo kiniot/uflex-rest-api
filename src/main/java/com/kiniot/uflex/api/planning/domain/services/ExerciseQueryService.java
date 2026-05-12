@@ -1,6 +1,6 @@
 package com.kiniot.uflex.api.planning.domain.services;
 
-import com.kiniot.uflex.api.planning.domain.model.entities.Exercise;
+import com.kiniot.uflex.api.planning.domain.model.aggregates.Exercise;
 import com.kiniot.uflex.api.planning.domain.model.queries.GetAllExercisesQuery;
 import com.kiniot.uflex.api.planning.domain.model.queries.GetExerciseByIdQuery;
 

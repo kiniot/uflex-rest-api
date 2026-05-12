@@ -1,9 +1,10 @@
 package com.kiniot.uflex.api.planning.infrastructure.persistence.jpa.repositories;
 
-import com.kiniot.uflex.api.planning.domain.model.entities.Exercise;
+import com.kiniot.uflex.api.planning.domain.model.aggregates.Exercise;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.BodyPart;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseId;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseName;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,11 +14,15 @@ import java.util.Optional;
 @Repository
 public interface ExerciseRepository extends JpaRepository<Exercise, ExerciseId> {
 
-    Optional<Exercise> findByName(ExerciseName name);
+    Optional<Exercise> findByIdAndClinicId(ExerciseId id, ClinicId clinicId);
 
-    List<Exercise> findAllByBodyPart(BodyPart bodyPart);
+    Optional<Exercise> findByNameAndClinicId(ExerciseName name, ClinicId clinicId);
 
-    List<Exercise> findAllByBodyPartAndNameContainingIgnoreCase(BodyPart bodyPart, String name);
+    List<Exercise> findAllByClinicId(ClinicId clinicId);
 
-    boolean existsByName(ExerciseName name);
+    List<Exercise> findAllByClinicIdAndBodyPart(ClinicId clinicId, BodyPart bodyPart);
+
+    List<Exercise> findAllByClinicIdAndBodyPartAndNameContainingIgnoreCase(ClinicId clinicId, BodyPart bodyPart, String name);
+
+    boolean existsByNameAndClinicId(ExerciseName name, ClinicId clinicId);
 }
