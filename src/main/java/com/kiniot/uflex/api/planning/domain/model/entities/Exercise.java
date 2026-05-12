@@ -1,6 +1,7 @@
 package com.kiniot.uflex.api.planning.domain.model.entities;
 
 import com.kiniot.uflex.api.planning.domain.model.commands.CreateExerciseCommand;
+import com.kiniot.uflex.api.planning.domain.model.commands.UpdateExerciseCommand;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.BodyPart;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseDescription;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseId;
@@ -30,6 +31,12 @@ public class Exercise extends AuditableModel<ExerciseId> {
 
     public Exercise(CreateExerciseCommand command) {
         this.id = new ExerciseId();
+        this.name = command.name();
+        this.description = command.description();
+        this.bodyPart = command.bodyPart();
+    }
+
+    public void update(UpdateExerciseCommand command) {
         this.name = command.name();
         this.description = command.description();
         this.bodyPart = command.bodyPart();

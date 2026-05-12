@@ -3,6 +3,7 @@ package com.kiniot.uflex.api.planning.domain.model.aggregates;
 import com.kiniot.uflex.api.planning.domain.model.commands.CreateRoutineCommand;
 import com.kiniot.uflex.api.planning.domain.model.commands.CreateTreatmentPlanCommand;
 import com.kiniot.uflex.api.planning.domain.model.commands.RemoveRoutineCommand;
+import com.kiniot.uflex.api.planning.domain.model.commands.UpdateTreatmentPlanCommand;
 import com.kiniot.uflex.api.planning.domain.model.commands.UpdateRoutineCommand;
 import com.kiniot.uflex.api.planning.domain.model.entities.Routine;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.PlanName;
@@ -46,6 +47,11 @@ public class TreatmentPlan extends AuditableAbstractAggregateRoot<TreatmentPlan,
         this.frequency = command.frequency();
         this.routines = new ArrayList<>();
         this.clinicId = clinicId;
+    }
+
+    public void update(UpdateTreatmentPlanCommand command) {
+        this.planName = command.name();
+        this.frequency = command.frequency();
     }
 
     public void addRoutine(CreateRoutineCommand command) {
