@@ -4,16 +4,21 @@ import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseSeries;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.RoutineName;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.RoutineOrder;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.RoutineSchedule;
+import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanId;
 
 import java.util.List;
 
 public record CreateRoutineCommand(
+        TreatmentPlanId treatmentPlanId,
         RoutineName name,
         RoutineOrder order,
         RoutineSchedule schedule,
         List<ExerciseSeries> exerciseSeries
 ) {
     public CreateRoutineCommand {
+        if (treatmentPlanId == null) {
+            throw new IllegalArgumentException("Treatment plan ID cannot be null");
+        }
         if (name == null) {
             throw new IllegalArgumentException("Routine name cannot be null");
         }

@@ -5,6 +5,9 @@ import com.kiniot.uflex.api.planning.domain.model.commands.CreateTreatmentPlanCo
 import com.kiniot.uflex.api.planning.domain.model.commands.RemoveRoutineCommand;
 import com.kiniot.uflex.api.planning.domain.model.commands.UpdateTreatmentPlanCommand;
 import com.kiniot.uflex.api.planning.domain.model.commands.UpdateRoutineCommand;
+import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateRoutineOrderException;
+import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateRoutineScheduleException;
+import com.kiniot.uflex.api.planning.domain.exceptions.RoutineWithOrderNotFoundException;
 import com.kiniot.uflex.api.planning.domain.model.entities.Routine;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.PlanName;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.PlanFrequency;
@@ -71,7 +74,7 @@ public class TreatmentPlan extends AuditableAbstractAggregateRoot<TreatmentPlan,
 
         boolean removed = this.routines.removeIf(routine -> routine.getOrder().equals(command.order()));
         if (!removed) {
-            throw new IllegalArgumentException("Routine with the provided order was not found");
+            throw new RoutineWithOrderNotFoundException(command.order().value());
         }
     }
 
@@ -96,7 +99,7 @@ public class TreatmentPlan extends AuditableAbstractAggregateRoot<TreatmentPlan,
                 .anyMatch(existingRoutine -> existingRoutine.getOrder().equals(order));
 
         if (duplicatedOrder) {
-            throw new IllegalArgumentException("Routine order must be unique within the treatment plan");
+            throw new DuplicateRoutineOrderException(order.value());
         }
     }
 
@@ -110,7 +113,7 @@ public class TreatmentPlan extends AuditableAbstractAggregateRoot<TreatmentPlan,
                 .anyMatch(existingRoutine -> existingRoutine.getSchedule().equals(schedule));
 
         if (duplicatedSchedule) {
-            throw new IllegalArgumentException("Routine schedule must be unique within the treatment plan");
+            throw new DuplicateRoutineScheduleException(schedule.dayOfWeek().name(), schedule.scheduledTime().toString());
         }
     }
 
@@ -118,7 +121,7 @@ public class TreatmentPlan extends AuditableAbstractAggregateRoot<TreatmentPlan,
         return this.routines.stream()
                 .filter(routine -> routine.getOrder().equals(order))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Routine with the provided order was not found"));
+                .orElseThrow(() -> new RoutineWithOrderNotFoundException(order.value()));
     }
 
     @Override

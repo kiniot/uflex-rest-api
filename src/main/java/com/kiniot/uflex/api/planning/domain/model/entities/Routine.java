@@ -2,6 +2,7 @@ package com.kiniot.uflex.api.planning.domain.model.entities;
 
 import com.kiniot.uflex.api.planning.domain.model.commands.CreateRoutineCommand;
 import com.kiniot.uflex.api.planning.domain.model.commands.UpdateRoutineCommand;
+import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateExerciseSeriesOrderException;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseSeries;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.RoutineId;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.RoutineName;
@@ -68,7 +69,14 @@ public class Routine extends AuditableModel<RoutineId> {
                 .anyMatch(orderValue -> !usedOrders.add(orderValue));
 
         if (duplicatedOrder) {
-            throw new IllegalArgumentException("Exercise series order must be unique within the routine");
+            Integer duplicatedValue = exerciseSeries.stream()
+                    .map(series -> series.order().value())
+                    .filter(orderValue -> exerciseSeries.stream()
+                            .filter(series -> series.order().value().equals(orderValue))
+                            .count() > 1)
+                    .findFirst()
+                    .orElse(null);
+            throw new DuplicateExerciseSeriesOrderException(duplicatedValue);
         }
     }
 }

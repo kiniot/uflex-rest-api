@@ -4,10 +4,12 @@ import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseSeries;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.RoutineName;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.RoutineOrder;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.RoutineSchedule;
+import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanId;
 
 import java.util.List;
 
 public record UpdateRoutineCommand(
+        TreatmentPlanId treatmentPlanId,
         RoutineOrder currentOrder,
         RoutineName name,
         RoutineOrder newOrder,
@@ -15,6 +17,9 @@ public record UpdateRoutineCommand(
         List<ExerciseSeries> exerciseSeries
 ) {
     public UpdateRoutineCommand {
+        if (treatmentPlanId == null) {
+            throw new IllegalArgumentException("Treatment plan ID cannot be null");
+        }
         if (currentOrder == null) {
             throw new IllegalArgumentException("Current routine order cannot be null");
         }
