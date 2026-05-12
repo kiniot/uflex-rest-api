@@ -7,9 +7,7 @@ import com.kiniot.uflex.api.organization.domain.model.events.PatientProfileRegis
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
 import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
-import jakarta.persistence.Embedded;
-import jakarta.persistence.EmbeddedId;
-import jakarta.persistence.Entity;
+import jakarta.persistence.*;
 import lombok.Getter;
 
 @Getter
@@ -55,7 +53,7 @@ public class Patient extends AuditableAbstractAggregateRoot<Patient, PatientId> 
     @Embedded
     private TreatmentPlanId treatmentPlanId;
 
-    @Embedded
+    @Enumerated(EnumType.STRING)
     private PatientStatus status;
 
     protected Patient() {}
@@ -77,6 +75,13 @@ public class Patient extends AuditableAbstractAggregateRoot<Patient, PatientId> 
         this.phoneNumber = phoneNumber;
         this.medicalCondition = medicalCondition;
         this.status = PatientStatus.UNASSIGNED;
+    }
+
+    public Patient(RegisterPatientCommand command, UserId userId, ClinicId clinicId, PhysiotherapistId assignedPhysiotherapistId, ClinicId physiotherapistClinicId) {
+        this(command, userId, clinicId);
+        if (assignedPhysiotherapistId != null && physiotherapistClinicId != null) {
+            this.assignPhysiotherapist(assignedPhysiotherapistId, physiotherapistClinicId);
+        }
     }
 
     public Patient(RegisterPatientCommand command, UserId userId, ClinicId clinicId) {

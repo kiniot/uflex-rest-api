@@ -10,7 +10,8 @@ public record RegisterPatientCommand(
         Gender gender,
         EmailAddress emailAddress,
         PhoneNumber phoneNumber,
-        MedicalCondition medicalCondition
+        MedicalCondition medicalCondition,
+        PhysiotherapistId assignedPhysiotherapistId
 ) {
     public RegisterPatientCommand {
         if (firstName == null) {

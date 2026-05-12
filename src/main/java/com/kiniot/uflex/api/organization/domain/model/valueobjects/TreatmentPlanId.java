@@ -9,7 +9,7 @@ import java.util.UUID;
 
 @Embeddable
 public record TreatmentPlanId(
-        @Column(columnDefinition = "UUID", nullable = false, unique = true)
+        @Column(columnDefinition = "UUID", nullable = true, unique = true)
         UUID treatmentPlanId
 ) implements Serializable {
     public TreatmentPlanId {

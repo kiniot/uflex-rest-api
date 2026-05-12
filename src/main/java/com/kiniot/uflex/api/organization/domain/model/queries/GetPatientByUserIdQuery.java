@@ -1,6 +1,6 @@
 package com.kiniot.uflex.api.organization.domain.model.queries;
 
-import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
+import com.kiniot.uflex.api.organization.domain.model.valueobjects.UserId;
 
 public record GetPatientByUserIdQuery(
         UserId userId

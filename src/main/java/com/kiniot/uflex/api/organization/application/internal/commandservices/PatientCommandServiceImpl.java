@@ -44,10 +44,21 @@ public class PatientCommandServiceImpl implements PatientCommandService {
         var clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(() -> new ClinicNotFoundException("Current clinic not found"));
 
-        if (patientRepository.existsByUserId(userId)) {
+        if (patientRepository.existsByUserId(new UserId(userId.id()))) {
             throw new PatientAlreadyRegisteredException(userId.id().toString());
         }
-        var patient = new Patient(command, new UserId(userId.id()), clinicId);
+
+        Patient patient;
+        if (command.assignedPhysiotherapistId() != null) {
+            var physiotherapist = physiotherapistRepository.findById(command.assignedPhysiotherapistId())
+                    .orElseThrow(() -> new IllegalArgumentException("Physiotherapist not found"));
+            if (!clinicId.equals(physiotherapist.getClinicId())) {
+                throw new com.kiniot.uflex.api.organization.domain.exceptions.CrossClinicAssignmentException();
+            }
+            patient = new Patient(command, new UserId(userId.id()), clinicId, command.assignedPhysiotherapistId(), physiotherapist.getClinicId());
+        } else {
+            patient = new Patient(command, new UserId(userId.id()), clinicId);
+        }
         patient.register();
         return Optional.of(patientRepository.save(patient));
     }
