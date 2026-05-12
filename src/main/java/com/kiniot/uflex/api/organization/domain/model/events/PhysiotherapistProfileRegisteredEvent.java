@@ -1,8 +1,8 @@
 package com.kiniot.uflex.api.organization.domain.model.events;
 
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhysiotherapistId;
-import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
-import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
+import com.kiniot.uflex.api.organization.domain.model.valueobjects.UserId;
+import com.kiniot.uflex.api.organization.domain.model.valueobjects.ClinicId;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 

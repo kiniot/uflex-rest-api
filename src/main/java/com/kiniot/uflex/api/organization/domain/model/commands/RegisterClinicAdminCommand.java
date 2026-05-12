@@ -8,7 +8,6 @@ public record RegisterClinicAdminCommand(
         Dni dni,
         BirthDate birthDate,
         Gender gender,
-        EmailAddress emailAddress,
         PhoneNumber phoneNumber
 ) {
     public RegisterClinicAdminCommand {
@@ -26,9 +25,6 @@ public record RegisterClinicAdminCommand(
         }
         if (gender == null) {
             throw new IllegalArgumentException("Gender cannot be null");
-        }
-        if (emailAddress == null) {
-            throw new IllegalArgumentException("Email address cannot be null");
         }
         if (phoneNumber == null) {
             throw new IllegalArgumentException("Phone number cannot be null");

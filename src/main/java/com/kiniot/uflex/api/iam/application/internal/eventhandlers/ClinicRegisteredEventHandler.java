@@ -1,11 +1,10 @@
 package com.kiniot.uflex.api.iam.application.internal.eventhandlers;
 
-import com.kiniot.uflex.api.iam.domain.exceptions.TenantAssignmentException;
 import com.kiniot.uflex.api.iam.domain.model.commands.AssignUserTenantId;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.TenantId;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.iam.domain.services.UserCommandService;
-import com.kiniot.uflex.api.organization.domain.model.events.ClinicAdminRegisteredEvent;
+import com.kiniot.uflex.api.organization.domain.model.events.ClinicRegisteredEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
@@ -14,17 +13,17 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 
 @Service
-public class ClinicAdminRegisteredEventHandler {
+public class ClinicRegisteredEventHandler {
 
     private final UserCommandService userCommandService;
-    private static final Logger LOGGER = LoggerFactory.getLogger(ClinicAdminRegisteredEventHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClinicRegisteredEventHandler.class);
 
-    public ClinicAdminRegisteredEventHandler(UserCommandService userCommandService) {
+    public ClinicRegisteredEventHandler(UserCommandService userCommandService) {
         this.userCommandService = userCommandService;
     }
 
     @EventListener
-    public void on(ClinicAdminRegisteredEvent event) {
+    public void on(ClinicRegisteredEvent event) {
         var userId = new UserId(UUID.fromString(event.getUserId()));
         var tenantId = new TenantId(UUID.fromString(event.getClinicId()));
         LOGGER.info("Handling ClinicAdminRegisteredEvent for User ID: {}, Clinic ID: {}", event.getUserId(), event.getClinicId());

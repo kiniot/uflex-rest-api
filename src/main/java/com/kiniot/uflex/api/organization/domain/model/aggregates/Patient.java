@@ -1,10 +1,10 @@
 package com.kiniot.uflex.api.organization.domain.model.aggregates;
 
-import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
+import com.kiniot.uflex.api.organization.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPatientCommand;
 import com.kiniot.uflex.api.organization.domain.model.events.PatientAssignedToPhysiotherapistEvent;
 import com.kiniot.uflex.api.organization.domain.model.events.PatientProfileRegisteredEvent;
-import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
+import com.kiniot.uflex.api.organization.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
 import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import jakarta.persistence.Embedded;
@@ -51,6 +51,9 @@ public class Patient extends AuditableAbstractAggregateRoot<Patient, PatientId> 
 
     @Embedded
     private PhysiotherapistId assignedPhysiotherapistId;
+
+    @Embedded
+    private TreatmentPlanId treatmentPlanId;
 
     @Embedded
     private PatientStatus status;
@@ -108,6 +111,13 @@ public class Patient extends AuditableAbstractAggregateRoot<Patient, PatientId> 
                 physiotherapistId,
                 this.clinicId
         ));
+    }
+
+    public void assignTreatmentPlan(TreatmentPlanId treatmentPlanId) {
+        if (this.treatmentPlanId != null) {
+            throw new IllegalStateException("Patient already has a treatment plan assigned");
+        }
+        this.treatmentPlanId = treatmentPlanId;
     }
 
     public void updateMedicalCondition(MedicalCondition condition) {

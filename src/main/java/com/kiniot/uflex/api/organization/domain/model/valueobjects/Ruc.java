@@ -15,9 +15,9 @@ public record Ruc(
         if (!ruc.matches("\\d{11}")) {
             throw new IllegalArgumentException("RUC must be exactly 11 digits");
         }
-        if (!isValidRuc(ruc)) {
-            throw new IllegalArgumentException("RUC has invalid checksum digit");
-        }
+//        if (!isValidRuc(ruc)) {
+//            throw new IllegalArgumentException("RUC has invalid checksum digit");
+//        }
     }
 
     public Ruc() {

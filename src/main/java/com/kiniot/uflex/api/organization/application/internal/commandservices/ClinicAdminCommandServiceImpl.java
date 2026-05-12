@@ -1,14 +1,14 @@
 package com.kiniot.uflex.api.organization.application.internal.commandservices;
 
 import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalIamService;
-import com.kiniot.uflex.api.organization.domain.exceptions.ClinicNotFoundException;
 import com.kiniot.uflex.api.organization.domain.exceptions.UserNotFoundException;
 import com.kiniot.uflex.api.organization.domain.model.entities.ClinicAdmin;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterClinicAdminCommand;
+import com.kiniot.uflex.api.organization.domain.model.valueobjects.EmailAddress;
+import com.kiniot.uflex.api.organization.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.organization.domain.services.ClinicAdminCommandService;
 import com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.repositories.ClinicAdminRepository;
 import jakarta.transaction.Transactional;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -18,16 +18,13 @@ public class ClinicAdminCommandServiceImpl implements ClinicAdminCommandService 
 
     private final ClinicAdminRepository clinicAdminRepository;
     private final ExternalIamService externalIamService;
-    private final ApplicationEventPublisher eventPublisher;
 
     public ClinicAdminCommandServiceImpl(
             ClinicAdminRepository clinicAdminRepository,
-            ExternalIamService externalIamService,
-            ApplicationEventPublisher eventPublisher
+            ExternalIamService externalIamService
     ) {
         this.clinicAdminRepository = clinicAdminRepository;
         this.externalIamService = externalIamService;
-        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -36,15 +33,12 @@ public class ClinicAdminCommandServiceImpl implements ClinicAdminCommandService 
         var userId = externalIamService.fetchCurrentUserId()
                 .orElseThrow(() -> new UserNotFoundException("Current user not found"));
         var clinicId = externalIamService.fetchCurrentClinicId()
-                .orElseThrow(() -> new ClinicNotFoundException("Current clinic not found"));
+                .orElseThrow(() -> new com.kiniot.uflex.api.organization.domain.exceptions.ClinicNotFoundException("Current clinic not found"));
+        var userEmail = externalIamService.fetchUserEmailAddressByUserId(userId.id().toString())
+                .orElseThrow(() -> new IllegalArgumentException("User email not found"));
 
-        var clinicAdmin = new ClinicAdmin(command, userId, clinicId);
+        var clinicAdmin = new ClinicAdmin(command, new UserId(userId.id()), clinicId, new EmailAddress(userEmail));
         var saved = clinicAdminRepository.save(clinicAdmin);
-        eventPublisher.publishEvent(new com.kiniot.uflex.api.organization.domain.model.events.ClinicAdminRegisteredEvent(
-                this,
-                userId.id().toString(),
-                clinicId.clinicId().toString()
-        ));
         return Optional.of(saved);
     }
 }

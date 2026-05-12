@@ -1,26 +1,17 @@
 package com.kiniot.uflex.api.organization.domain.model.events;
 
-import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
-
-import java.time.Instant;
 
 @Getter
 public class ClinicRegisteredEvent extends ApplicationEvent {
 
-    private final ClinicId clinicId;
-    private final String legalName;
-    private final String taxId;
-    private final String createdBy;
-    private final Instant occurredOn;
+    private final String userId;
+    private final String clinicId;
 
-    public ClinicRegisteredEvent(Object source, ClinicId clinicId, String legalName, String taxId, String createdBy) {
+    public ClinicRegisteredEvent(Object source, String userId, String clinicId) {
         super(source);
+        this.userId = userId;
         this.clinicId = clinicId;
-        this.legalName = legalName;
-        this.taxId = taxId;
-        this.createdBy = createdBy;
-        this.occurredOn = Instant.now();
     }
 }

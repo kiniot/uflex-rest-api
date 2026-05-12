@@ -2,7 +2,7 @@ package com.kiniot.uflex.api.organization.application.internal.outboundservices.
 
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.iam.interfaces.acl.IamContextFacade;
-import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
+import com.kiniot.uflex.api.organization.domain.model.valueobjects.ClinicId;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;

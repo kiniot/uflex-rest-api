@@ -6,6 +6,7 @@ import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistLicens
 import com.kiniot.uflex.api.organization.domain.exceptions.UserNotFoundException;
 import com.kiniot.uflex.api.organization.domain.model.aggregates.Physiotherapist;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPhysiotherapistCommand;
+import com.kiniot.uflex.api.organization.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.organization.domain.services.PhysiotherapistCommandService;
 import com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.repositories.PhysiotherapistRepository;
 import jakarta.transaction.Transactional;
@@ -35,13 +36,14 @@ public class PhysiotherapistCommandServiceImpl implements PhysiotherapistCommand
         var clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(() -> new ClinicNotFoundException("Current clinic not found"));
 
-        if (physiotherapistRepository.existsByUserId(userId)) {
-            throw new com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistAlreadyRegisteredException(userId.id().toString());
-        }
-        if (physiotherapistRepository.existsByLicenseNumber(command.licenseNumber())) {
+        if (physiotherapistRepository.existsByLicenseNumberAndClinicId(command.licenseNumber(), clinicId)) {
             throw new PhysiotherapistLicenseInvalidException(command.licenseNumber().licenseNumber());
         }
-        var physiotherapist = new Physiotherapist(command, userId, clinicId);
+        if (physiotherapistRepository.existsByEmailAddressAndClinicId(command.emailAddress(), clinicId)) {
+            throw new com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistAlreadyRegisteredException(
+                    "Physiotherapist with email " + command.emailAddress().email() + " already registered for this clinic");
+        }
+        var physiotherapist = new Physiotherapist(command, new UserId(userId.id()), clinicId);
         physiotherapist.register();
         return Optional.of(physiotherapistRepository.save(physiotherapist));
     }

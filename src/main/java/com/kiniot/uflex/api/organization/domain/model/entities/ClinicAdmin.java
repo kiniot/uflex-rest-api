@@ -1,9 +1,9 @@
 package com.kiniot.uflex.api.organization.domain.model.entities;
 
-import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
+import com.kiniot.uflex.api.organization.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterClinicAdminCommand;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
-import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
+import com.kiniot.uflex.api.organization.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.shared.domain.model.entities.AuditableModel;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.EmbeddedId;
@@ -62,11 +62,11 @@ public class ClinicAdmin extends AuditableModel<ClinicAdminId> {
         this.phoneNumber = phoneNumber;
     }
 
-    public ClinicAdmin(RegisterClinicAdminCommand command, UserId userId, ClinicId clinicId) {
+    public ClinicAdmin(RegisterClinicAdminCommand command, UserId userId, ClinicId clinicId, EmailAddress emailAddress) {
         this(new ClinicAdminId(), userId, clinicId,
                 command.firstName(), command.lastName(), command.dni(),
                 command.birthDate(), command.gender(),
-                command.emailAddress(), command.phoneNumber());
+                emailAddress, command.phoneNumber());
     }
 
     @Override
