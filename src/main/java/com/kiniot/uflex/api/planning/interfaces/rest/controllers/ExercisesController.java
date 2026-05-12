@@ -13,6 +13,9 @@ import com.kiniot.uflex.api.planning.interfaces.rest.resources.UpdateExerciseRes
 import com.kiniot.uflex.api.planning.interfaces.rest.transform.CreateExerciseCommandFromResourceAssembler;
 import com.kiniot.uflex.api.planning.interfaces.rest.transform.ExerciseResourceFromEntityAssembler;
 import com.kiniot.uflex.api.planning.interfaces.rest.transform.UpdateExerciseCommandFromResourceAssembler;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -45,6 +48,11 @@ public class ExercisesController {
     }
 
     @GetMapping
+    @Operation(summary = "Get exercises",
+            description = "Returns all exercises from the exercise catalog.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Exercises retrieved successfully")
+    })
     public ResponseEntity<List<ExerciseResource>> getExercises() {
         var exercises = exerciseQueryService.handle(new GetAllExercisesQuery()).stream()
                 .map(ExerciseResourceFromEntityAssembler::toResourceFromEntity)
@@ -53,6 +61,12 @@ public class ExercisesController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get exercise by id",
+            description = "Returns the exercise with the specified identifier.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Exercise retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Exercise not found")
+    })
     public ResponseEntity<ExerciseResource> getExerciseById(@PathVariable String id) {
         return exerciseQueryService.handle(new GetExerciseByIdQuery(new ExerciseId(UUID.fromString(id))))
                 .map(ExerciseResourceFromEntityAssembler::toResourceFromEntity)
@@ -61,6 +75,12 @@ public class ExercisesController {
     }
 
     @PostMapping
+    @Operation(summary = "Create exercise",
+            description = "Creates a new exercise in the exercise catalog.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Exercise created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data")
+    })
     public ResponseEntity<ExerciseResource> createExercise(@RequestBody CreateExerciseResource resource) {
         try {
             var command = CreateExerciseCommandFromResourceAssembler.toCommandFromResource(resource);
@@ -74,6 +94,13 @@ public class ExercisesController {
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Update exercise",
+            description = "Updates the exercise with the specified identifier.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Exercise updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "404", description = "Exercise not found")
+    })
     public ResponseEntity<ExerciseResource> updateExercise(@PathVariable String id,
                                                            @RequestBody UpdateExerciseResource resource) {
         try {
@@ -90,6 +117,13 @@ public class ExercisesController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Delete exercise",
+            description = "Deletes the exercise with the specified identifier.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Exercise deleted successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid exercise identifier"),
+            @ApiResponse(responseCode = "404", description = "Exercise not found")
+    })
     public ResponseEntity<Void> removeExercise(@PathVariable String id) {
         try {
             var command = new RemoveExerciseCommand(new ExerciseId(UUID.fromString(id)));

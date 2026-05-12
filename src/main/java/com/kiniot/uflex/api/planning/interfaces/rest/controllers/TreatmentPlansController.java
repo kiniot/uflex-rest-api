@@ -19,6 +19,9 @@ import com.kiniot.uflex.api.planning.interfaces.rest.transform.CreateTreatmentPl
 import com.kiniot.uflex.api.planning.interfaces.rest.transform.TreatmentPlanResourceFromEntityAssembler;
 import com.kiniot.uflex.api.planning.interfaces.rest.transform.UpdateRoutineCommandFromResourceAssembler;
 import com.kiniot.uflex.api.planning.interfaces.rest.transform.UpdateTreatmentPlanCommandFromResourceAssembler;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -51,6 +54,12 @@ public class TreatmentPlansController {
     }
 
     @GetMapping
+    @Operation(summary = "Get treatment plans",
+            description = "Returns all treatment plans associated with the authenticated user's clinic.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Treatment plans retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized or authenticated user has no clinic")
+    })
     public ResponseEntity<List<TreatmentPlanResource>> getTreatmentPlans() {
         var treatmentPlans = treatmentPlanQueryService.handle(new GetAllTreatmentPlansQuery()).stream()
                 .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
@@ -59,6 +68,12 @@ public class TreatmentPlansController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get treatment plan by id",
+            description = "Returns the treatment plan with the specified identifier, including its routines.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Treatment plan retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Treatment plan not found")
+    })
     public ResponseEntity<TreatmentPlanResource> getTreatmentPlanById(@PathVariable String id) {
         return treatmentPlanQueryService.handle(new GetTreatmentPlanByIdQuery(new TreatmentPlanId(UUID.fromString(id))))
                 .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
@@ -67,6 +82,13 @@ public class TreatmentPlansController {
     }
 
     @PostMapping
+    @Operation(summary = "Create treatment plan",
+            description = "Creates a new treatment plan for the authenticated user's clinic.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Treatment plan created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized or authenticated user has no clinic")
+    })
     public ResponseEntity<TreatmentPlanResource> createTreatmentPlan(@RequestBody CreateTreatmentPlanResource resource) {
         try {
             var command = CreateTreatmentPlanCommandFromResourceAssembler.toCommandFromResource(resource);
@@ -80,6 +102,13 @@ public class TreatmentPlansController {
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Update treatment plan",
+            description = "Updates the treatment plan with the specified identifier.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Treatment plan updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "404", description = "Treatment plan not found")
+    })
     public ResponseEntity<TreatmentPlanResource> updateTreatmentPlan(@PathVariable String id,
                                                                      @RequestBody UpdateTreatmentPlanResource resource) {
         try {
@@ -96,6 +125,13 @@ public class TreatmentPlansController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Delete treatment plan",
+            description = "Deletes the treatment plan with the specified identifier.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Treatment plan deleted successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid treatment plan identifier"),
+            @ApiResponse(responseCode = "404", description = "Treatment plan not found")
+    })
     public ResponseEntity<Void> removeTreatmentPlan(@PathVariable String id) {
         try {
             var command = new RemoveTreatmentPlanCommand(new TreatmentPlanId(UUID.fromString(id)));
@@ -109,6 +145,13 @@ public class TreatmentPlansController {
     }
 
     @PostMapping("/routines")
+    @Operation(summary = "Add routine to treatment plan",
+            description = "Creates a new routine inside the specified treatment plan.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Routine created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "404", description = "Treatment plan not found")
+    })
     public ResponseEntity<TreatmentPlanResource> createRoutine(@RequestBody CreateRoutineResource resource) {
         try {
             var command = CreateRoutineCommandFromResourceAssembler.toCommandFromResource(resource);
@@ -124,6 +167,13 @@ public class TreatmentPlansController {
     }
 
     @PutMapping("/routines")
+    @Operation(summary = "Update routine",
+            description = "Updates an existing routine inside the specified treatment plan.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Routine updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "404", description = "Treatment plan or routine not found")
+    })
     public ResponseEntity<TreatmentPlanResource> updateRoutine(@RequestBody UpdateRoutineResource resource) {
         try {
             var command = UpdateRoutineCommandFromResourceAssembler.toCommandFromResource(resource);
@@ -139,6 +189,13 @@ public class TreatmentPlansController {
     }
 
     @DeleteMapping("/{treatmentPlanId}/routines/{routineOrder}")
+    @Operation(summary = "Delete routine",
+            description = "Deletes the routine with the specified order from the treatment plan.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Routine deleted successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid identifiers"),
+            @ApiResponse(responseCode = "404", description = "Treatment plan or routine not found")
+    })
     public ResponseEntity<TreatmentPlanResource> removeRoutine(@PathVariable String treatmentPlanId,
                                                                @PathVariable Integer routineOrder) {
         try {
