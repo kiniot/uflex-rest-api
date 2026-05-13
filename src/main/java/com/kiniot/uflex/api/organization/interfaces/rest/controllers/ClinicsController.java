@@ -1,9 +1,7 @@
 package com.kiniot.uflex.api.organization.interfaces.rest.controllers;
 
-import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalIamService;
 import com.kiniot.uflex.api.organization.domain.exceptions.UserNotFoundException;
-import com.kiniot.uflex.api.organization.domain.model.aggregates.Clinic;
 import com.kiniot.uflex.api.organization.domain.services.ClinicCommandService;
 import com.kiniot.uflex.api.organization.interfaces.rest.resources.ClinicResource;
 import com.kiniot.uflex.api.organization.interfaces.rest.resources.RegisterClinicResource;

@@ -6,11 +6,11 @@ import com.kiniot.uflex.api.iam.domain.model.queries.GetAuthenticatedUserIdQuery
 import com.kiniot.uflex.api.iam.domain.model.queries.GetAuthenticatedUserTenantIdQuery;
 import com.kiniot.uflex.api.iam.domain.model.queries.GetUserByIdQuery;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.Email;
-import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.iam.domain.services.UserCommandService;
 import com.kiniot.uflex.api.iam.domain.services.UserQueryService;
 import com.kiniot.uflex.api.iam.interfaces.acl.IamContextFacade;
 import com.kiniot.uflex.api.iam.domain.model.commands.SignUpVerifiedUserCommand;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

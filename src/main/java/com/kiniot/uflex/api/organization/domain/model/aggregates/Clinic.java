@@ -1,16 +1,14 @@
 package com.kiniot.uflex.api.organization.domain.model.aggregates;
 
 import com.fasterxml.uuid.Generators;
-import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterClinicCommand;
 import com.kiniot.uflex.api.organization.domain.model.events.ClinicRegisteredEvent;
 import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
-import jakarta.persistence.Embedded;
-import jakarta.persistence.EmbeddedId;
-import jakarta.persistence.Entity;
+import jakarta.persistence.*;
 import lombok.Getter;
 
 @Getter
@@ -60,7 +58,7 @@ public class Clinic extends AuditableAbstractAggregateRoot<Clinic, ClinicId> {
         this.addDomainEvent(new ClinicRegisteredEvent(
                 this,
                 this.createdBy.id().toString(),
-                this.id.clinicId().toString()
+                this.id.id().toString()
         ));
     }
 

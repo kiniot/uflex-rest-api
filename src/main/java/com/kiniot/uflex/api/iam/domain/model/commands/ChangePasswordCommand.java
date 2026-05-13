@@ -1,7 +1,7 @@
 package com.kiniot.uflex.api.iam.domain.model.commands;
 
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.Password;
-import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 
 public record ChangePasswordCommand(
         UserId userId,

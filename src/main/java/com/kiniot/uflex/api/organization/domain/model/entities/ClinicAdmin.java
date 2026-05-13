@@ -1,14 +1,12 @@
 package com.kiniot.uflex.api.organization.domain.model.entities;
 
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterClinicAdminCommand;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.shared.domain.model.entities.AuditableModel;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
-import jakarta.persistence.Embedded;
-import jakarta.persistence.EmbeddedId;
-import jakarta.persistence.Entity;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
+import jakarta.persistence.*;
 import lombok.Getter;
 
 @Entity
@@ -19,9 +17,11 @@ public class ClinicAdmin extends AuditableModel<ClinicAdminId> {
     private ClinicAdminId id;
 
     @Embedded
+    @AttributeOverride(name = "id", column = @Column(name = "user_id", columnDefinition = "UUID", nullable = false))
     private UserId userId;
 
     @Embedded
+    @AttributeOverride(name = "id", column = @Column(name = "clinic_id", columnDefinition = "UUID", nullable = false))
     private ClinicId clinicId;
 
     @Embedded

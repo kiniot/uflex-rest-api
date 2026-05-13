@@ -1,8 +1,8 @@
 package com.kiniot.uflex.api.iam.infrastructure.authorization.sfs.services;
 
-import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.iam.infrastructure.authorization.sfs.model.UserDetailsImpl;
 import com.kiniot.uflex.api.iam.infrastructure.persistence.jpa.repositories.UserRepository;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

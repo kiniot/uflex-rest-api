@@ -7,9 +7,9 @@ import com.kiniot.uflex.api.iam.domain.model.queries.GetAuthenticatedUserTenantI
 import com.kiniot.uflex.api.iam.domain.model.queries.GetUserByEmailQuery;
 import com.kiniot.uflex.api.iam.domain.model.queries.GetUserByIdQuery;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.TenantId;
-import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.iam.domain.services.UserQueryService;
 import com.kiniot.uflex.api.iam.infrastructure.persistence.jpa.repositories.UserRepository;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;

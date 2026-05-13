@@ -1,10 +1,8 @@
 package com.kiniot.uflex.api.organization.domain.model.aggregates;
 
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPhysiotherapistCommand;
 import com.kiniot.uflex.api.organization.domain.model.events.PhysiotherapistProfileActivatedEvent;
 import com.kiniot.uflex.api.organization.domain.model.events.PhysiotherapistProfileRegisteredEvent;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.LicenseNumber;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhoneNumber;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhotoUrl;
@@ -14,6 +12,8 @@ import com.kiniot.uflex.api.organization.domain.model.valueobjects.Physiotherapi
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.Specialty;
 import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -27,9 +27,11 @@ public class Physiotherapist extends AuditableAbstractAggregateRoot<Physiotherap
     private PhysiotherapistId id;
 
     @Embedded
+    @AttributeOverride(name = "id", column = @Column(name = "user_id", columnDefinition = "UUID", nullable = false))
     private UserId userId;
 
     @Embedded
+    @AttributeOverride(name = "id", column = @Column(name = "clinic_id", columnDefinition = "UUID", nullable = false))
     private ClinicId clinicId;
 
     private String fullName;

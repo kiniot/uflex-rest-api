@@ -29,6 +29,7 @@ public class Exercise extends AuditableAbstractAggregateRoot<Exercise, ExerciseI
     private BodyPart bodyPart;
 
     @Embedded
+    @AttributeOverride(name = "id", column = @Column(name = "clinic_id", columnDefinition = "UUID", nullable = false))
     private ClinicId clinicId;
 
     protected Exercise() {}

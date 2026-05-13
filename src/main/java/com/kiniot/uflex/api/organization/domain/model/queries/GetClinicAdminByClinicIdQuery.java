@@ -1,6 +1,6 @@
 package com.kiniot.uflex.api.organization.domain.model.queries;
 
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.ClinicId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 
 public record GetClinicAdminByClinicIdQuery(
         ClinicId clinicId

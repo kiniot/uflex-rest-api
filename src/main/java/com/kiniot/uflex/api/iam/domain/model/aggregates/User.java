@@ -6,8 +6,8 @@ import com.kiniot.uflex.api.iam.domain.model.events.UserSignedUpAndActivatedEven
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.Email;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.Password;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.TenantId;
-import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import jakarta.persistence.*;
 import lombok.Getter;
 

@@ -3,6 +3,7 @@ package com.kiniot.uflex.api.shared.domain.model.valueobjects;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 /**
@@ -14,14 +15,15 @@ import java.util.UUID;
 @Embeddable
 public record ClinicId(
         @Column(columnDefinition = "UUID")
-        UUID clinicId
-) {
+        UUID id
+) implements Serializable {
+
     public ClinicId() {
         this(null);
     }
 
     public ClinicId {
-        if (clinicId != null && clinicId.equals(new UUID(0L, 0L))) {
+        if (id != null && id.equals(new UUID(0L, 0L))) {
             throw new IllegalArgumentException("Clinic ID cannot be null or zero");
         }
     }
