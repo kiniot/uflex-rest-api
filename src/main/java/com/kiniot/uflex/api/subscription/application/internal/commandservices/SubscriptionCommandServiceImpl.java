@@ -64,23 +64,29 @@ public class SubscriptionCommandServiceImpl implements SubscriptionCommandServic
                 amount.currency(),
                 null,
                 null,
-                plan.getName()
+                plan.getName(),
+                command.userId()
         ));
     }
 
     @Override
     @Transactional
     public Optional<Subscription> handle(CompleteCheckoutSessionPaymentCommand command) {
-        if (subscriptionRepository.existsByClinicIdAndStatus(command.clinicId(), SubscriptionStatus.ACTIVE)) {
-            return subscriptionRepository.findByClinicIdAndStatus(command.clinicId(), SubscriptionStatus.ACTIVE);
+        if (command.paymentReference() != null && command.paymentReference().providerCheckoutSessionId() != null) {
+            var existingBySession = subscriptionRepository.findByCheckoutSessionId(command.paymentReference().providerCheckoutSessionId());
+            if (existingBySession.isPresent()) return existingBySession;
         }
         var plan = planRepository.findById(new SubscriptionPlanId(command.planId()))
                 .filter(com.kiniot.uflex.api.subscription.domain.model.entities.SubscriptionPlan::isActive)
                 .orElseThrow(() -> new IllegalArgumentException("Active plan not found"));
         var amount = pricingService.priceFor(plan, command.billingCycle());
-        var subscription = new Subscription(new ClinicId(command.clinicId()), plan, command.billingCycle(), command.paymentReference());
-        var now = OffsetDateTime.now();
-        subscription.activate(now);
+        var now = command.currentPeriodStart() == null ? OffsetDateTime.now() : command.currentPeriodStart();
+        var periodEnd = command.currentPeriodEnd() == null
+                ? (command.billingCycle() == com.kiniot.uflex.api.subscription.domain.model.valueobjects.BillingCycle.YEARLY ? now.plusYears(1) : now.plusMonths(1))
+                : command.currentPeriodEnd();
+        var subscription = subscriptionRepository.findByClinicIdAndStatus(command.clinicId(), SubscriptionStatus.ACTIVE)
+                .orElseGet(() -> new Subscription(new ClinicId(command.clinicId()), plan, command.billingCycle(), command.paymentReference()));
+        subscription.refreshStripePayment(command.paymentReference(), now, periodEnd);
         var savedSubscription = subscriptionRepository.save(subscription);
         var invoice = new Invoice(savedSubscription.getId().id(), amount, now, now);
         invoice.markPaid(command.paymentReference().providerTransactionId(), now);

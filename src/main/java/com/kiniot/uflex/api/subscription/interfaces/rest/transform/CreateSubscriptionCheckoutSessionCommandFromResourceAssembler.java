@@ -9,7 +9,8 @@ public class CreateSubscriptionCheckoutSessionCommandFromResourceAssembler {
         return new CreateSubscriptionCheckoutSessionCommand(
                 resource.clinicId(),
                 resource.planId(),
-                BillingCycle.valueOf(resource.billingCycle())
+                BillingCycle.valueOf(resource.billingCycle()),
+                null
         );
     }
 }

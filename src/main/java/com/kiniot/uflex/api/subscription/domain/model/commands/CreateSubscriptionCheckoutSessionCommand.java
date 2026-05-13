@@ -7,6 +7,7 @@ import java.util.UUID;
 public record CreateSubscriptionCheckoutSessionCommand(
         UUID clinicId,
         UUID planId,
-        BillingCycle billingCycle
+        BillingCycle billingCycle,
+        String userId
 ) {
 }

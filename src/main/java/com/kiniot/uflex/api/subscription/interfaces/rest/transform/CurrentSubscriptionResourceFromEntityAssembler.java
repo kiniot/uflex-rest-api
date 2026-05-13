@@ -1,15 +1,19 @@
 package com.kiniot.uflex.api.subscription.interfaces.rest.transform;
 
 import com.kiniot.uflex.api.subscription.domain.model.aggregates.Subscription;
-import com.kiniot.uflex.api.subscription.interfaces.rest.resources.PaymentReferenceResource;
-import com.kiniot.uflex.api.subscription.interfaces.rest.resources.SubscriptionResource;
+import com.kiniot.uflex.api.subscription.domain.model.valueobjects.BillingCycle;
+import com.kiniot.uflex.api.subscription.interfaces.rest.resources.CurrentSubscriptionResource;
 
-public class SubscriptionResourceFromEntityAssembler {
-    public static SubscriptionResource toResourceFromEntity(Subscription entity) {
+public class CurrentSubscriptionResourceFromEntityAssembler {
+    public static CurrentSubscriptionResource toResourceFromEntity(Subscription entity) {
+        var plan = entity.getPlan();
+        var amount = entity.getBillingCycle() == BillingCycle.YEARLY
+                ? plan.getYearlyPrice().amount()
+                : plan.getMonthlyPrice().amount();
         var paymentReference = entity.getPaymentReference();
         var paymentResource = paymentReference == null
                 ? null
-                : new PaymentReferenceResource(
+                : new com.kiniot.uflex.api.subscription.interfaces.rest.resources.PaymentReferenceResource(
                 paymentReference.provider(),
                 paymentReference.providerTransactionId(),
                 paymentReference.providerCheckoutSessionId(),
@@ -17,16 +21,18 @@ public class SubscriptionResourceFromEntityAssembler {
                 paymentReference.providerSubscriptionId(),
                 paymentReference.last4(),
                 paymentReference.expiresOn());
-        return new SubscriptionResource(
+        return new CurrentSubscriptionResource(
                 entity.getId().id(),
                 entity.getClinicId().clinicId(),
-                PlanResourceFromEntityAssembler.toResourceFromEntity(entity.getPlan()),
+                plan.getId().id(),
+                plan.getName(),
                 entity.getStatus(),
                 entity.getBillingCycle(),
+                amount,
+                plan.getCurrency(),
                 entity.getCurrentPeriodStart(),
                 entity.getCurrentPeriodEnd(),
                 entity.getNextBillingDate(),
-                entity.getTrialUntil(),
                 paymentResource
         );
     }

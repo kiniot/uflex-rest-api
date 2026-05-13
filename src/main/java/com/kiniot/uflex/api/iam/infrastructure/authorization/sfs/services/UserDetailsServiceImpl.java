@@ -1,5 +1,6 @@
 package com.kiniot.uflex.api.iam.infrastructure.authorization.sfs.services;
 
+import com.kiniot.uflex.api.iam.domain.model.valueobjects.Email;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.iam.infrastructure.authorization.sfs.model.UserDetailsImpl;
 import com.kiniot.uflex.api.iam.infrastructure.persistence.jpa.repositories.UserRepository;
@@ -21,9 +22,24 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        var userId = new UserId(UUID.fromString(username));
+        if (username != null && username.contains("@")) {
+            return loadUserByEmail(username);
+        }
+        UUID id;
+        try {
+            id = UUID.fromString(username);
+        } catch (IllegalArgumentException exception) {
+            return loadUserByEmail(username);
+        }
+        var userId = new UserId(id);
         var user = userRepository.findByIdWithRoles(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with id: " + username));
+        return UserDetailsImpl.build(user);
+    }
+
+    private UserDetails loadUserByEmail(String email) {
+        var user = userRepository.findByEmailWithRoles(new Email(email))
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
         return UserDetailsImpl.build(user);
     }
 }
