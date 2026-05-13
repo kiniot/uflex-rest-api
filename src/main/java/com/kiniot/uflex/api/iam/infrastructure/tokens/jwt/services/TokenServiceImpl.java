@@ -78,24 +78,7 @@ public class TokenServiceImpl implements BearerTokenService {
 
     @Override
     public String getUsernameFromToken(String token) {
-        var email = getEmailFromToken(token);
-        return StringUtils.hasText(email) ? email : getSubjectFromToken(token);
-    }
-
-    @Override
-    public String getSubjectFromToken(String token) {
         return extractClaim(token, Claims::getSubject);
-    }
-
-    @Override
-    public String getEmailFromToken(String token) {
-        return extractClaim(token, claims -> claims.get("email", String.class));
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public List<String> getRolesFromToken(String token) {
-        return extractClaim(token, claims -> claims.get("roles", List.class));
     }
 
     @Override

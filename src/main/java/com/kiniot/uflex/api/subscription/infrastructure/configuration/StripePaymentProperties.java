@@ -9,7 +9,7 @@ public class StripePaymentProperties {
     private boolean enabled = false;
     private String secretKey = "";
     private String webhookSecret = "";
-    private String successUrl = "http://localhost:4200/subscription?payment=success";
+    private String successUrl = "http://localhost:4200/subscription?payment=success&session_id={CHECKOUT_SESSION_ID}";
     private String cancelUrl = "http://localhost:4200/subscription?payment=cancelled";
 
     public boolean isEnabled() {

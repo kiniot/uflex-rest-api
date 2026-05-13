@@ -4,6 +4,7 @@ import com.kiniot.uflex.api.subscription.domain.model.aggregates.Subscription;
 import com.kiniot.uflex.api.subscription.domain.model.commands.CancelSubscriptionCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.ChangeSubscriptionPlanCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.CompleteCheckoutSessionPaymentCommand;
+import com.kiniot.uflex.api.subscription.domain.model.commands.ConfirmCheckoutSessionCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.CreateSubscriptionCheckoutSessionCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.PurchaseSubscriptionPlanCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.RegisterInvoicePaymentCommand;
@@ -14,6 +15,7 @@ import java.util.Optional;
 
 public interface SubscriptionCommandService {
     CheckoutSessionResult handle(CreateSubscriptionCheckoutSessionCommand command);
+    Optional<Subscription> handle(ConfirmCheckoutSessionCommand command);
     Optional<Subscription> handle(CompleteCheckoutSessionPaymentCommand command);
     Optional<Subscription> handle(PurchaseSubscriptionPlanCommand command);
     Optional<Subscription> handle(ChangeSubscriptionPlanCommand command);

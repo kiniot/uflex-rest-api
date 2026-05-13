@@ -23,7 +23,7 @@ public class CurrentSubscriptionResourceFromEntityAssembler {
                 paymentReference.expiresOn());
         return new CurrentSubscriptionResource(
                 entity.getId().id(),
-                entity.getClinicId().clinicId(),
+                entity.getClinicId().id(),
                 plan.getId().id(),
                 plan.getName(),
                 entity.getStatus(),

@@ -180,6 +180,6 @@ public class SubscriptionController {
     private Optional<Subscription> currentSubscription() {
         var clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Authenticated user has no clinic assigned"));
-        return subscriptionQueryService.handle(new GetSubscriptionByClinicQuery(clinicId.clinicId()));
+        return subscriptionQueryService.handle(new GetSubscriptionByClinicQuery(clinicId.id()));
     }
 }

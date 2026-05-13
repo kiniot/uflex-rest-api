@@ -8,12 +8,14 @@ import com.kiniot.uflex.api.subscription.domain.model.aggregates.Subscription;
 import com.kiniot.uflex.api.subscription.domain.model.commands.CancelSubscriptionCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.ChangeSubscriptionPlanCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.CompleteCheckoutSessionPaymentCommand;
+import com.kiniot.uflex.api.subscription.domain.model.commands.ConfirmCheckoutSessionCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.CreateSubscriptionCheckoutSessionCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.PurchaseSubscriptionPlanCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.RegisterInvoicePaymentCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.UpdatePaymentMethodCommand;
 import com.kiniot.uflex.api.subscription.domain.model.entities.Invoice;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.InvoiceId;
+import com.kiniot.uflex.api.subscription.domain.model.valueobjects.Money;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionId;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionPlanId;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionStatus;
@@ -71,9 +73,37 @@ public class SubscriptionCommandServiceImpl implements SubscriptionCommandServic
 
     @Override
     @Transactional
+    public Optional<Subscription> handle(ConfirmCheckoutSessionCommand command) {
+        if (command.sessionId() == null || command.sessionId().isBlank()) {
+            throw new IllegalArgumentException("sessionId is required");
+        }
+        var existingBySession = subscriptionRepository.findByPaymentReferenceProviderCheckoutSessionId(command.sessionId());
+        if (existingBySession.isPresent()) return existingBySession;
+
+        var completedPayment = paymentGateway.confirmCheckoutSession(command.sessionId())
+                .orElseThrow(() -> new IllegalArgumentException("Stripe Checkout Session was not found"));
+        if (!"paid".equalsIgnoreCase(completedPayment.paymentStatus())) {
+            throw new IllegalStateException("Stripe Checkout Session has not been paid");
+        }
+        if (!"complete".equalsIgnoreCase(completedPayment.status())) {
+            throw new IllegalStateException("Stripe Checkout Session is not complete");
+        }
+        return handle(new CompleteCheckoutSessionPaymentCommand(
+                completedPayment.clinicId(),
+                completedPayment.planId(),
+                completedPayment.billingCycle(),
+                completedPayment.paymentReference(),
+                completedPayment.currentPeriodStart(),
+                completedPayment.currentPeriodEnd()
+        ));
+    }
+
+    @Override
+    @Transactional
     public Optional<Subscription> handle(CompleteCheckoutSessionPaymentCommand command) {
         if (command.paymentReference() != null && command.paymentReference().providerCheckoutSessionId() != null) {
-            var existingBySession = subscriptionRepository.findByCheckoutSessionId(command.paymentReference().providerCheckoutSessionId());
+            var existingBySession = subscriptionRepository.findByPaymentReferenceProviderCheckoutSessionId(
+                    command.paymentReference().providerCheckoutSessionId());
             if (existingBySession.isPresent()) return existingBySession;
         }
         var plan = planRepository.findById(new SubscriptionPlanId(command.planId()))
@@ -88,9 +118,7 @@ public class SubscriptionCommandServiceImpl implements SubscriptionCommandServic
                 .orElseGet(() -> new Subscription(new ClinicId(command.clinicId()), plan, command.billingCycle(), command.paymentReference()));
         subscription.refreshStripePayment(command.paymentReference(), now, periodEnd);
         var savedSubscription = subscriptionRepository.save(subscription);
-        var invoice = new Invoice(savedSubscription.getId().id(), amount, now, now);
-        invoice.markPaid(command.paymentReference().providerTransactionId(), now);
-        invoiceRepository.save(invoice);
+        savePaidInvoiceIfAbsent(savedSubscription, amount, command.paymentReference().providerTransactionId(), now);
         return Optional.of(savedSubscription);
     }
 
@@ -163,5 +191,14 @@ public class SubscriptionCommandServiceImpl implements SubscriptionCommandServic
             }
             invoiceRepository.save(invoice);
         });
+    }
+
+    private void savePaidInvoiceIfAbsent(Subscription subscription, Money amount, String providerTransactionId, OffsetDateTime paidAt) {
+        if (providerTransactionId != null && invoiceRepository.findByProviderTransactionId(providerTransactionId).isPresent()) {
+            return;
+        }
+        var invoice = new Invoice(subscription.getId().id(), amount, paidAt, paidAt);
+        invoice.markPaid(providerTransactionId, paidAt);
+        invoiceRepository.save(invoice);
     }
 }

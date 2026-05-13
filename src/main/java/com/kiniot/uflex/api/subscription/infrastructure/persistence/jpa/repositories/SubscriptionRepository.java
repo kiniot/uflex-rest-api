@@ -18,6 +18,11 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Subs
     @Query("select s from Subscription s where s.clinicId.id = :clinicId and s.status = :status")
     Optional<Subscription> findByClinicIdAndStatus(@Param("clinicId") UUID clinicId, @Param("status") SubscriptionStatus status);
 
+    Optional<Subscription> findByPaymentReferenceProviderCheckoutSessionId(String providerCheckoutSessionId);
+
+    @Query("select s from Subscription s where s.clinicId.id = :clinicId and s.paymentReference.providerTransactionId is not null")
+    List<Subscription> findPaidSubscriptionsByClinicId(@Param("clinicId") UUID clinicId);
+
     @Query("select count(s) > 0 from Subscription s where s.clinicId.id = :clinicId and s.status = :status")
     boolean existsByClinicIdAndStatus(@Param("clinicId") UUID clinicId, @Param("status") SubscriptionStatus status);
 }

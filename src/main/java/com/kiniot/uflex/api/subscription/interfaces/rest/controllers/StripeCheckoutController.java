@@ -1,8 +1,7 @@
 package com.kiniot.uflex.api.subscription.interfaces.rest.controllers;
 
 import com.kiniot.uflex.api.subscription.application.internal.outboundservices.acl.ExternalIamService;
-import com.kiniot.uflex.api.subscription.application.internal.outboundservices.payment.PaymentGatewayPort;
-import com.kiniot.uflex.api.subscription.domain.model.commands.CompleteCheckoutSessionPaymentCommand;
+import com.kiniot.uflex.api.subscription.domain.model.commands.ConfirmCheckoutSessionCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.CreateSubscriptionCheckoutSessionCommand;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.BillingCycle;
 import com.kiniot.uflex.api.subscription.domain.services.SubscriptionCommandService;
@@ -28,14 +27,11 @@ import org.springframework.web.server.ResponseStatusException;
 @Tag(name = "Subscriptions", description = "Available subscription endpoints")
 public class StripeCheckoutController {
     private final SubscriptionCommandService subscriptionCommandService;
-    private final PaymentGatewayPort paymentGatewayPort;
     private final ExternalIamService externalIamService;
 
     public StripeCheckoutController(SubscriptionCommandService subscriptionCommandService,
-                                    PaymentGatewayPort paymentGatewayPort,
                                     ExternalIamService externalIamService) {
         this.subscriptionCommandService = subscriptionCommandService;
-        this.paymentGatewayPort = paymentGatewayPort;
         this.externalIamService = externalIamService;
     }
 
@@ -75,21 +71,7 @@ public class StripeCheckoutController {
             if (resolvedSessionId == null || resolvedSessionId.isBlank()) {
                 throw new IllegalArgumentException("sessionId is required");
             }
-            var clinicId = externalIamService.fetchCurrentClinicId()
-                    .orElseThrow(() -> new IllegalStateException("Authenticated user has no clinic assigned"));
-            var completedPayment = paymentGatewayPort.confirmCheckoutSession(resolvedSessionId)
-                    .orElseThrow(() -> new IllegalArgumentException("Stripe Checkout Session was not found"));
-            if (!clinicId.id().equals(completedPayment.clinicId())) {
-                throw new IllegalArgumentException("Stripe Checkout Session does not belong to the authenticated clinic");
-            }
-            return subscriptionCommandService.handle(new CompleteCheckoutSessionPaymentCommand(
-                            completedPayment.clinicId(),
-                            completedPayment.planId(),
-                            completedPayment.billingCycle(),
-                            completedPayment.paymentReference(),
-                            completedPayment.currentPeriodStart(),
-                            completedPayment.currentPeriodEnd()
-                    ))
+            return subscriptionCommandService.handle(new ConfirmCheckoutSessionCommand(resolvedSessionId))
                     .map(SubscriptionResourceFromEntityAssembler::toResourceFromEntity)
                     .map(ResponseEntity::ok)
                     .orElseGet(() -> ResponseEntity.badRequest().build());
