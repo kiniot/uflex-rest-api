@@ -14,7 +14,8 @@ import com.kiniot.uflex.api.organization.domain.services.PatientQueryService;
 import com.kiniot.uflex.api.organization.domain.services.PhysiotherapistQueryService;
 import com.kiniot.uflex.api.organization.interfaces.rest.resources.AssignPhysiotherapistResource;
 import com.kiniot.uflex.api.organization.interfaces.rest.resources.PatientResource;
-import com.kiniot.uflex.api.organization.interfaces.rest.resources.RegisterPatientResource;
+import com.kiniot.uflex.api.organization.interfaces.rest.resources.RegisterPatientByClinicAdminResource;
+import com.kiniot.uflex.api.organization.interfaces.rest.resources.RegisterPatientByPhysiotherapistResource;
 import com.kiniot.uflex.api.organization.interfaces.rest.transform.PatientResourceFromEntityAssembler;
 import com.kiniot.uflex.api.organization.interfaces.rest.transform.RegisterPatientCommandFromResourceAssembler;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
@@ -28,6 +29,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -59,13 +61,13 @@ public class PatientsController {
     @Operation(
             summary = "Register a new patient as clinic admin",
             description = "Creates a patient profile under the authenticated clinic administrator's clinic. "
-                    + "This endpoint does not assign the patient to any physiotherapist; assignment is handled separately."
+                    + "This endpoint may optionally assign the patient to a physiotherapist from the same clinic."
     )
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Patient profile data to register from a clinic administrator context.",
             required = true,
             content = @Content(
-                    schema = @Schema(implementation = RegisterPatientResource.class),
+                    schema = @Schema(implementation = RegisterPatientByClinicAdminResource.class),
                     examples = @ExampleObject(
                             name = "Clinic admin patient registration",
                             value = """
@@ -78,7 +80,8 @@ public class PatientsController {
                                       "email": "lucia.ramos@example.com",
                                       "countryCode": "+51",
                                       "phoneNumber": "987654321",
-                                      "medicalCondition": "Post-operative knee rehabilitation"
+                                      "medicalCondition": "Post-operative knee rehabilitation",
+                                      "assignedPhysiotherapistId": "019e1e7d-80c3-71c5-ae4b-2358fa9ae43c"
                                     }
                                     """
                     )
@@ -87,9 +90,11 @@ public class PatientsController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Patient created successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "404", description = "Assigned physiotherapist not found"),
             @ApiResponse(responseCode = "409", description = "The authenticated user already has a registered patient profile"),
     })
-    public ResponseEntity<PatientResource> registerPatient(@RequestBody RegisterPatientResource resource) {
+    @PreAuthorize("hasAuthority('ROLE_CLINIC_ADMIN')")
+    public ResponseEntity<PatientResource> registerPatient(@RequestBody RegisterPatientByClinicAdminResource resource) {
         var command = RegisterPatientCommandFromResourceAssembler.toRegisterPatientByClinicAdminCommand(resource);
         var patient = patientCommandService.handle(command);
         if (patient.isEmpty()) {
@@ -109,7 +114,7 @@ public class PatientsController {
             description = "Patient profile data to register from a physiotherapist context. The physiotherapist assignment is inferred from the authenticated user.",
             required = true,
             content = @Content(
-                    schema = @Schema(implementation = RegisterPatientResource.class),
+                    schema = @Schema(implementation = RegisterPatientByPhysiotherapistResource.class),
                     examples = @ExampleObject(
                             name = "Physiotherapist patient registration",
                             value = """
@@ -134,7 +139,8 @@ public class PatientsController {
             @ApiResponse(responseCode = "404", description = "Authenticated physiotherapist profile not found"),
             @ApiResponse(responseCode = "409", description = "The authenticated user already has a registered patient profile"),
     })
-    public ResponseEntity<PatientResource> registerPatientByPhysiotherapist(@RequestBody RegisterPatientResource resource) {
+    @PreAuthorize("hasAuthority('ROLE_PHYSIOTHERAPIST')")
+    public ResponseEntity<PatientResource> registerPatientByPhysiotherapist(@RequestBody RegisterPatientByPhysiotherapistResource resource) {
         var userId = externalIamService.fetchCurrentUserId()
                 .orElseThrow(() -> new UserNotFoundException("Current user not found"));
         var physiotherapist = physiotherapistQueryService.handle(new GetPhysiotherapistByUserIdQuery(userId))

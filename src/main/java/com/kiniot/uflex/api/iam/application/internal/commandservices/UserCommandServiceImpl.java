@@ -140,4 +140,13 @@ public class UserCommandServiceImpl implements UserCommandService {
         user.addRole(role);
         userRepository.save(user);
     }
+
+    @Override
+    @Transactional
+    public void handle(DeleteUserCommand command) {
+        if (!userRepository.existsById(command.userId())) {
+            return;
+        }
+        userRepository.deleteById(command.userId());
+    }
 }

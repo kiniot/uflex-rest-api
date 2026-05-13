@@ -82,6 +82,18 @@ public class Patient extends AuditableAbstractAggregateRoot<Patient, PatientId> 
     }
 
     public Patient(
+            RegisterPatientByClinicAdminCommand command,
+            UserId userId,
+            ClinicId clinicId,
+            ClinicId physiotherapistClinicId
+    ) {
+        this(command, userId, clinicId);
+        if (command.assignedPhysiotherapistId() != null && physiotherapistClinicId != null) {
+            this.assignPhysiotherapist(command.assignedPhysiotherapistId(), physiotherapistClinicId);
+        }
+    }
+
+    public Patient(
             RegisterPatientByPhysiotherapistCommand command,
             UserId userId,
             ClinicId clinicId,

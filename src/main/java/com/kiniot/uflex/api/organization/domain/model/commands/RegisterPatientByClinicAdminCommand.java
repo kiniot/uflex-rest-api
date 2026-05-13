@@ -11,7 +11,8 @@ public record RegisterPatientByClinicAdminCommand(
         Gender gender,
         Email emailAddress,
         PhoneNumber phoneNumber,
-        MedicalCondition medicalCondition
+        MedicalCondition medicalCondition,
+        PhysiotherapistId assignedPhysiotherapistId
 ) {
     public RegisterPatientByClinicAdminCommand {
         if (firstName == null) {

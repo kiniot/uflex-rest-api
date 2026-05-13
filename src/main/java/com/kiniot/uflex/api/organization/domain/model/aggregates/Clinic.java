@@ -34,6 +34,7 @@ public class Clinic extends AuditableAbstractAggregateRoot<Clinic, ClinicId> {
     private PhoneNumber phoneNumber;
 
     @Embedded
+    @AttributeOverride(name = "id", column = @Column(name = "created_by", columnDefinition = "UUID", nullable = false))
     private UserId createdBy;
 
     protected Clinic() {}

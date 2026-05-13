@@ -6,6 +6,7 @@ import com.kiniot.uflex.api.iam.domain.model.queries.GetAuthenticatedUserIdQuery
 import com.kiniot.uflex.api.iam.domain.model.queries.GetAuthenticatedUserTenantIdQuery;
 import com.kiniot.uflex.api.iam.domain.model.queries.GetUserByIdQuery;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.Email;
+import com.kiniot.uflex.api.iam.domain.model.commands.DeleteUserCommand;
 import com.kiniot.uflex.api.iam.domain.services.UserCommandService;
 import com.kiniot.uflex.api.iam.domain.services.UserQueryService;
 import com.kiniot.uflex.api.iam.interfaces.acl.IamContextFacade;
@@ -53,6 +54,11 @@ public class IamContextFacadeImpl implements IamContextFacade {
                 .map(UserId::id)
                 .map(UUID::toString)
                 .orElseThrow(() -> new IllegalStateException("User ID is null"));
+    }
+
+    @Override
+    public void deleteUserById(String userId) {
+        userCommandService.handle(new DeleteUserCommand(new UserId(UUID.fromString(userId))));
     }
 
     @Override

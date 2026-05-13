@@ -7,6 +7,8 @@ public interface IamContextFacade {
 
     String signUpVerifiedUser(String email, List<String> roles);
 
+    void deleteUserById(String userId);
+
     String fetchAuthenticatedUserId();
 
     String fetchAuthenticatedUserTenantId();

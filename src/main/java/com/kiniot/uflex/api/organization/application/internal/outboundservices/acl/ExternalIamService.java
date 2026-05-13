@@ -44,4 +44,13 @@ public class ExternalIamService {
         var userId = iamContextFacade.signUpVerifiedUser(email, List.of(RoleName.ROLE_PHYSIOTHERAPIST.name()));
         return userId.isEmpty() ? Optional.empty() : Optional.of(new UserId(UUID.fromString(userId)));
     }
+
+    public Optional<UserId> registerPatient(String email) {
+        var userId = iamContextFacade.signUpVerifiedUser(email, List.of(RoleName.ROLE_PATIENT.name()));
+        return userId.isEmpty() ? Optional.empty() : Optional.of(new UserId(UUID.fromString(userId)));
+    }
+
+    public void deleteUserById(UserId userId) {
+        iamContextFacade.deleteUserById(userId.id().toString());
+    }
 }
