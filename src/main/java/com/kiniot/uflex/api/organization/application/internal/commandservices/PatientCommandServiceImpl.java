@@ -2,18 +2,19 @@ package com.kiniot.uflex.api.organization.application.internal.commandservices;
 
 import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalIamService;
 import com.kiniot.uflex.api.organization.domain.exceptions.ClinicNotFoundException;
+import com.kiniot.uflex.api.organization.domain.exceptions.CrossClinicAssignmentException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PatientAlreadyRegisteredException;
 import com.kiniot.uflex.api.organization.domain.exceptions.UserNotFoundException;
 import com.kiniot.uflex.api.organization.domain.model.aggregates.Patient;
-import com.kiniot.uflex.api.organization.domain.model.aggregates.Physiotherapist;
 import com.kiniot.uflex.api.organization.domain.model.commands.AssignPatientToPhysiotherapistCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.AssignTreatmentPlanToPatientCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.DischargePatientCommand;
-import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPatientCommand;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.UserId;
+import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPatientByClinicAdminCommand;
+import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPatientByPhysiotherapistCommand;
 import com.kiniot.uflex.api.organization.domain.services.PatientCommandService;
 import com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.repositories.PatientRepository;
 import com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.repositories.PhysiotherapistRepository;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -38,29 +39,44 @@ public class PatientCommandServiceImpl implements PatientCommandService {
 
     @Override
     @Transactional
-    public Optional<Patient> handle(RegisterPatientCommand command) {
+    public Optional<Patient> handle(RegisterPatientByClinicAdminCommand command) {
         var userId = externalIamService.fetchCurrentUserId()
                 .orElseThrow(() -> new UserNotFoundException("Current user not found"));
         var clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(() -> new ClinicNotFoundException("Current clinic not found"));
 
-        if (patientRepository.existsByUserId(new UserId(userId.id()))) {
-            throw new PatientAlreadyRegisteredException(userId.id().toString());
-        }
+        ensurePatientIsNotAlreadyRegistered(userId);
 
-        Patient patient;
-        if (command.assignedPhysiotherapistId() != null) {
-            var physiotherapist = physiotherapistRepository.findById(command.assignedPhysiotherapistId())
-                    .orElseThrow(() -> new IllegalArgumentException("Physiotherapist not found"));
-            if (!clinicId.equals(physiotherapist.getClinicId())) {
-                throw new com.kiniot.uflex.api.organization.domain.exceptions.CrossClinicAssignmentException();
-            }
-            patient = new Patient(command, new UserId(userId.id()), clinicId, command.assignedPhysiotherapistId(), physiotherapist.getClinicId());
-        } else {
-            patient = new Patient(command, new UserId(userId.id()), clinicId);
-        }
+        var patient = new Patient(command, userId, clinicId);
         patient.register();
         return Optional.of(patientRepository.save(patient));
+    }
+
+    @Override
+    @Transactional
+    public Optional<Patient> handle(RegisterPatientByPhysiotherapistCommand command) {
+        var userId = externalIamService.fetchCurrentUserId()
+                .orElseThrow(() -> new UserNotFoundException("Current user not found"));
+        var clinicId = externalIamService.fetchCurrentClinicId()
+                .orElseThrow(() -> new ClinicNotFoundException("Current clinic not found"));
+
+        ensurePatientIsNotAlreadyRegistered(userId);
+
+        var physiotherapist = physiotherapistRepository.findById(command.assignedPhysiotherapistId())
+                .orElseThrow(() -> new IllegalArgumentException("Physiotherapist not found"));
+        if (!clinicId.equals(physiotherapist.getClinicId())) {
+            throw new CrossClinicAssignmentException();
+        }
+
+        var patient = new Patient(command, userId, clinicId, physiotherapist.getClinicId());
+        patient.register();
+        return Optional.of(patientRepository.save(patient));
+    }
+
+    private void ensurePatientIsNotAlreadyRegistered(UserId userId) {
+        if (patientRepository.existsByUserId(userId)) {
+            throw new PatientAlreadyRegisteredException(userId.id().toString());
+        }
     }
 
     @Override

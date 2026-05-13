@@ -1,13 +1,14 @@
 package com.kiniot.uflex.api.organization.domain.model.aggregates;
 
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.UserId;
-import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPatientCommand;
+import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPatientByClinicAdminCommand;
+import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPatientByPhysiotherapistCommand;
 import com.kiniot.uflex.api.organization.domain.model.events.PatientAssignedToPhysiotherapistEvent;
 import com.kiniot.uflex.api.organization.domain.model.events.PatientProfileRegisteredEvent;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
 import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -19,9 +20,11 @@ public class Patient extends AuditableAbstractAggregateRoot<Patient, PatientId> 
     private PatientId id;
 
     @Embedded
+    @AttributeOverride(name = "id", column = @Column(name = "user_id", columnDefinition = "UUID", nullable = false))
     private UserId userId;
 
     @Embedded
+    @AttributeOverride(name = "id", column = @Column(name = "clinic_id", columnDefinition = "UUID", nullable = false))
     private ClinicId clinicId;
 
     @Embedded
@@ -78,14 +81,27 @@ public class Patient extends AuditableAbstractAggregateRoot<Patient, PatientId> 
         this.status = PatientStatus.UNASSIGNED;
     }
 
-    public Patient(RegisterPatientCommand command, UserId userId, ClinicId clinicId, PhysiotherapistId assignedPhysiotherapistId, ClinicId physiotherapistClinicId) {
+    public Patient(
+            RegisterPatientByPhysiotherapistCommand command,
+            UserId userId,
+            ClinicId clinicId,
+            ClinicId physiotherapistClinicId
+    ) {
         this(command, userId, clinicId);
-        if (assignedPhysiotherapistId != null && physiotherapistClinicId != null) {
-            this.assignPhysiotherapist(assignedPhysiotherapistId, physiotherapistClinicId);
+        if (physiotherapistClinicId != null) {
+            this.assignPhysiotherapist(command.assignedPhysiotherapistId(), physiotherapistClinicId);
         }
     }
 
-    public Patient(RegisterPatientCommand command, UserId userId, ClinicId clinicId) {
+    public Patient(RegisterPatientByClinicAdminCommand command, UserId userId, ClinicId clinicId) {
+        this(userId, clinicId,
+                command.firstName(), command.lastName(), command.dni(),
+                command.birthDate(), command.gender(),
+                command.emailAddress(), command.phoneNumber(),
+                command.medicalCondition());
+    }
+
+    public Patient(RegisterPatientByPhysiotherapistCommand command, UserId userId, ClinicId clinicId) {
         this(userId, clinicId,
                 command.firstName(), command.lastName(), command.dni(),
                 command.birthDate(), command.gender(),
