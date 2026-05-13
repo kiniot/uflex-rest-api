@@ -17,7 +17,7 @@ public class ClinicResourceFromEntityAssembler {
 
     public static ClinicResource toResourceFromEntity(Clinic entity) {
         return new ClinicResource(
-                entity.getId().clinicId().toString(),
+                entity.getId().id().toString(),
                 entity.getLegalName().legalName(),
                 entity.getCommercialName().commercialName(),
                 entity.getRuc().ruc(),

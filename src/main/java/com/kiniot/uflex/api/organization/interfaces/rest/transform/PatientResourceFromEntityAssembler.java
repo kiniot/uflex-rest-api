@@ -24,7 +24,7 @@ public class PatientResourceFromEntityAssembler {
                 entity.getAssignedPhysiotherapistId() != null ? entity.getAssignedPhysiotherapistId().physiotherapistId().toString() : null,
                 entity.getTreatmentPlanId() != null ? entity.getTreatmentPlanId().treatmentPlanId().toString() : null,
                 entity.getStatus().name(),
-                entity.getClinicId().clinicId().toString()
+                entity.getClinicId().id().toString()
         );
     }
 }

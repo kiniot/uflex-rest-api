@@ -20,7 +20,7 @@ public class ClinicAdminResourceFromEntityAssembler {
                 entity.getEmailAddress().email(),
                 entity.getPhoneNumber().countryCode(),
                 entity.getPhoneNumber().number(),
-                entity.getClinicId().clinicId().toString()
+                entity.getClinicId().id().toString()
         );
     }
 }
