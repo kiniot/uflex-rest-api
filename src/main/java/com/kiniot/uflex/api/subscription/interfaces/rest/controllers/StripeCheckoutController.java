@@ -51,7 +51,7 @@ public class StripeCheckoutController {
                 throw new IllegalArgumentException("billingCycle is required");
             }
             var command = new CreateSubscriptionCheckoutSessionCommand(
-                    clinicId.clinicId(),
+                    clinicId.id(),
                     resource.planId(),
                     BillingCycle.valueOf(resource.billingCycle()),
                     externalIamService.fetchCurrentUserId().orElse(null)
@@ -79,7 +79,7 @@ public class StripeCheckoutController {
                     .orElseThrow(() -> new IllegalStateException("Authenticated user has no clinic assigned"));
             var completedPayment = paymentGatewayPort.confirmCheckoutSession(resolvedSessionId)
                     .orElseThrow(() -> new IllegalArgumentException("Stripe Checkout Session was not found"));
-            if (!clinicId.clinicId().equals(completedPayment.clinicId())) {
+            if (!clinicId.id().equals(completedPayment.clinicId())) {
                 throw new IllegalArgumentException("Stripe Checkout Session does not belong to the authenticated clinic");
             }
             return subscriptionCommandService.handle(new CompleteCheckoutSessionPaymentCommand(
