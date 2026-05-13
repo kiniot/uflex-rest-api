@@ -1,17 +1,24 @@
 package com.kiniot.uflex.api.subscription.interfaces.rest.controllers;
 
+import com.kiniot.uflex.api.subscription.application.internal.outboundservices.acl.ExternalIamService;
+import com.kiniot.uflex.api.subscription.application.internal.outboundservices.payment.PaymentGatewayPort;
+import com.kiniot.uflex.api.subscription.domain.model.aggregates.Subscription;
 import com.kiniot.uflex.api.subscription.domain.model.queries.GetInvoiceHistoryQuery;
 import com.kiniot.uflex.api.subscription.domain.model.queries.GetSubscriptionByClinicQuery;
 import com.kiniot.uflex.api.subscription.domain.services.SubscriptionCommandService;
 import com.kiniot.uflex.api.subscription.domain.services.SubscriptionQueryService;
 import com.kiniot.uflex.api.subscription.interfaces.rest.resources.CancelSubscriptionResource;
 import com.kiniot.uflex.api.subscription.interfaces.rest.resources.ChangePlanResource;
+import com.kiniot.uflex.api.subscription.interfaces.rest.resources.CurrentSubscriptionResource;
 import com.kiniot.uflex.api.subscription.interfaces.rest.resources.InvoiceResource;
 import com.kiniot.uflex.api.subscription.interfaces.rest.resources.PurchaseSubscriptionResource;
+import com.kiniot.uflex.api.subscription.interfaces.rest.resources.StripeInvoiceResource;
+import com.kiniot.uflex.api.subscription.interfaces.rest.resources.StripePaymentMethodResource;
 import com.kiniot.uflex.api.subscription.interfaces.rest.resources.SubscriptionResource;
 import com.kiniot.uflex.api.subscription.interfaces.rest.resources.UpdatePaymentMethodResource;
 import com.kiniot.uflex.api.subscription.interfaces.rest.transform.CancelSubscriptionCommandFromResourceAssembler;
 import com.kiniot.uflex.api.subscription.interfaces.rest.transform.ChangeSubscriptionPlanCommandFromResourceAssembler;
+import com.kiniot.uflex.api.subscription.interfaces.rest.transform.CurrentSubscriptionResourceFromEntityAssembler;
 import com.kiniot.uflex.api.subscription.interfaces.rest.transform.InvoiceResourceFromEntityAssembler;
 import com.kiniot.uflex.api.subscription.interfaces.rest.transform.PurchaseSubscriptionCommandFromResourceAssembler;
 import com.kiniot.uflex.api.subscription.interfaces.rest.transform.SubscriptionResourceFromEntityAssembler;
@@ -31,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -39,11 +47,64 @@ import java.util.UUID;
 public class SubscriptionController {
     private final SubscriptionCommandService subscriptionCommandService;
     private final SubscriptionQueryService subscriptionQueryService;
+    private final ExternalIamService externalIamService;
+    private final PaymentGatewayPort paymentGatewayPort;
 
     public SubscriptionController(SubscriptionCommandService subscriptionCommandService,
-                                  SubscriptionQueryService subscriptionQueryService) {
+                                  SubscriptionQueryService subscriptionQueryService,
+                                  ExternalIamService externalIamService,
+                                  PaymentGatewayPort paymentGatewayPort) {
         this.subscriptionCommandService = subscriptionCommandService;
         this.subscriptionQueryService = subscriptionQueryService;
+        this.externalIamService = externalIamService;
+        this.paymentGatewayPort = paymentGatewayPort;
+    }
+
+    @GetMapping("/current")
+    public ResponseEntity<CurrentSubscriptionResource> getCurrentSubscription() {
+        return currentSubscription()
+                .map(CurrentSubscriptionResourceFromEntityAssembler::toResourceFromEntity)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.ok().body(null));
+    }
+
+    @GetMapping("/payment-method")
+    public ResponseEntity<StripePaymentMethodResource> getPaymentMethod() {
+        try {
+            var paymentMethod = currentSubscription()
+                    .map(Subscription::getPaymentReference)
+                    .flatMap(paymentGatewayPort::getPaymentMethod)
+                    .map(method -> new StripePaymentMethodResource(method.brand(), method.last4(), method.expMonth(), method.expYear()))
+                    .orElse(null);
+            return ResponseEntity.ok(paymentMethod);
+        } catch (IllegalStateException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, exception.getMessage(), exception);
+        }
+    }
+
+    @GetMapping("/invoices")
+    public ResponseEntity<List<StripeInvoiceResource>> getCurrentSubscriptionInvoices() {
+        try {
+            var invoices = currentSubscription()
+                    .map(Subscription::getPaymentReference)
+                    .map(paymentGatewayPort::getInvoices)
+                    .orElseGet(List::of)
+                    .stream()
+                    .map(invoice -> new StripeInvoiceResource(
+                            invoice.invoiceId(),
+                            invoice.number(),
+                            invoice.issuedDate(),
+                            invoice.dueDate(),
+                            invoice.amount(),
+                            invoice.currency(),
+                            invoice.status(),
+                            invoice.hostedInvoiceUrl()
+                    ))
+                    .toList();
+            return ResponseEntity.ok(invoices);
+        } catch (IllegalStateException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, exception.getMessage(), exception);
+        }
     }
 
     @GetMapping
@@ -114,5 +175,11 @@ public class SubscriptionController {
                 .map(InvoiceResourceFromEntityAssembler::toResourceFromEntity)
                 .toList();
         return ResponseEntity.ok(invoices);
+    }
+
+    private Optional<Subscription> currentSubscription() {
+        var clinicId = externalIamService.fetchCurrentClinicId()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Authenticated user has no clinic assigned"));
+        return subscriptionQueryService.handle(new GetSubscriptionByClinicQuery(clinicId.clinicId()));
     }
 }

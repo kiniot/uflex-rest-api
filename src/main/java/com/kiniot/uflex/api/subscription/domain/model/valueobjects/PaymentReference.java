@@ -11,6 +11,15 @@ public record PaymentReference(
         @Column(length = 120)
         String providerTransactionId,
 
+        @Column(length = 120)
+        String providerCheckoutSessionId,
+
+        @Column(length = 120)
+        String providerCustomerId,
+
+        @Column(length = 120)
+        String providerSubscriptionId,
+
         @Column(length = 4)
         String last4,
 
@@ -18,6 +27,6 @@ public record PaymentReference(
         String expiresOn
 ) {
     public static PaymentReference empty() {
-        return new PaymentReference(null, null, null, null);
+        return new PaymentReference(null, null, null, null, null, null, null);
     }
 }

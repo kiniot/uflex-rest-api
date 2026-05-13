@@ -6,6 +6,7 @@ import com.kiniot.uflex.api.subscription.domain.model.queries.GetInvoiceHistoryQ
 import com.kiniot.uflex.api.subscription.domain.model.queries.GetSubscriptionByClinicQuery;
 import com.kiniot.uflex.api.subscription.domain.model.queries.GetSubscriptionByIdQuery;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionId;
+import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionStatus;
 import com.kiniot.uflex.api.subscription.domain.services.SubscriptionQueryService;
 import com.kiniot.uflex.api.subscription.infrastructure.persistence.jpa.repositories.InvoiceRepository;
 import com.kiniot.uflex.api.subscription.infrastructure.persistence.jpa.repositories.SubscriptionRepository;
@@ -26,7 +27,26 @@ public class SubscriptionQueryServiceImpl implements SubscriptionQueryService {
 
     @Override
     public Optional<Subscription> handle(GetSubscriptionByClinicQuery query) {
-        return subscriptionRepository.findByClinicId(query.clinicId());
+        var activeSubscription = subscriptionRepository.findByClinicIdAndStatus(query.clinicId(), SubscriptionStatus.ACTIVE);
+        if (activeSubscription.isPresent()) return activeSubscription;
+        return subscriptionRepository.findPaidSubscriptionsByClinicId(query.clinicId()).stream().findFirst()
+                .map(this::activateRecoveredPaidSubscription);
+    }
+
+    private Subscription activateRecoveredPaidSubscription(Subscription subscription) {
+        if (subscription.getStatus() != SubscriptionStatus.ACTIVE && subscription.getPaymentReference() != null) {
+            var periodStart = subscription.getCurrentPeriodStart() == null
+                    ? java.time.OffsetDateTime.now()
+                    : subscription.getCurrentPeriodStart();
+            var periodEnd = subscription.getCurrentPeriodEnd() == null
+                    ? (subscription.getBillingCycle() == com.kiniot.uflex.api.subscription.domain.model.valueobjects.BillingCycle.YEARLY
+                    ? periodStart.plusYears(1)
+                    : periodStart.plusMonths(1))
+                    : subscription.getCurrentPeriodEnd();
+            subscription.refreshStripePayment(subscription.getPaymentReference(), periodStart, periodEnd);
+            return subscriptionRepository.save(subscription);
+        }
+        return subscription;
     }
 
     @Override

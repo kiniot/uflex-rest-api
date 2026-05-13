@@ -79,13 +79,22 @@ public class Subscription extends AuditableAbstractAggregateRoot<Subscription, S
     }
 
     public void activate(OffsetDateTime activatedAt) {
+        activate(activatedAt, billingCycle == BillingCycle.YEARLY ? activatedAt.plusYears(1) : activatedAt.plusMonths(1));
+    }
+
+    public void activate(OffsetDateTime periodStart, OffsetDateTime periodEnd) {
         if (paymentReference == null || paymentReference.providerTransactionId() == null) {
             throw new IllegalStateException("Subscription cannot be activated without confirmed payment");
         }
         this.status = SubscriptionStatus.ACTIVE;
-        this.currentPeriodStart = activatedAt;
-        this.currentPeriodEnd = billingCycle == BillingCycle.YEARLY ? activatedAt.plusYears(1) : activatedAt.plusMonths(1);
+        this.currentPeriodStart = periodStart;
+        this.currentPeriodEnd = periodEnd;
         this.nextBillingDate = this.currentPeriodEnd;
+    }
+
+    public void refreshStripePayment(PaymentReference paymentReference, OffsetDateTime periodStart, OffsetDateTime periodEnd) {
+        updatePaymentReference(paymentReference);
+        activate(periodStart, periodEnd);
     }
 
     public void changePlan(SubscriptionPlan newPlan, BillingCycle newBillingCycle, PaymentReference paymentReference, OffsetDateTime changedAt) {

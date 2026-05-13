@@ -39,7 +39,9 @@ public class StripeWebhookController {
                         payment.clinicId(),
                         payment.planId(),
                         payment.billingCycle(),
-                        payment.paymentReference()
+                        payment.paymentReference(),
+                        payment.currentPeriodStart(),
+                        payment.currentPeriodEnd()
                 )));
         return ResponseEntity.noContent().build();
     }

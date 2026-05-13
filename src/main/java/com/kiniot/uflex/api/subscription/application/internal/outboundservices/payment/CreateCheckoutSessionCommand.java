@@ -13,6 +13,7 @@ public record CreateCheckoutSessionCommand(
         String currency,
         String successUrl,
         String cancelUrl,
-        String planName
+        String planName,
+        String userId
 ) {
 }
