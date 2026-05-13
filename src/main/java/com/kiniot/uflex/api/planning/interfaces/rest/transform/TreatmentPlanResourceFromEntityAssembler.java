@@ -10,8 +10,8 @@ public class TreatmentPlanResourceFromEntityAssembler {
     public static TreatmentPlanResource toResourceFromEntity(TreatmentPlan entity) {
         var treatmentPlanId = entity.getId() != null ? entity.getId().id().toString() : null;
         var planName = entity.getPlanName() != null ? entity.getPlanName().name() : null;
-        var clinicId = entity.getClinicId() != null && entity.getClinicId().clinicId() != null
-                ? entity.getClinicId().clinicId().toString()
+        var clinicId = entity.getClinicId() != null && entity.getClinicId().id() != null
+                ? entity.getClinicId().id().toString()
                 : null;
         var frequency = entity.getFrequency() != null
                 ? PlanFrequencyResourceFromValueObjectAssembler.toResourceFromValueObject(entity.getFrequency())

@@ -2,11 +2,12 @@ package com.kiniot.uflex.api.iam.domain.model.aggregates;
 
 import com.kiniot.uflex.api.iam.domain.model.entities.Role;
 import com.kiniot.uflex.api.iam.domain.model.events.UserCreatedEvent;
+import com.kiniot.uflex.api.iam.domain.model.events.UserSignedUpAndActivatedEvent;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.Email;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.Password;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.TenantId;
-import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -115,6 +116,13 @@ public class User extends AuditableAbstractAggregateRoot<User, UserId> {
                         this.id.id().toString(),
                         this.getEmail().email(),
                         this.getRoles().stream().map(role -> role.getName().name()).toList()));
+    }
+
+    public void notifySignedUpAndActivated(String email, String password) {
+        this.addDomainEvent(new UserSignedUpAndActivatedEvent(
+                this,
+                email,
+                password));
     }
 
     /**

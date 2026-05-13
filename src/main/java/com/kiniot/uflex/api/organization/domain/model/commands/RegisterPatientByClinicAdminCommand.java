@@ -1,19 +1,20 @@
 package com.kiniot.uflex.api.organization.domain.model.commands;
 
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
 
-public record RegisterPatientCommand(
+public record RegisterPatientByClinicAdminCommand(
         FirstName firstName,
         LastName lastName,
         Dni dni,
         BirthDate birthDate,
         Gender gender,
-        EmailAddress emailAddress,
+        Email emailAddress,
         PhoneNumber phoneNumber,
         MedicalCondition medicalCondition,
         PhysiotherapistId assignedPhysiotherapistId
 ) {
-    public RegisterPatientCommand {
+    public RegisterPatientByClinicAdminCommand {
         if (firstName == null) {
             throw new IllegalArgumentException("First name cannot be null");
         }

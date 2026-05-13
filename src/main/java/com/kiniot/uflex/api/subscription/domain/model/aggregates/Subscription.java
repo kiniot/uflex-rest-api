@@ -37,6 +37,7 @@ public class Subscription extends AuditableAbstractAggregateRoot<Subscription, S
     private SubscriptionId id;
 
     @Embedded
+    @jakarta.persistence.AttributeOverride(name = "id", column = @jakarta.persistence.Column(name = "clinic_id", columnDefinition = "UUID", nullable = false))
     private ClinicId clinicId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

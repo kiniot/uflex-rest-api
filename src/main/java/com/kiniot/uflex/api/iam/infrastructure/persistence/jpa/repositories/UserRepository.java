@@ -2,7 +2,7 @@ package com.kiniot.uflex.api.iam.infrastructure.persistence.jpa.repositories;
 
 import com.kiniot.uflex.api.iam.domain.model.aggregates.User;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.Email;
-import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

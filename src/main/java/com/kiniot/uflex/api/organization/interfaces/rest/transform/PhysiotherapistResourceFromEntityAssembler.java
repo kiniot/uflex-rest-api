@@ -12,8 +12,8 @@ public class PhysiotherapistResourceFromEntityAssembler {
     public static PhysiotherapistResource toResourceFromEntity(Physiotherapist entity) {
         return new PhysiotherapistResource(
                 entity.getId().physiotherapistId().toString(),
-                entity.getUserId().userId().toString(),
-                entity.getClinicId().clinicId().toString(),
+                entity.getUserId().id().toString(),
+                entity.getClinicId().id().toString(),
                 entity.getFullName(),
                 entity.getSpecialty() != null ? entity.getSpecialty().name() : null,
                 entity.getEmailAddress().email(),

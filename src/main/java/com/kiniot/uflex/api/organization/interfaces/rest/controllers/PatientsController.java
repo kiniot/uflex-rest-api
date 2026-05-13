@@ -14,16 +14,22 @@ import com.kiniot.uflex.api.organization.domain.services.PatientQueryService;
 import com.kiniot.uflex.api.organization.domain.services.PhysiotherapistQueryService;
 import com.kiniot.uflex.api.organization.interfaces.rest.resources.AssignPhysiotherapistResource;
 import com.kiniot.uflex.api.organization.interfaces.rest.resources.PatientResource;
-import com.kiniot.uflex.api.organization.interfaces.rest.resources.RegisterPatientResource;
+import com.kiniot.uflex.api.organization.interfaces.rest.resources.RegisterPatientByClinicAdminResource;
+import com.kiniot.uflex.api.organization.interfaces.rest.resources.RegisterPatientByPhysiotherapistResource;
 import com.kiniot.uflex.api.organization.interfaces.rest.transform.PatientResourceFromEntityAssembler;
 import com.kiniot.uflex.api.organization.interfaces.rest.transform.RegisterPatientCommandFromResourceAssembler;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -52,13 +58,44 @@ public class PatientsController {
     }
 
     @PostMapping
-    @Operation(summary = "Register a new patient", description = "CLINIC ADMIN: Creates a new patient profile with optional physiotherapist assignment")
+    @Operation(
+            summary = "Register a new patient as clinic admin",
+            description = "Creates a patient profile under the authenticated clinic administrator's clinic. "
+                    + "This endpoint may optionally assign the patient to a physiotherapist from the same clinic."
+    )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Patient profile data to register from a clinic administrator context.",
+            required = true,
+            content = @Content(
+                    schema = @Schema(implementation = RegisterPatientByClinicAdminResource.class),
+                    examples = @ExampleObject(
+                            name = "Clinic admin patient registration",
+                            value = """
+                                    {
+                                      "firstName": "Lucia",
+                                      "lastName": "Ramos",
+                                      "dni": "74839210",
+                                      "birthDate": "1992-08-14",
+                                      "gender": "FEMALE",
+                                      "email": "lucia.ramos@example.com",
+                                      "countryCode": "+51",
+                                      "phoneNumber": "987654321",
+                                      "medicalCondition": "Post-operative knee rehabilitation",
+                                      "assignedPhysiotherapistId": "019e1e7d-80c3-71c5-ae4b-2358fa9ae43c"
+                                    }
+                                    """
+                    )
+            )
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Patient created successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "404", description = "Assigned physiotherapist not found"),
+            @ApiResponse(responseCode = "409", description = "The authenticated user already has a registered patient profile"),
     })
-    public ResponseEntity<PatientResource> registerPatient(@RequestBody RegisterPatientResource resource) {
-        var command = RegisterPatientCommandFromResourceAssembler.toCommandFromResource(resource);
+    @PreAuthorize("hasAuthority('ROLE_CLINIC_ADMIN')")
+    public ResponseEntity<PatientResource> registerPatient(@RequestBody RegisterPatientByClinicAdminResource resource) {
+        var command = RegisterPatientCommandFromResourceAssembler.toRegisterPatientByClinicAdminCommand(resource);
         var patient = patientCommandService.handle(command);
         if (patient.isEmpty()) {
             return ResponseEntity.badRequest().build();
@@ -68,18 +105,48 @@ public class PatientsController {
     }
 
     @PostMapping(value = "/by-physiotherapist")
-    @Operation(summary = "Register new patient assigned to current physiotherapist", description = "PHYSIOTHERAPIST: Creates a new patient profile and assigns it to the authenticated physiotherapist")
+    @Operation(
+            summary = "Register a new patient as physiotherapist",
+            description = "Creates a patient profile under the authenticated physiotherapist's clinic and automatically assigns "
+                    + "the patient to that same physiotherapist as part of the registration flow."
+    )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Patient profile data to register from a physiotherapist context. The physiotherapist assignment is inferred from the authenticated user.",
+            required = true,
+            content = @Content(
+                    schema = @Schema(implementation = RegisterPatientByPhysiotherapistResource.class),
+                    examples = @ExampleObject(
+                            name = "Physiotherapist patient registration",
+                            value = """
+                                    {
+                                      "firstName": "Mateo",
+                                      "lastName": "Salazar",
+                                      "dni": "73124568",
+                                      "birthDate": "1987-03-22",
+                                      "gender": "MALE",
+                                      "email": "mateo.salazar@example.com",
+                                      "countryCode": "+51",
+                                      "phoneNumber": "912345678",
+                                      "medicalCondition": "Shoulder mobility recovery"
+                                    }
+                                    """
+                    )
+            )
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Patient created and assigned successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "404", description = "Authenticated physiotherapist profile not found"),
+            @ApiResponse(responseCode = "409", description = "The authenticated user already has a registered patient profile"),
     })
-    public ResponseEntity<PatientResource> registerPatientByPhysiotherapist(@RequestBody RegisterPatientResource resource) {
+    @PreAuthorize("hasAuthority('ROLE_PHYSIOTHERAPIST')")
+    public ResponseEntity<PatientResource> registerPatientByPhysiotherapist(@RequestBody RegisterPatientByPhysiotherapistResource resource) {
         var userId = externalIamService.fetchCurrentUserId()
                 .orElseThrow(() -> new UserNotFoundException("Current user not found"));
         var physiotherapist = physiotherapistQueryService.handle(new GetPhysiotherapistByUserIdQuery(userId))
                 .orElseThrow(() -> new UserNotFoundException("Physiotherapist profile not found"));
 
-        var command = RegisterPatientCommandFromResourceAssembler.toCommandFromResource(resource, physiotherapist.getId());
+        var command = RegisterPatientCommandFromResourceAssembler.toRegisterPatientByPhysiotherapistCommand(resource, physiotherapist.getId());
         var patient = patientCommandService.handle(command);
         if (patient.isEmpty()) {
             return ResponseEntity.badRequest().build();

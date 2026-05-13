@@ -11,12 +11,12 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface SubscriptionRepository extends JpaRepository<Subscription, SubscriptionId> {
-    @Query("select s from Subscription s where s.clinicId.clinicId = :clinicId")
+    @Query("select s from Subscription s where s.clinicId.id = :clinicId")
     Optional<Subscription> findByClinicId(@Param("clinicId") UUID clinicId);
 
-    @Query("select s from Subscription s where s.clinicId.clinicId = :clinicId and s.status = :status")
+    @Query("select s from Subscription s where s.clinicId.id = :clinicId and s.status = :status")
     Optional<Subscription> findByClinicIdAndStatus(@Param("clinicId") UUID clinicId, @Param("status") SubscriptionStatus status);
 
-    @Query("select count(s) > 0 from Subscription s where s.clinicId.clinicId = :clinicId and s.status = :status")
+    @Query("select count(s) > 0 from Subscription s where s.clinicId.id = :clinicId and s.status = :status")
     boolean existsByClinicIdAndStatus(@Param("clinicId") UUID clinicId, @Param("status") SubscriptionStatus status);
 }

@@ -4,10 +4,10 @@ import com.kiniot.uflex.api.organization.application.internal.outboundservices.a
 import com.kiniot.uflex.api.organization.domain.exceptions.UserNotFoundException;
 import com.kiniot.uflex.api.organization.domain.model.entities.ClinicAdmin;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterClinicAdminCommand;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.EmailAddress;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.organization.domain.services.ClinicAdminCommandService;
 import com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.repositories.ClinicAdminRepository;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -37,7 +37,7 @@ public class ClinicAdminCommandServiceImpl implements ClinicAdminCommandService 
         var userEmail = externalIamService.fetchUserEmailAddressByUserId(userId.id().toString())
                 .orElseThrow(() -> new IllegalArgumentException("User email not found"));
 
-        var clinicAdmin = new ClinicAdmin(command, new UserId(userId.id()), clinicId, new EmailAddress(userEmail));
+        var clinicAdmin = new ClinicAdmin(command, userId, clinicId, new Email(userEmail));
         var saved = clinicAdminRepository.save(clinicAdmin);
         return Optional.of(saved);
     }

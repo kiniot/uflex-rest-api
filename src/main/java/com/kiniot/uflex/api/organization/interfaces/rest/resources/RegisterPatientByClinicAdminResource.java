@@ -1,6 +1,6 @@
 package com.kiniot.uflex.api.organization.interfaces.rest.resources;
 
-public record RegisterPatientResource(
+public record RegisterPatientByClinicAdminResource(
         String firstName,
         String lastName,
         String dni,
@@ -9,5 +9,6 @@ public record RegisterPatientResource(
         String email,
         String countryCode,
         String phoneNumber,
-        String medicalCondition
+        String medicalCondition,
+        String assignedPhysiotherapistId
 ) {}

@@ -101,7 +101,7 @@ public class TreatmentPlanCommandServiceImpl implements TreatmentPlanCommandServ
         for (ExerciseId exerciseId : exerciseIds) {
             boolean belongsToClinic = exerciseRepository.findByIdAndClinicId(exerciseId, clinicId).isPresent();
             if (!belongsToClinic) {
-                throw new ExerciseClinicMismatchException(exerciseId.id().toString(), clinicId.clinicId().toString());
+                throw new ExerciseClinicMismatchException(exerciseId.id().toString(), clinicId.id().toString());
             }
         }
     }

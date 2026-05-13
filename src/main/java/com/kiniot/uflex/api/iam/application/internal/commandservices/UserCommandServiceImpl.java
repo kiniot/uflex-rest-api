@@ -1,17 +1,16 @@
 package com.kiniot.uflex.api.iam.application.internal.commandservices;
 
 import com.kiniot.uflex.api.iam.application.internal.outboundservices.hashing.HashingService;
+import com.kiniot.uflex.api.iam.application.internal.outboundservices.identity.IdentityService;
 import com.kiniot.uflex.api.iam.application.internal.outboundservices.tokens.TokenService;
 import com.kiniot.uflex.api.iam.domain.exceptions.UserWithEmailNotFound;
 import com.kiniot.uflex.api.iam.domain.exceptions.UserWithIdNotFoundException;
 import com.kiniot.uflex.api.iam.domain.model.aggregates.User;
-import com.kiniot.uflex.api.iam.domain.model.commands.AssignUserTenantId;
-import com.kiniot.uflex.api.iam.domain.model.commands.ChangePasswordCommand;
-import com.kiniot.uflex.api.iam.domain.model.commands.SignInCommand;
-import com.kiniot.uflex.api.iam.domain.model.commands.SignUpCommand;
+import com.kiniot.uflex.api.iam.domain.model.commands.*;
 import com.kiniot.uflex.api.iam.domain.model.entities.Role;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.Password;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.RoleName;
+import com.kiniot.uflex.api.iam.domain.model.valueobjects.TenantId;
 import com.kiniot.uflex.api.iam.domain.services.UserCommandService;
 import com.kiniot.uflex.api.iam.infrastructure.persistence.jpa.repositories.RoleRepository;
 import com.kiniot.uflex.api.iam.infrastructure.persistence.jpa.repositories.UserRepository;
@@ -22,6 +21,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UserCommandServiceImpl implements UserCommandService {
@@ -30,17 +30,20 @@ public class UserCommandServiceImpl implements UserCommandService {
     private final RoleRepository roleRepository;
     private final HashingService hashingService;
     private final TokenService tokenService;
+    private final IdentityService identityService;
 
     public UserCommandServiceImpl(
             UserRepository userRepository,
             RoleRepository roleRepository,
             HashingService hashingService,
-            TokenService tokenService
+            TokenService tokenService,
+            IdentityService identityService
     ) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.hashingService = hashingService;
         this.tokenService = tokenService;
+        this.identityService = identityService;
     }
 
     @Override
@@ -77,6 +80,29 @@ public class UserCommandServiceImpl implements UserCommandService {
 
     @Override
     @Transactional
+    public Optional<User> handle(SignUpVerifiedUserCommand command) {
+        if (userRepository.existsByEmail(command.emailAddress()))
+            throw new RuntimeException("Username already exists");
+        var roles = (command.roles() == null || command.roles().isEmpty())
+                ? List.of(roleRepository.findByName(RoleName.ROLE_USER).orElseThrow(() -> new RuntimeException("Default role not found")))
+                : command.roles().stream()
+                  .map(role -> roleRepository.findByName(role.getName()).orElseThrow(() -> new RuntimeException("Role name not found")))
+                  .toList();
+        var tenantId = new TenantId(UUID.fromString(identityService.getTenantId()
+                .orElseThrow(() -> new RuntimeException("Tenant ID not found in identity service"))));
+        var user = new User(
+                command.emailAddress(),
+                new Password(hashingService.encode(command.password())),
+                roles,
+                tenantId
+        );
+        user.notifySignedUpAndActivated(command.emailAddress().email(), command.password());
+        userRepository.save(user);
+        return userRepository.findByEmail(command.emailAddress());
+    }
+
+    @Override
+    @Transactional
     public void handle(ChangePasswordCommand command) {
         var user = userRepository.findById(command.userId())
                 .orElseThrow(() -> new UserWithIdNotFoundException(command.userId().toString()));
@@ -87,6 +113,7 @@ public class UserCommandServiceImpl implements UserCommandService {
     }
 
     @Override
+    @Transactional
     public void handle(AssignUserTenantId command) {
         var user = userRepository.findById(command.userId())
                 .orElseThrow(() -> new UserWithIdNotFoundException(command.userId().toString()));
@@ -96,5 +123,30 @@ public class UserCommandServiceImpl implements UserCommandService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to assign tenant to user: %s".formatted(e.getMessage()));
         }
+    }
+
+    @Override
+    @Transactional
+    public void handle(AssignUserRoleCommand command) {
+        var user = userRepository.findByIdWithRoles(command.userId())
+                .orElseThrow(() -> new UserWithIdNotFoundException(command.userId().toString()));
+        var role = roleRepository.findByName(command.roleName())
+                .orElseThrow(() -> new IllegalArgumentException("Role not found: %s".formatted(command.roleName().name())));
+        var alreadyAssigned = user.getRoles().stream()
+                .anyMatch(userRole -> userRole.getName().equals(command.roleName()));
+        if (alreadyAssigned) {
+            return;
+        }
+        user.addRole(role);
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void handle(DeleteUserCommand command) {
+        if (!userRepository.existsById(command.userId())) {
+            return;
+        }
+        userRepository.deleteById(command.userId());
     }
 }

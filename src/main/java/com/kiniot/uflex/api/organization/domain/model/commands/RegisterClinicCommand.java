@@ -1,18 +1,17 @@
 package com.kiniot.uflex.api.organization.domain.model.commands;
 
-import com.kiniot.uflex.api.iam.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.CommercialName;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.EmailAddress;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.LegalName;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhoneNumber;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.Ruc;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.ClinicId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 
 public record RegisterClinicCommand(
         LegalName legalName,
         CommercialName commercialName,
         Ruc ruc,
-        EmailAddress emailAddress,
+        Email emailAddress,
         PhoneNumber phoneNumber,
         UserId createdBy
 ) {

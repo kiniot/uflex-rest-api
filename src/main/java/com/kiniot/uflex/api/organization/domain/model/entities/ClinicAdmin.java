@@ -1,13 +1,12 @@
 package com.kiniot.uflex.api.organization.domain.model.entities;
 
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterClinicAdminCommand;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.shared.domain.model.entities.AuditableModel;
-import jakarta.persistence.Embedded;
-import jakarta.persistence.EmbeddedId;
-import jakarta.persistence.Entity;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
+import jakarta.persistence.*;
 import lombok.Getter;
 
 @Entity
@@ -18,9 +17,11 @@ public class ClinicAdmin extends AuditableModel<ClinicAdminId> {
     private ClinicAdminId id;
 
     @Embedded
+    @AttributeOverride(name = "id", column = @Column(name = "user_id", columnDefinition = "UUID", nullable = false))
     private UserId userId;
 
     @Embedded
+    @AttributeOverride(name = "id", column = @Column(name = "clinic_id", columnDefinition = "UUID", nullable = false))
     private ClinicId clinicId;
 
     @Embedded
@@ -39,7 +40,7 @@ public class ClinicAdmin extends AuditableModel<ClinicAdminId> {
     private Gender gender;
 
     @Embedded
-    private EmailAddress emailAddress;
+    private Email emailAddress;
 
     @Embedded
     private PhoneNumber phoneNumber;
@@ -49,7 +50,7 @@ public class ClinicAdmin extends AuditableModel<ClinicAdminId> {
     public ClinicAdmin(ClinicAdminId id, UserId userId, ClinicId clinicId,
                        FirstName firstName, LastName lastName, Dni dni,
                        BirthDate birthDate, Gender gender,
-                       EmailAddress emailAddress, PhoneNumber phoneNumber) {
+                       Email emailAddress, PhoneNumber phoneNumber) {
         this.id = id;
         this.userId = userId;
         this.clinicId = clinicId;
@@ -62,7 +63,7 @@ public class ClinicAdmin extends AuditableModel<ClinicAdminId> {
         this.phoneNumber = phoneNumber;
     }
 
-    public ClinicAdmin(RegisterClinicAdminCommand command, UserId userId, ClinicId clinicId, EmailAddress emailAddress) {
+    public ClinicAdmin(RegisterClinicAdminCommand command, UserId userId, ClinicId clinicId, Email emailAddress) {
         this(new ClinicAdminId(), userId, clinicId,
                 command.firstName(), command.lastName(), command.dni(),
                 command.birthDate(), command.gender(),

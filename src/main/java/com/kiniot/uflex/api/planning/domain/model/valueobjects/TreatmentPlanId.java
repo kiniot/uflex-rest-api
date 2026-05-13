@@ -16,10 +16,10 @@ import java.util.UUID;
 @Embeddable
 public record TreatmentPlanId (
         @Column(columnDefinition = "UUID", nullable = false, unique = true)
-        UUID treatmentPlanId
+        UUID id
 ) implements Serializable {
     public TreatmentPlanId {
-        if (treatmentPlanId == null) {
+        if (id == null) {
             throw new IllegalArgumentException("Treatment plan ID cannot be null");
         }
     }

@@ -16,7 +16,7 @@ public class SubscriptionResourceFromEntityAssembler {
                 paymentReference.expiresOn());
         return new SubscriptionResource(
                 entity.getId().id(),
-                entity.getClinicId().clinicId(),
+                entity.getClinicId().id(),
                 PlanResourceFromEntityAssembler.toResourceFromEntity(entity.getPlan()),
                 entity.getStatus(),
                 entity.getBillingCycle(),
