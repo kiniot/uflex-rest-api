@@ -11,7 +11,7 @@ spring:
 
 logging:
   level:
-    org.hibernate.SQL: error
+    org.hibernate.SQL: info
 
 authorization:
   jwt:
