@@ -12,4 +12,6 @@ public interface IamContextFacade {
     String fetchAuthenticatedUserId();
 
     String fetchAuthenticatedUserTenantId();
+
+    String fetchCurrentTenantId();
 }

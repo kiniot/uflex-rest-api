@@ -2,6 +2,7 @@ package com.kiniot.uflex.api.iam.application.internal.queryservices;
 
 import com.kiniot.uflex.api.iam.application.internal.outboundservices.identity.IdentityService;
 import com.kiniot.uflex.api.iam.domain.model.aggregates.User;
+import com.kiniot.uflex.api.iam.domain.model.queries.GetCurrentTenantIdQuery;
 import com.kiniot.uflex.api.iam.domain.model.queries.GetAuthenticatedUserIdQuery;
 import com.kiniot.uflex.api.iam.domain.model.queries.GetAuthenticatedUserTenantIdQuery;
 import com.kiniot.uflex.api.iam.domain.model.queries.GetUserByEmailQuery;
@@ -52,5 +53,17 @@ public class UserQueryServiceImpl implements UserQueryService {
                 .map(UUID::fromString)
                 .map(TenantId::new)
                 .orElseThrow(() -> new IllegalStateException("Tenant ID is required but not present")));
+    }
+
+    @Override
+    public Optional<TenantId> handle(GetCurrentTenantIdQuery query) {
+        var currentUserId = identityService.getUserId()
+                .map(UUID::fromString)
+                .map(UserId::new)
+                .orElseThrow(() -> new IllegalStateException("Authenticated user ID is required but not present"));
+
+        return userRepository.findById(currentUserId)
+                .map(User::getTenantId)
+                .filter(TenantId::isAssigned);
     }
 }

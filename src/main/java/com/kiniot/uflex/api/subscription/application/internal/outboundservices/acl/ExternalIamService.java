@@ -17,7 +17,7 @@ public class ExternalIamService {
     }
 
     public Optional<ClinicId> fetchCurrentClinicId() {
-        var clinicId = iamContextFacade.fetchAuthenticatedUserTenantId();
+        var clinicId = iamContextFacade.fetchCurrentTenantId();
         return clinicId.isEmpty() ? Optional.empty() : Optional.of(new ClinicId(UUID.fromString(clinicId)));
     }
 

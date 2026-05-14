@@ -2,6 +2,7 @@ package com.kiniot.uflex.api.iam.application.acl;
 
 import com.kiniot.uflex.api.iam.application.internal.outboundservices.verification.VerificationService;
 import com.kiniot.uflex.api.iam.domain.model.entities.Role;
+import com.kiniot.uflex.api.iam.domain.model.queries.GetCurrentTenantIdQuery;
 import com.kiniot.uflex.api.iam.domain.model.queries.GetAuthenticatedUserIdQuery;
 import com.kiniot.uflex.api.iam.domain.model.queries.GetAuthenticatedUserTenantIdQuery;
 import com.kiniot.uflex.api.iam.domain.model.queries.GetUserByIdQuery;
@@ -73,6 +74,12 @@ public class IamContextFacadeImpl implements IamContextFacade {
     public String fetchAuthenticatedUserTenantId() {
         var getAuthenticatedUserTenantIdQuery = new GetAuthenticatedUserTenantIdQuery();
         var tenantId = userQueryService.handle(getAuthenticatedUserTenantIdQuery);
+        return tenantId.isEmpty() ? "" : tenantId.get().tenantId().toString();
+    }
+
+    @Override
+    public String fetchCurrentTenantId() {
+        var tenantId = userQueryService.handle(new GetCurrentTenantIdQuery());
         return tenantId.isEmpty() ? "" : tenantId.get().tenantId().toString();
     }
 }

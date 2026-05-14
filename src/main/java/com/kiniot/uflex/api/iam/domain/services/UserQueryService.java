@@ -1,6 +1,7 @@
 package com.kiniot.uflex.api.iam.domain.services;
 
 import com.kiniot.uflex.api.iam.domain.model.aggregates.User;
+import com.kiniot.uflex.api.iam.domain.model.queries.GetCurrentTenantIdQuery;
 import com.kiniot.uflex.api.iam.domain.model.queries.GetAuthenticatedUserIdQuery;
 import com.kiniot.uflex.api.iam.domain.model.queries.GetAuthenticatedUserTenantIdQuery;
 import com.kiniot.uflex.api.iam.domain.model.queries.GetUserByEmailQuery;
@@ -15,4 +16,5 @@ public interface UserQueryService {
     Optional<User> handle(GetUserByEmailQuery query);
     Optional<UserId> handle(GetAuthenticatedUserIdQuery query);
     Optional<TenantId> handle(GetAuthenticatedUserTenantIdQuery query);
+    Optional<TenantId> handle(GetCurrentTenantIdQuery query);
 }
