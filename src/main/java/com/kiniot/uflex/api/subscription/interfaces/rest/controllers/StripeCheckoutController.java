@@ -2,11 +2,17 @@ package com.kiniot.uflex.api.subscription.interfaces.rest.controllers;
 
 import com.kiniot.uflex.api.subscription.application.internal.outboundservices.acl.ExternalIamService;
 import com.kiniot.uflex.api.subscription.domain.model.commands.ConfirmCheckoutSessionCommand;
+import com.kiniot.uflex.api.subscription.domain.model.aggregates.Subscription;
+import com.kiniot.uflex.api.subscription.domain.model.queries.GetSubscriptionByClinicQuery;
+import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionStatus;
 import com.kiniot.uflex.api.subscription.domain.services.SubscriptionCommandService;
+import com.kiniot.uflex.api.subscription.domain.services.SubscriptionQueryService;
+import com.kiniot.uflex.api.subscription.interfaces.rest.resources.ChangePlanCheckoutSessionResource;
 import com.kiniot.uflex.api.subscription.interfaces.rest.resources.ConfirmStripeCheckoutSessionResource;
 import com.kiniot.uflex.api.subscription.interfaces.rest.resources.CreateStripeCheckoutSessionResource;
 import com.kiniot.uflex.api.subscription.interfaces.rest.resources.StripeCheckoutSessionResource;
 import com.kiniot.uflex.api.subscription.interfaces.rest.resources.SubscriptionResource;
+import com.kiniot.uflex.api.subscription.interfaces.rest.transform.CreateChangePlanCheckoutSessionCommandFromResourceAssembler;
 import com.kiniot.uflex.api.subscription.interfaces.rest.transform.CreateSubscriptionCheckoutSessionCommandFromResourceAssembler;
 import com.kiniot.uflex.api.subscription.interfaces.rest.transform.StripeCheckoutSessionResourceFromResultAssembler;
 import com.kiniot.uflex.api.subscription.interfaces.rest.transform.SubscriptionResourceFromEntityAssembler;
@@ -21,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -28,11 +35,14 @@ import java.util.UUID;
 @Tag(name = "Subscriptions", description = "Available subscription endpoints")
 public class StripeCheckoutController {
     private final SubscriptionCommandService subscriptionCommandService;
+    private final SubscriptionQueryService subscriptionQueryService;
     private final ExternalIamService externalIamService;
 
     public StripeCheckoutController(SubscriptionCommandService subscriptionCommandService,
+                                    SubscriptionQueryService subscriptionQueryService,
                                     ExternalIamService externalIamService) {
         this.subscriptionCommandService = subscriptionCommandService;
+        this.subscriptionQueryService = subscriptionQueryService;
         this.externalIamService = externalIamService;
     }
 
@@ -50,6 +60,34 @@ public class StripeCheckoutController {
             var command = CreateSubscriptionCheckoutSessionCommandFromResourceAssembler.toCommandFromResource(
                     resource,
                     clinicId,
+                    externalIamService.fetchCurrentUserId()
+                            .map(UUID::fromString)
+                            .map(com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId::new)
+                            .orElse(null)
+            );
+            var checkoutSession = subscriptionCommandService.handle(command);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(StripeCheckoutSessionResourceFromResultAssembler.toResourceFromResult(checkoutSession));
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            throw toHttpException(exception);
+        }
+    }
+
+    @PostMapping("/current/change-plan/checkout-session")
+    public ResponseEntity<StripeCheckoutSessionResource> createChangePlanCheckoutSession(
+            @RequestBody ChangePlanCheckoutSessionResource resource) {
+        try {
+            var subscription = currentSubscription()
+                    .orElseThrow(() -> new IllegalStateException("Current subscription not found"));
+            if (resource == null || resource.planId() == null) {
+                throw new IllegalArgumentException("planId is required");
+            }
+            if (resource.billingCycle() == null || resource.billingCycle().isBlank()) {
+                throw new IllegalArgumentException("billingCycle is required");
+            }
+            var command = CreateChangePlanCheckoutSessionCommandFromResourceAssembler.toCommandFromResource(
+                    resource,
+                    subscription.getId(),
                     externalIamService.fetchCurrentUserId()
                             .map(UUID::fromString)
                             .map(com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId::new)
@@ -90,9 +128,22 @@ public class StripeCheckoutController {
         if ("Clinic already has an active subscription".equals(exception.getMessage())) {
             return new ResponseStatusException(HttpStatus.CONFLICT, "Clinic already has an active subscription; plan changes through Checkout are not supported yet", exception);
         }
+        if ("Current subscription not found".equals(exception.getMessage())) {
+            return new ResponseStatusException(HttpStatus.NOT_FOUND, exception.getMessage(), exception);
+        }
+        if ("Only active subscriptions can change plans".equals(exception.getMessage())) {
+            return new ResponseStatusException(HttpStatus.CONFLICT, exception.getMessage(), exception);
+        }
         if (exception.getMessage() != null && exception.getMessage().startsWith("Stripe Checkout Session could not be created")) {
             return new ResponseStatusException(HttpStatus.BAD_GATEWAY, exception.getMessage(), exception);
         }
         return new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
+    }
+
+    private Optional<Subscription> currentSubscription() {
+        var clinicId = externalIamService.fetchCurrentClinicId()
+                .orElseThrow(() -> new IllegalStateException("Authenticated user has no clinic assigned"));
+        return subscriptionQueryService.handle(new GetSubscriptionByClinicQuery(clinicId))
+                .filter(subscription -> subscription.getStatus() == SubscriptionStatus.ACTIVE);
     }
 }

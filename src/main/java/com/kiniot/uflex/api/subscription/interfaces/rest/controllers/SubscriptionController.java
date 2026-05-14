@@ -23,7 +23,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,7 +32,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @RestController
 @RequestMapping(value = "/api/v1/subscriptions", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -101,11 +99,12 @@ public class SubscriptionController {
         }
     }
 
-    @PostMapping("/{id}/cancel")
-    public ResponseEntity<SubscriptionResource> cancelSubscription(@PathVariable UUID id,
-                                                                  @RequestBody(required = false) CancelSubscriptionResource resource) {
+    @PostMapping("/current/cancel")
+    public ResponseEntity<SubscriptionResource> cancelCurrentSubscription(@RequestBody(required = false) CancelSubscriptionResource resource) {
         try {
-            var command = CancelSubscriptionCommandFromResourceAssembler.toCommandFromResource(id, resource);
+            var subscription = currentSubscription()
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Current subscription not found"));
+            var command = CancelSubscriptionCommandFromResourceAssembler.toCommandFromResource(subscription.getId().id(), resource);
             return subscriptionCommandService.handle(command)
                     .map(SubscriptionResourceFromEntityAssembler::toResourceFromEntity)
                     .map(ResponseEntity::ok)
@@ -113,14 +112,6 @@ public class SubscriptionController {
         } catch (IllegalArgumentException | IllegalStateException exception) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
         }
-    }
-
-    @GetMapping("/{id}/invoices")
-    public ResponseEntity<List<InvoiceResource>> getInvoiceHistory(@PathVariable UUID id) {
-        var invoices = subscriptionQueryService.handle(new GetInvoiceHistoryQuery(new SubscriptionId(id))).stream()
-                .map(InvoiceResourceFromEntityAssembler::toResourceFromEntity)
-                .toList();
-        return ResponseEntity.ok(invoices);
     }
 
     private Optional<Subscription> currentSubscription() {

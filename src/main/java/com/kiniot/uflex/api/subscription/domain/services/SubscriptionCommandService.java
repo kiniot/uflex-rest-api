@@ -5,6 +5,7 @@ import com.kiniot.uflex.api.subscription.domain.model.commands.CancelSubscriptio
 import com.kiniot.uflex.api.subscription.domain.model.commands.ChangeSubscriptionPlanCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.CompleteCheckoutSessionPaymentCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.ConfirmCheckoutSessionCommand;
+import com.kiniot.uflex.api.subscription.domain.model.commands.CreateChangePlanCheckoutSessionCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.CreateSubscriptionCheckoutSessionCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.PurchaseSubscriptionPlanCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.RegisterInvoicePaymentCommand;
@@ -15,6 +16,7 @@ import java.util.Optional;
 
 public interface SubscriptionCommandService {
     CheckoutSessionResult handle(CreateSubscriptionCheckoutSessionCommand command);
+    CheckoutSessionResult handle(CreateChangePlanCheckoutSessionCommand command);
     Optional<Subscription> handle(ConfirmCheckoutSessionCommand command);
     Optional<Subscription> handle(CompleteCheckoutSessionPaymentCommand command);
     Optional<Subscription> handle(PurchaseSubscriptionPlanCommand command);

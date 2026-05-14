@@ -7,6 +7,7 @@ import com.kiniot.uflex.api.subscription.domain.model.commands.CancelSubscriptio
 import com.kiniot.uflex.api.subscription.domain.model.commands.ChangeSubscriptionPlanCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.CompleteCheckoutSessionPaymentCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.ConfirmCheckoutSessionCommand;
+import com.kiniot.uflex.api.subscription.domain.model.commands.CreateChangePlanCheckoutSessionCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.CreateSubscriptionCheckoutSessionCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.PurchaseSubscriptionPlanCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.RegisterInvoicePaymentCommand;
@@ -56,6 +57,30 @@ public class SubscriptionCommandServiceImpl implements SubscriptionCommandServic
                 command.clinicId().id(),
                 command.planId().id(),
                 command.billingCycle(),
+                amount,
+                null,
+                null,
+                plan.getName(),
+                command.userId() == null ? null : command.userId().id().toString()
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CheckoutSessionResult handle(CreateChangePlanCheckoutSessionCommand command) {
+        var subscription = subscriptionRepository.findById(command.subscriptionId())
+                .orElseThrow(() -> new IllegalArgumentException("Subscription not found"));
+        if (subscription.getStatus() != SubscriptionStatus.ACTIVE) {
+            throw new IllegalStateException("Only active subscriptions can change plans");
+        }
+        var plan = planRepository.findById(command.newPlanId())
+                .filter(com.kiniot.uflex.api.subscription.domain.model.entities.SubscriptionPlan::isActive)
+                .orElseThrow(() -> new IllegalArgumentException("Active plan not found"));
+        var amount = plan.amountForPlanChange(command.newBillingCycle());
+        return paymentGateway.createCheckoutSession(
+                subscription.getClinicId().id(),
+                command.newPlanId().id(),
+                command.newBillingCycle(),
                 amount,
                 null,
                 null,
