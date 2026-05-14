@@ -9,7 +9,7 @@ import com.kiniot.uflex.api.subscription.domain.model.commands.CreateSubscriptio
 import com.kiniot.uflex.api.subscription.domain.model.commands.PurchaseSubscriptionPlanCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.RegisterInvoicePaymentCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.UpdatePaymentMethodCommand;
-import com.kiniot.uflex.api.subscription.application.internal.outboundservices.payment.CheckoutSessionResult;
+import com.kiniot.uflex.api.subscription.domain.services.results.CheckoutSessionResult;
 
 import java.util.Optional;
 

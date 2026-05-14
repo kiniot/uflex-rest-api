@@ -2,13 +2,12 @@ package com.kiniot.uflex.api.subscription.interfaces.rest.controllers;
 
 import com.kiniot.uflex.api.subscription.application.internal.outboundservices.acl.ExternalIamService;
 import com.kiniot.uflex.api.subscription.domain.model.commands.ConfirmCheckoutSessionCommand;
-import com.kiniot.uflex.api.subscription.domain.model.commands.CreateSubscriptionCheckoutSessionCommand;
-import com.kiniot.uflex.api.subscription.domain.model.valueobjects.BillingCycle;
 import com.kiniot.uflex.api.subscription.domain.services.SubscriptionCommandService;
 import com.kiniot.uflex.api.subscription.interfaces.rest.resources.ConfirmStripeCheckoutSessionResource;
 import com.kiniot.uflex.api.subscription.interfaces.rest.resources.CreateStripeCheckoutSessionResource;
 import com.kiniot.uflex.api.subscription.interfaces.rest.resources.StripeCheckoutSessionResource;
 import com.kiniot.uflex.api.subscription.interfaces.rest.resources.SubscriptionResource;
+import com.kiniot.uflex.api.subscription.interfaces.rest.transform.CreateSubscriptionCheckoutSessionCommandFromResourceAssembler;
 import com.kiniot.uflex.api.subscription.interfaces.rest.transform.StripeCheckoutSessionResourceFromResultAssembler;
 import com.kiniot.uflex.api.subscription.interfaces.rest.transform.SubscriptionResourceFromEntityAssembler;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping(value = "/api/v1/subscriptions", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -46,11 +47,13 @@ public class StripeCheckoutController {
             if (resource.billingCycle() == null || resource.billingCycle().isBlank()) {
                 throw new IllegalArgumentException("billingCycle is required");
             }
-            var command = new CreateSubscriptionCheckoutSessionCommand(
-                    clinicId.id(),
-                    resource.planId(),
-                    BillingCycle.valueOf(resource.billingCycle()),
-                    externalIamService.fetchCurrentUserId().orElse(null)
+            var command = CreateSubscriptionCheckoutSessionCommandFromResourceAssembler.toCommandFromResource(
+                    resource,
+                    clinicId,
+                    externalIamService.fetchCurrentUserId()
+                            .map(UUID::fromString)
+                            .map(com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId::new)
+                            .orElse(null)
             );
             var checkoutSession = subscriptionCommandService.handle(command);
             return ResponseEntity.status(HttpStatus.CREATED)

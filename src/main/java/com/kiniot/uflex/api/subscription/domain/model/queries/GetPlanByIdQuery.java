@@ -1,6 +1,6 @@
 package com.kiniot.uflex.api.subscription.domain.model.queries;
 
-import java.util.UUID;
+import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionPlanId;
 
-public record GetPlanByIdQuery(UUID planId) {
+public record GetPlanByIdQuery(SubscriptionPlanId planId) {
 }

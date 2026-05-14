@@ -3,7 +3,6 @@ package com.kiniot.uflex.api.subscription.application.internal.commandservices;
 import com.kiniot.uflex.api.subscription.domain.model.commands.CreatePlanCommand;
 import com.kiniot.uflex.api.subscription.domain.model.commands.DeactivatePlanCommand;
 import com.kiniot.uflex.api.subscription.domain.model.entities.SubscriptionPlan;
-import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionPlanId;
 import com.kiniot.uflex.api.subscription.domain.services.PlanCommandService;
 import com.kiniot.uflex.api.subscription.infrastructure.persistence.jpa.repositories.PlanRepository;
 import org.springframework.stereotype.Service;
@@ -26,7 +25,7 @@ public class PlanCommandServiceImpl implements PlanCommandService {
 
     @Override
     public void handle(DeactivatePlanCommand command) {
-        planRepository.findById(new SubscriptionPlanId(command.planId())).ifPresent(plan -> {
+        planRepository.findById(command.planId()).ifPresent(plan -> {
             plan.deactivate();
             planRepository.save(plan);
         });

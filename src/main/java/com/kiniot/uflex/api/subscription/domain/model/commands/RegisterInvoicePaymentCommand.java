@@ -1,9 +1,9 @@
 package com.kiniot.uflex.api.subscription.domain.model.commands;
 
-import java.util.UUID;
+import com.kiniot.uflex.api.subscription.domain.model.valueobjects.InvoiceId;
 
 public record RegisterInvoicePaymentCommand(
-        UUID invoiceId,
+        InvoiceId invoiceId,
         String providerTransactionId,
         boolean successful
 ) {

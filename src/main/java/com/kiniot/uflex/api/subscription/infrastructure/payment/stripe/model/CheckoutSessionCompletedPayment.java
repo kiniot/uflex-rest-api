@@ -1,4 +1,6 @@
-package com.kiniot.uflex.api.subscription.application.internal.outboundservices.payment;
+package com.kiniot.uflex.api.subscription.infrastructure.payment.stripe.model;
+
+import com.kiniot.uflex.api.subscription.application.internal.outboundservices.payment.CompletedCheckoutPayment;
 
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.BillingCycle;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.PaymentReference;
@@ -20,5 +22,5 @@ public record CheckoutSessionCompletedPayment(
         PaymentReference paymentReference,
         OffsetDateTime currentPeriodStart,
         OffsetDateTime currentPeriodEnd
-) {
+) implements CompletedCheckoutPayment {
 }

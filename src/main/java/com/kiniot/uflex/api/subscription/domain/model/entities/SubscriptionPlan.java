@@ -2,6 +2,7 @@ package com.kiniot.uflex.api.subscription.domain.model.entities;
 
 import com.kiniot.uflex.api.shared.domain.model.entities.AuditableModel;
 import com.kiniot.uflex.api.subscription.domain.model.commands.CreatePlanCommand;
+import com.kiniot.uflex.api.subscription.domain.model.valueobjects.BillingCycle;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.Money;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionPlanId;
 import jakarta.persistence.CollectionTable;
@@ -76,9 +77,9 @@ public class SubscriptionPlan extends AuditableModel<SubscriptionPlanId> {
         this.id = new SubscriptionPlanId();
         this.name = command.name();
         this.code = command.code();
-        this.monthlyPrice = new Money(command.monthlyPrice(), command.currency());
-        this.yearlyPrice = new Money(command.yearlyPrice(), command.currency());
-        this.currency = command.currency().toUpperCase();
+        this.monthlyPrice = command.monthlyPrice();
+        this.yearlyPrice = command.yearlyPrice();
+        this.currency = command.monthlyPrice().currency();
         this.maxPatients = command.maxPatients();
         this.maxPhysiotherapists = command.maxPhysiotherapists();
         this.features = new ArrayList<>(command.features());
@@ -87,6 +88,15 @@ public class SubscriptionPlan extends AuditableModel<SubscriptionPlanId> {
 
     public void deactivate() {
         this.active = false;
+    }
+
+    public Money priceFor(BillingCycle billingCycle) {
+        return billingCycle == BillingCycle.YEARLY ? yearlyPrice : monthlyPrice;
+    }
+
+    public Money amountForPlanChange(BillingCycle billingCycle) {
+        // TODO: replace this simple full-cycle charge with prorated billing when billing rules are defined.
+        return priceFor(billingCycle);
     }
 
     @Override

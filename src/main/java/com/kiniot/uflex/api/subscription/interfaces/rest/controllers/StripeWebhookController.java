@@ -1,8 +1,10 @@
 package com.kiniot.uflex.api.subscription.interfaces.rest.controllers;
 
-import com.kiniot.uflex.api.subscription.application.internal.outboundservices.payment.PaymentGatewayPort;
+import com.kiniot.uflex.api.subscription.infrastructure.payment.stripe.StripePaymentService;
 import com.kiniot.uflex.api.subscription.domain.model.commands.CompleteCheckoutSessionPaymentCommand;
 import com.kiniot.uflex.api.subscription.domain.services.SubscriptionCommandService;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
+import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionPlanId;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -19,25 +21,25 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping(value = "/api/v1/webhooks/stripe", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "Stripe Webhooks", description = "Stripe Checkout sandbox webhook endpoints")
 public class StripeWebhookController {
-    private final PaymentGatewayPort paymentGatewayPort;
+    private final StripePaymentService stripePaymentService;
     private final SubscriptionCommandService subscriptionCommandService;
 
-    public StripeWebhookController(PaymentGatewayPort paymentGatewayPort,
+    public StripeWebhookController(StripePaymentService stripePaymentService,
                                    SubscriptionCommandService subscriptionCommandService) {
-        this.paymentGatewayPort = paymentGatewayPort;
+        this.stripePaymentService = stripePaymentService;
         this.subscriptionCommandService = subscriptionCommandService;
     }
 
     @PostMapping
     public ResponseEntity<Void> receiveWebhook(@RequestBody String payload, @RequestHeader HttpHeaders headers) {
         var signature = headers.getFirst("Stripe-Signature");
-        if (!paymentGatewayPort.verifyWebhookSignature(payload, signature)) {
+        if (!stripePaymentService.verifyWebhookSignature(payload, signature)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Stripe webhook signature");
         }
-        paymentGatewayPort.handleCheckoutSessionCompleted(payload, signature)
+        stripePaymentService.handleCheckoutSessionCompleted(payload, signature)
                 .ifPresent(payment -> subscriptionCommandService.handle(new CompleteCheckoutSessionPaymentCommand(
-                        payment.clinicId(),
-                        payment.planId(),
+                        new ClinicId(payment.clinicId()),
+                        new SubscriptionPlanId(payment.planId()),
                         payment.billingCycle(),
                         payment.paymentReference(),
                         payment.currentPeriodStart(),

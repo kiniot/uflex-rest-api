@@ -1,6 +1,7 @@
 package com.kiniot.uflex.api.subscription.application.internal.eventhandlers;
 
 import com.kiniot.uflex.api.subscription.domain.model.commands.CreatePlanCommand;
+import com.kiniot.uflex.api.subscription.domain.model.valueobjects.Money;
 import com.kiniot.uflex.api.subscription.domain.services.PlanCommandService;
 import com.kiniot.uflex.api.subscription.infrastructure.persistence.jpa.repositories.PlanRepository;
 import org.slf4j.Logger;
@@ -9,7 +10,6 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;
 
@@ -32,9 +32,8 @@ public class SubscriptionPlanSeederApplicationReadyEventHandler {
         seedPlan(new CreatePlanCommand(
                 "Starter",
                 "STARTER",
-                BigDecimal.valueOf(149),
-                BigDecimal.valueOf(1490),
-                "PEN",
+                new Money(java.math.BigDecimal.valueOf(149), "PEN"),
+                new Money(java.math.BigDecimal.valueOf(1490), "PEN"),
                 30,
                 2,
                 List.of("Seguimiento basico", "Dashboard clinico", "Historial de sesiones")
@@ -42,9 +41,8 @@ public class SubscriptionPlanSeederApplicationReadyEventHandler {
         seedPlan(new CreatePlanCommand(
                 "Professional",
                 "PROFESSIONAL",
-                BigDecimal.valueOf(299),
-                BigDecimal.valueOf(2990),
-                "PEN",
+                new Money(java.math.BigDecimal.valueOf(299), "PEN"),
+                new Money(java.math.BigDecimal.valueOf(2990), "PEN"),
                 120,
                 8,
                 List.of("Monitoreo ROM avanzado", "Reportes clinicos", "Alertas", "Soporte prioritario")
@@ -52,9 +50,8 @@ public class SubscriptionPlanSeederApplicationReadyEventHandler {
         seedPlan(new CreatePlanCommand(
                 "Enterprise",
                 "ENTERPRISE",
-                BigDecimal.valueOf(599),
-                BigDecimal.valueOf(5990),
-                "PEN",
+                new Money(java.math.BigDecimal.valueOf(599), "PEN"),
+                new Money(java.math.BigDecimal.valueOf(5990), "PEN"),
                 500,
                 30,
                 List.of("Multi-sede", "Integracion avanzada", "Auditoria", "SLA empresarial")

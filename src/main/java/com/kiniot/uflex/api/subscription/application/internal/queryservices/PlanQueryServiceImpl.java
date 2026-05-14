@@ -3,7 +3,6 @@ package com.kiniot.uflex.api.subscription.application.internal.queryservices;
 import com.kiniot.uflex.api.subscription.domain.model.entities.SubscriptionPlan;
 import com.kiniot.uflex.api.subscription.domain.model.queries.GetPlanByIdQuery;
 import com.kiniot.uflex.api.subscription.domain.model.queries.GetPlanListQuery;
-import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionPlanId;
 import com.kiniot.uflex.api.subscription.domain.services.PlanQueryService;
 import com.kiniot.uflex.api.subscription.infrastructure.persistence.jpa.repositories.PlanRepository;
 import org.springframework.stereotype.Service;
@@ -26,6 +25,6 @@ public class PlanQueryServiceImpl implements PlanQueryService {
 
     @Override
     public Optional<SubscriptionPlan> handle(GetPlanByIdQuery query) {
-        return planRepository.findById(new SubscriptionPlanId(query.planId())).filter(SubscriptionPlan::isActive);
+        return planRepository.findById(query.planId()).filter(SubscriptionPlan::isActive);
     }
 }

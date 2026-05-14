@@ -1,6 +1,6 @@
 package com.kiniot.uflex.api.subscription.domain.model.commands;
 
-import java.util.UUID;
+import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionPlanId;
 
-public record DeactivatePlanCommand(UUID planId) {
+public record DeactivatePlanCommand(SubscriptionPlanId planId) {
 }

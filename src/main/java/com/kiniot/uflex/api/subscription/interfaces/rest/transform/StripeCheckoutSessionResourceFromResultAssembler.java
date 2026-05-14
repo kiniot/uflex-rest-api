@@ -1,6 +1,6 @@
 package com.kiniot.uflex.api.subscription.interfaces.rest.transform;
 
-import com.kiniot.uflex.api.subscription.application.internal.outboundservices.payment.CheckoutSessionResult;
+import com.kiniot.uflex.api.subscription.domain.services.results.CheckoutSessionResult;
 import com.kiniot.uflex.api.subscription.interfaces.rest.resources.StripeCheckoutSessionResource;
 
 public class StripeCheckoutSessionResourceFromResultAssembler {

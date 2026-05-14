@@ -2,6 +2,7 @@ package com.kiniot.uflex.api.subscription.interfaces.rest.controllers;
 
 import com.kiniot.uflex.api.subscription.domain.model.queries.GetPlanByIdQuery;
 import com.kiniot.uflex.api.subscription.domain.model.queries.GetPlanListQuery;
+import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionPlanId;
 import com.kiniot.uflex.api.subscription.domain.services.PlanQueryService;
 import com.kiniot.uflex.api.subscription.interfaces.rest.resources.PlanResource;
 import com.kiniot.uflex.api.subscription.interfaces.rest.transform.PlanResourceFromEntityAssembler;
@@ -36,7 +37,7 @@ public class PlanController {
 
     @GetMapping("/{id}")
     public ResponseEntity<PlanResource> getPlanById(@PathVariable UUID id) {
-        return planQueryService.handle(new GetPlanByIdQuery(id))
+        return planQueryService.handle(new GetPlanByIdQuery(new SubscriptionPlanId(id)))
                 .map(PlanResourceFromEntityAssembler::toResourceFromEntity)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());

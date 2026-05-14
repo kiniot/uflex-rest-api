@@ -1,9 +1,9 @@
 package com.kiniot.uflex.api.subscription.domain.model.commands;
 
-import java.util.UUID;
+import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionId;
 
 public record UpdatePaymentMethodCommand(
-        UUID subscriptionId,
+        SubscriptionId subscriptionId,
         String paymentToken,
         String last4,
         String expiresOn

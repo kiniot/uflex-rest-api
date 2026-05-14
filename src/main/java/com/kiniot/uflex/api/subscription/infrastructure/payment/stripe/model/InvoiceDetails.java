@@ -1,4 +1,6 @@
-package com.kiniot.uflex.api.subscription.application.internal.outboundservices.payment;
+package com.kiniot.uflex.api.subscription.infrastructure.payment.stripe.model;
+
+import com.kiniot.uflex.api.subscription.application.internal.outboundservices.payment.SubscriptionInvoiceDetails;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -12,5 +14,5 @@ public record InvoiceDetails(
         String currency,
         String status,
         String hostedInvoiceUrl
-) {
+) implements SubscriptionInvoiceDetails {
 }

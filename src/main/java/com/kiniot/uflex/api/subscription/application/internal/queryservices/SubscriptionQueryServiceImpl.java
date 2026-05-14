@@ -5,7 +5,6 @@ import com.kiniot.uflex.api.subscription.domain.model.entities.Invoice;
 import com.kiniot.uflex.api.subscription.domain.model.queries.GetInvoiceHistoryQuery;
 import com.kiniot.uflex.api.subscription.domain.model.queries.GetSubscriptionByClinicQuery;
 import com.kiniot.uflex.api.subscription.domain.model.queries.GetSubscriptionByIdQuery;
-import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionId;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionStatus;
 import com.kiniot.uflex.api.subscription.domain.services.SubscriptionQueryService;
 import com.kiniot.uflex.api.subscription.infrastructure.persistence.jpa.repositories.InvoiceRepository;
@@ -27,9 +26,9 @@ public class SubscriptionQueryServiceImpl implements SubscriptionQueryService {
 
     @Override
     public Optional<Subscription> handle(GetSubscriptionByClinicQuery query) {
-        var activeSubscription = subscriptionRepository.findByClinicIdAndStatus(query.clinicId(), SubscriptionStatus.ACTIVE);
+        var activeSubscription = subscriptionRepository.findByClinicIdAndStatus(query.clinicId().id(), SubscriptionStatus.ACTIVE);
         if (activeSubscription.isPresent()) return activeSubscription;
-        return subscriptionRepository.findPaidSubscriptionsByClinicId(query.clinicId()).stream().findFirst()
+        return subscriptionRepository.findPaidSubscriptionsByClinicId(query.clinicId().id()).stream().findFirst()
                 .map(this::activateRecoveredPaidSubscription);
     }
 
@@ -51,11 +50,11 @@ public class SubscriptionQueryServiceImpl implements SubscriptionQueryService {
 
     @Override
     public Optional<Subscription> handle(GetSubscriptionByIdQuery query) {
-        return subscriptionRepository.findById(new SubscriptionId(query.subscriptionId()));
+        return subscriptionRepository.findById(query.subscriptionId());
     }
 
     @Override
     public List<Invoice> handle(GetInvoiceHistoryQuery query) {
-        return invoiceRepository.findBySubscriptionId(query.subscriptionId());
+        return invoiceRepository.findBySubscriptionId(query.subscriptionId().id());
     }
 }
