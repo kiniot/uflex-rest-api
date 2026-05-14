@@ -95,7 +95,9 @@ public class WebSecurityConfiguration {
             var cors = new CorsConfiguration();
             cors.setAllowedOriginPatterns(List.of(
                     "http://localhost:[*]",
-                    "http://127.0.0.1:[*]"
+                    "http://127.0.0.1:[*]",
+                    "https://uflex-clinic-web.vercel.app",
+                    "https://uflex-rest-api-production.up.railway.app"
             ));
             cors.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
             cors.setAllowedHeaders(List.of("*"));
