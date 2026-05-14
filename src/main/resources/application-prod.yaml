@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${UFLEX_DB_HOST:localhost}:${UFLEX_DB_PORT:5432}/${UFLEX_DB_NAME:uflex_db}?sslmode=require
+    username: ${UFLEX_DB_USERNAME:admin}
+    password: ${UFLEX_DB_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+logging:
+  level:
+    org.hibernate.SQL: error
+
+authorization:
+  jwt:
+    secret: ${JWT_SECRET:uflex-prod-secret-very-long-key-change-me}
+    expiration:
+      days: ${JWT_EXPIRATION_DAYS:7}
+
+stripe:
+  enabled: ${STRIPE_ENABLED:true}
+  secret-key: ${STRIPE_SECRET_KEY}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET}
+  success-url: ${STRIPE_SUCCESS_URL}
+  cancel-url: ${STRIPE_CANCEL_URL}
