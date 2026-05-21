@@ -79,14 +79,10 @@ public class Subscription extends AuditableAbstractAggregateRoot<Subscription, S
     }
 
     public boolean isCurrentAt(LocalDate date) {
-        if (date == null) {
+        if (date == null)
             throw new IllegalArgumentException("Date cannot be null");
-        }
-
-        if (this.status == SubscriptionStatus.ACTIVE || this.status == SubscriptionStatus.PAST_DUE) {
+        if (this.status == SubscriptionStatus.ACTIVE || this.status == SubscriptionStatus.PAST_DUE)
             return true;
-        }
-
         return this.status == SubscriptionStatus.CANCELED
                 && this.endsAt != null
                 && !this.endsAt.isBefore(date);

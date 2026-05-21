@@ -4,7 +4,6 @@ import com.kiniot.uflex.api.shared.domain.exceptions.AuthenticatedUserClinicNotF
 import com.kiniot.uflex.api.subscription.application.internal.outboundservices.acl.ExternalIamService;
 import com.kiniot.uflex.api.subscription.domain.model.aggregates.Subscription;
 import com.kiniot.uflex.api.subscription.domain.model.commands.GetCurrentSubscriptionQuery;
-import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionStatus;
 import com.kiniot.uflex.api.subscription.domain.services.SubscriptionQueryService;
 import com.kiniot.uflex.api.subscription.infrastructure.persistence.jpa.repositories.SubscriptionRepository;
 import org.springframework.stereotype.Service;
@@ -31,16 +30,7 @@ public class SubscriptionQueryServiceImpl implements SubscriptionQueryService {
         var clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(AuthenticatedUserClinicNotFoundException::new);
         return subscriptionRepository.findAllByClinicId(clinicId).stream()
-                .filter(this::isCurrentSubscription)
+                .filter(subscription -> subscription.isCurrentAt(LocalDate.now()))
                 .findFirst();
-    }
-
-    private boolean isCurrentSubscription(Subscription subscription) {
-        if (subscription.getStatus() == SubscriptionStatus.ACTIVE
-                || subscription.getStatus() == SubscriptionStatus.PAST_DUE)
-            return true;
-        return subscription.getStatus() == SubscriptionStatus.CANCELED
-                && subscription.getEndsAt() != null
-                && !subscription.getEndsAt().isBefore(LocalDate.now());
     }
 }
