@@ -24,9 +24,11 @@ public class Subscription extends AuditableAbstractAggregateRoot<Subscription, S
     private SubscriptionId id;
 
     @Embedded
+    @AttributeOverride(name = "id", column = @Column(name = "clinic_id", columnDefinition = "UUID"))
     private ClinicId clinicId;
 
     @Embedded
+    @AttributeOverride(name = "tierId.id", column = @Column(name = "tier_id", columnDefinition = "UUID", nullable = false, unique = false))
     private SubscriptionSelection selection;
 
     @Embedded
