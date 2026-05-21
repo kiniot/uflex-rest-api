@@ -43,7 +43,7 @@ public class TreatmentPlanCommandServiceImpl implements TreatmentPlanCommandServ
     @Override
     @Transactional
     public Optional<TreatmentPlan> handle(CreateTreatmentPlanCommand command) {
-        var clinicId = externalIamService.fetchCurrentAcademyId()
+        var clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(AuthenticatedUserClinicNotFoundException::new);
         var treatmentPlan = new TreatmentPlan(command, clinicId);
         return Optional.of(treatmentPlanRepository.save(treatmentPlan));
@@ -91,7 +91,7 @@ public class TreatmentPlanCommandServiceImpl implements TreatmentPlanCommandServ
     }
 
     private TreatmentPlan getTreatmentPlanOrThrow(TreatmentPlanId treatmentPlanId) {
-        var clinicId = externalIamService.fetchCurrentAcademyId()
+        var clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(AuthenticatedUserClinicNotFoundException::new);
         return treatmentPlanRepository.findWithRoutinesAndExerciseSeriesByIdAndClinicId(treatmentPlanId, clinicId)
                 .orElseThrow(() -> new TreatmentPlanWithIdNotFoundException(treatmentPlanId.id().toString()));
