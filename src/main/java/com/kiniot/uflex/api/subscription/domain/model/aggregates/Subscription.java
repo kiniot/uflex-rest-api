@@ -78,6 +78,20 @@ public class Subscription extends AuditableAbstractAggregateRoot<Subscription, S
         this.status = SubscriptionStatus.EXPIRED;
     }
 
+    public boolean isCurrentAt(LocalDate date) {
+        if (date == null) {
+            throw new IllegalArgumentException("Date cannot be null");
+        }
+
+        if (this.status == SubscriptionStatus.ACTIVE || this.status == SubscriptionStatus.PAST_DUE) {
+            return true;
+        }
+
+        return this.status == SubscriptionStatus.CANCELED
+                && this.endsAt != null
+                && !this.endsAt.isBefore(date);
+    }
+
     private LocalDate calculateRenewsAt(LocalDate startedAt) {
         return switch (this.selection.billingPeriod()) {
             case MONTHLY -> startedAt.plusMonths(1);

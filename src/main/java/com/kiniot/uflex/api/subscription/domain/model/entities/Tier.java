@@ -91,6 +91,19 @@ public class Tier extends AuditableModel<TierId> {
                         && tierPrice.getPrice().currency() == currency);
     }
 
+    public Money getPrice(BillingPeriod billingPeriod, CurrencyCode currency) {
+        Objects.requireNonNull(billingPeriod, "Billing period cannot be null");
+        Objects.requireNonNull(currency, "Currency cannot be null");
+        return this.prices.stream()
+                .filter(tierPrice -> tierPrice.getBillingPeriod() == billingPeriod)
+                .map(TierPrice::getPrice)
+                .filter(price -> price.currency() == currency)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Tier price not found for period %s and currency %s"
+                                .formatted(billingPeriod, currency)));
+    }
+
     public void addPrice(BillingPeriod billingPeriod, Money price) {
         Objects.requireNonNull(billingPeriod, "Billing period cannot be null");
         Objects.requireNonNull(price, "Price cannot be null");
