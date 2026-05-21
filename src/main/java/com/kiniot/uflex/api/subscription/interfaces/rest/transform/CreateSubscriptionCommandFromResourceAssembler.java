@@ -17,7 +17,8 @@ public class CreateSubscriptionCommandFromResourceAssembler {
                 new Money(
                         new BigDecimal(String.valueOf(resource.amount())),
                         CurrencyCode.valueOf(resource.currency().trim().toUpperCase(Locale.ROOT))
-                )
+                ),
+                resource.requestedTotalKits()
         );
     }
 }

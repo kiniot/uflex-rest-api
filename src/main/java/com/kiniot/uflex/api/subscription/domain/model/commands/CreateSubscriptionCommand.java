@@ -5,14 +5,15 @@ import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionS
 
 public record CreateSubscriptionCommand(
         SubscriptionSelection selection,
-        Money contractedPrice
+        Money contractedPrice,
+        Integer requestedTotalKits
 ) {
     public CreateSubscriptionCommand {
-        if (selection == null) {
+        if (selection == null)
             throw new IllegalArgumentException("Subscription selection cannot be null");
-        }
-        if (contractedPrice == null) {
+        if (contractedPrice == null)
             throw new IllegalArgumentException("Contracted price cannot be null");
-        }
+        if (requestedTotalKits == null || requestedTotalKits < 0)
+            throw new IllegalArgumentException("Requested total kits must be a non-negative integer");
     }
 }

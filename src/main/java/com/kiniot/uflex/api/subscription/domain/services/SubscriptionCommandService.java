@@ -1,10 +1,10 @@
 package com.kiniot.uflex.api.subscription.domain.services;
 
-import com.kiniot.uflex.api.subscription.domain.model.aggregates.Subscription;
 import com.kiniot.uflex.api.subscription.domain.model.commands.CreateSubscriptionCommand;
+import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionCheckoutResult;
 
 import java.util.Optional;
 
 public interface SubscriptionCommandService {
-    Optional<Subscription> handle(CreateSubscriptionCommand command);
+    Optional<SubscriptionCheckoutResult> handle(CreateSubscriptionCommand command);
 }

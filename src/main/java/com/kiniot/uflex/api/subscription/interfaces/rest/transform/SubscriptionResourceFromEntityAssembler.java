@@ -14,8 +14,8 @@ public class SubscriptionResourceFromEntityAssembler {
                 entity.getContractedPrice().amount(),
                 entity.getContractedPrice().currency().name(),
                 entity.getStatus().name(),
-                entity.getStartedAt().toString(),
-                entity.getRenewsAt().toString(),
+                entity.getStartedAt() != null ? entity.getStartedAt().toString() : null,
+                entity.getRenewsAt() != null ? entity.getRenewsAt().toString() : null,
                 entity.getEndsAt() != null ? entity.getEndsAt().toString() : null
         );
     }

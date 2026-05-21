@@ -5,6 +5,7 @@ import com.kiniot.uflex.api.subscription.domain.model.commands.SeedTiersCommand;
 import com.kiniot.uflex.api.subscription.domain.model.entities.Tier;
 import com.kiniot.uflex.api.subscription.domain.services.TierCommandService;
 import com.kiniot.uflex.api.subscription.infrastructure.persistence.jpa.repositories.TierRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -17,9 +18,10 @@ public class TierCommandServiceImpl  implements TierCommandService {
     }
 
     @Override
+    @Transactional
     public void handle(SeedTiersCommand command) {
         TierCatalogSeedData.catalogs().forEach(catalog -> {
-            var tier = tierRepository.findByName(catalog.name())
+            var tier = tierRepository.findWithPricesByName(catalog.name())
                     .orElseGet(() -> Tier.create(
                             catalog.name(),
                             catalog.limits(),

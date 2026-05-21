@@ -36,6 +36,13 @@ authorization:
     expiration:
       days: ${JWT_EXPIRATION_DAYS}
 
+stripe:
+  enabled: ${STRIPE_ENABLED:true}
+  secret-key: ${STRIPE_SECRET_KEY:}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  success-url: ${STRIPE_SUCCESS_URL:http://localhost:4200/subscription?payment=success}
+  cancel-url: ${STRIPE_CANCEL_URL:http://localhost:4200/subscription?payment=cancel}
+
 scalar:
   enabled: true
   theme: kepler

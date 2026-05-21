@@ -52,6 +52,13 @@ public record Money(
         return this.amount.signum() == 0;
     }
 
+    public Money multiply(int factor) {
+        if (factor < 0) {
+            throw new IllegalArgumentException("Factor cannot be negative");
+        }
+        return new Money(this.amount.multiply(BigDecimal.valueOf(factor)), this.currency);
+    }
+
     public static Money zero(CurrencyCode currency) {
         return new Money(BigDecimal.ZERO, currency);
     }
