@@ -1,6 +1,6 @@
 package com.kiniot.uflex.api.subscription.domain.model.valueobjects;
 
-public enum BillingCycle {
+public enum BillingPeriod {
     MONTHLY,
     YEARLY
 }

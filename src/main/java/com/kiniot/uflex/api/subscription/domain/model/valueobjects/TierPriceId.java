@@ -8,17 +8,17 @@ import java.io.Serializable;
 import java.util.UUID;
 
 @Embeddable
-public record InvoiceId(
+public record TierPriceId(
         @Column(columnDefinition = "UUID", nullable = false, unique = true)
         UUID id
 ) implements Serializable {
-    public InvoiceId {
+    public TierPriceId {
         if (id == null) {
-            throw new IllegalArgumentException("Invoice ID cannot be null");
+            throw new IllegalArgumentException("Tier price ID cannot be null");
         }
     }
 
-    public InvoiceId() {
+    public TierPriceId() {
         this(Generators.timeBasedEpochGenerator().generate());
     }
 }
