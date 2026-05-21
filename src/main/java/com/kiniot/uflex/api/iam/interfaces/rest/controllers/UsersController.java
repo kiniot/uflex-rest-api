@@ -1,7 +1,7 @@
 package com.kiniot.uflex.api.iam.interfaces.rest.controllers;
 
 import com.kiniot.uflex.api.iam.domain.model.commands.ChangePasswordCommand;
-import com.kiniot.uflex.api.iam.domain.model.queries.GetAuthenticatedUserIdQuery;
+import com.kiniot.uflex.api.iam.domain.model.queries.GetContextUserIdQuery;
 import com.kiniot.uflex.api.iam.domain.model.queries.GetUserByEmailQuery;
 import com.kiniot.uflex.api.iam.domain.model.queries.GetUserByIdQuery;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.Email;
@@ -47,7 +47,7 @@ public class UsersController {
             @ApiResponse(responseCode = "404", description = "Authenticated user no longer exists")
     })
     public ResponseEntity<UserResource> getCurrentUser() {
-        var authenticatedUserId = userQueryService.handle(new GetAuthenticatedUserIdQuery());
+        var authenticatedUserId = userQueryService.handle(new GetContextUserIdQuery());
         if (authenticatedUserId.isEmpty())
             return ResponseEntity.status(401).build();
         var user = userQueryService.handle(new GetUserByIdQuery(authenticatedUserId.get()));
@@ -65,7 +65,7 @@ public class UsersController {
             @ApiResponse(responseCode = "401", description = "Unauthorized — missing or invalid token")
     })
     public ResponseEntity<Void> changeMyPassword(@RequestBody ChangePasswordResource resource) {
-        var authenticatedUserId = userQueryService.handle(new GetAuthenticatedUserIdQuery());
+        var authenticatedUserId = userQueryService.handle(new GetContextUserIdQuery());
         if (authenticatedUserId.isEmpty())
             return ResponseEntity.status(401).build();
         try {

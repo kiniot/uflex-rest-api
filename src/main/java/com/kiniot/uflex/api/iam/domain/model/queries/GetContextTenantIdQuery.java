@@ -1,4 +1,4 @@
 package com.kiniot.uflex.api.iam.domain.model.queries;
 
-public record GetAuthenticatedUserTenantIdQuery() {
+public record GetContextTenantIdQuery() {
 }

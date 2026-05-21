@@ -9,7 +9,11 @@ public interface IamContextFacade {
 
     void deleteUserById(String userId);
 
-    String fetchAuthenticatedUserId();
+    String fetchContextUserId();
 
-    String fetchAuthenticatedUserTenantId();
+    String fetchContextTenantId();
+
+    String fetchCurrentUserId();
+
+    String fetchCurrentTenantId();
 }
