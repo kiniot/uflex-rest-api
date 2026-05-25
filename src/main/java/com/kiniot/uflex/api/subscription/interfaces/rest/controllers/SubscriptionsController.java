@@ -14,6 +14,9 @@ import com.kiniot.uflex.api.subscription.interfaces.rest.transform.CreateSubscri
 import com.kiniot.uflex.api.subscription.interfaces.rest.transform.SubscriptionResourceFromEntityAssembler;
 import com.kiniot.uflex.api.subscription.interfaces.rest.transform.TierCatalogResourceFromEntityAssembler;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -48,6 +51,32 @@ public class SubscriptionsController {
     }
 
     @PostMapping("/checkout")
+    @Operation(summary = "Create subscription checkout session",
+            description = "Creates a pending subscription for the authenticated clinic and returns the Stripe checkout session URL.")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Subscription selection and pricing data for checkout creation.",
+            required = true,
+            content = @Content(
+                    schema = @Schema(implementation = CreateSubscriptionResource.class),
+                    examples = @ExampleObject(
+                            name = "Create subscription checkout",
+                            value = """
+                                    {
+                                      "tierId": "019e4c9b-a972-729b-8e35-667d1fb56d38",
+                                      "billingPeriod": "MONTHLY",
+                                      "amount": 90.00,
+                                      "currency": "USD",
+                                      "requestedTotalKits": 1
+                                    }
+                                    """
+                    )
+            )
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Checkout session created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid subscription data or checkout could not be created"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized or authenticated user has no clinic")
+    })
     public ResponseEntity<CheckoutSessionResource> createSubscriptionCheckout(@RequestBody CreateSubscriptionResource resource) {
         var command = CreateSubscriptionCommandFromResourceAssembler.toCommandFromResource(resource);
         var subscription = subscriptionCommandService.handle(command);
@@ -57,6 +86,13 @@ public class SubscriptionsController {
     }
 
     @GetMapping("/current")
+    @Operation(summary = "Get current subscription",
+            description = "Returns the current subscription for the authenticated clinic, if one exists.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Current subscription retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized or authenticated user has no clinic"),
+            @ApiResponse(responseCode = "404", description = "No current subscription found for the authenticated clinic")
+    })
     public ResponseEntity<SubscriptionResource> getCurrentSubscription() {
         return subscriptionQueryService.handle(new GetCurrentSubscriptionQuery())
                 .map(SubscriptionResourceFromEntityAssembler::toResourceFromEntity)

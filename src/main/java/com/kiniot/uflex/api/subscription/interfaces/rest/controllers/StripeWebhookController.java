@@ -7,6 +7,13 @@ import com.stripe.model.Event;
 import com.stripe.model.StripeObject;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/webhooks/stripe")
+@Tag(name = "Stripe Webhooks", description = "Endpoints used by Stripe to notify subscription checkout events")
 public class StripeWebhookController {
 
     private final StripePaymentProperties stripePaymentProperties;
@@ -31,8 +39,16 @@ public class StripeWebhookController {
     }
 
     @PostMapping
+    @Operation(summary = "Handle Stripe webhook",
+            description = "Receives Stripe checkout webhook events and updates subscription state accordingly.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Webhook received and processed successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid Stripe signature"),
+            @ApiResponse(responseCode = "500", description = "Stripe webhook secret is not configured on the server")
+    })
     public ResponseEntity<Void> handleStripeWebhook(
             @RequestBody String payload,
+            @Parameter(description = "Stripe signature header used to verify webhook authenticity", required = true)
             @RequestHeader("Stripe-Signature") String stripeSignature
     ) {
         if (stripePaymentProperties.getWebhookSecret() == null || stripePaymentProperties.getWebhookSecret().isBlank())
