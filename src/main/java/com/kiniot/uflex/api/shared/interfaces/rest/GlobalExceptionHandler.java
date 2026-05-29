@@ -14,6 +14,8 @@ import com.kiniot.uflex.api.planning.domain.exceptions.RoutineWithOrderNotFoundE
 import com.kiniot.uflex.api.planning.domain.exceptions.TreatmentPlanWithIdNotFoundException;
 import com.kiniot.uflex.api.shared.domain.exceptions.AuthenticatedUserClinicNotFoundException;
 import com.kiniot.uflex.api.shared.interfaces.rest.resources.ErrorResource;
+import com.kiniot.uflex.api.subscription.domain.exceptions.InvalidSubscriptionAmountFormatException;
+import com.kiniot.uflex.api.subscription.domain.exceptions.StripeCheckoutSessionCreationException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -55,6 +57,22 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResource> handleIllegalArgumentException(IllegalArgumentException exception, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidSubscriptionAmountFormatException.class)
+    public ResponseEntity<ErrorResource> handleInvalidSubscriptionAmountFormatException(
+            InvalidSubscriptionAmountFormatException exception,
+            HttpServletRequest request
+    ) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(StripeCheckoutSessionCreationException.class)
+    public ResponseEntity<ErrorResource> handleStripeCheckoutSessionCreationException(
+            StripeCheckoutSessionCreationException exception,
+            HttpServletRequest request
+    ) {
+        return buildErrorResponse(HttpStatus.BAD_GATEWAY, exception.getMessage(), request);
     }
 
     @ExceptionHandler(IllegalStateException.class)

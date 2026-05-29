@@ -52,9 +52,9 @@ public class SubscriptionsController {
 
     @PostMapping("/checkout")
     @Operation(summary = "Create subscription checkout session",
-            description = "Creates a pending subscription for the authenticated clinic and returns the Stripe checkout session URL.")
+            description = "Creates a pending subscription for the authenticated clinic and returns the Stripe checkout session URL. The amount must be sent as a JSON number with exactly 2 decimal places, for example 90.00.")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Subscription selection and pricing data for checkout creation.",
+            description = "Subscription selection and pricing data for checkout creation. Send amount as a numeric decimal with exactly 2 fractional digits.",
             required = true,
             content = @Content(
                     schema = @Schema(implementation = CreateSubscriptionResource.class),
@@ -64,7 +64,7 @@ public class SubscriptionsController {
                                     {
                                       "tierId": "019e4c9b-a972-729b-8e35-667d1fb56d38",
                                       "billingPeriod": "MONTHLY",
-                                      "amount": 90.00,
+                                      "amount": "90.00",
                                       "currency": "USD",
                                       "requestedTotalKits": 1
                                     }

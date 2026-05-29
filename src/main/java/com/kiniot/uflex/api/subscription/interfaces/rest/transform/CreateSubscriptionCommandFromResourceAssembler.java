@@ -4,7 +4,6 @@ import com.kiniot.uflex.api.subscription.domain.model.commands.CreateSubscriptio
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.*;
 import com.kiniot.uflex.api.subscription.interfaces.rest.resources.CreateSubscriptionResource;
 
-import java.math.BigDecimal;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -15,7 +14,7 @@ public class CreateSubscriptionCommandFromResourceAssembler {
                         new TierId(UUID.fromString(resource.tierId())),
                         BillingPeriod.valueOf(resource.billingPeriod().trim().toUpperCase(Locale.ROOT))),
                 new Money(
-                        new BigDecimal(String.valueOf(resource.amount())),
+                        resource.amount(),
                         CurrencyCode.valueOf(resource.currency().trim().toUpperCase(Locale.ROOT))
                 ),
                 resource.requestedTotalKits()

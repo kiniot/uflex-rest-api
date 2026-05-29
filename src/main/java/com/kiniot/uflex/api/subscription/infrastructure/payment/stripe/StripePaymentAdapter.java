@@ -1,5 +1,6 @@
 package com.kiniot.uflex.api.subscription.infrastructure.payment.stripe;
 
+import com.kiniot.uflex.api.subscription.domain.exceptions.StripeCheckoutSessionCreationException;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.CheckoutSessionResult;
 import com.kiniot.uflex.api.subscription.domain.model.commands.CreateCheckoutSessionCommand;
 import com.kiniot.uflex.api.subscription.application.internal.outboundservices.payment.PaymentGatewayPort;
@@ -8,6 +9,8 @@ import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.checkout.SessionCreateParams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -17,6 +20,7 @@ import java.math.RoundingMode;
 public class StripePaymentAdapter implements PaymentGatewayPort {
 
     private final StripePaymentProperties stripePaymentProperties;
+    private static final Logger LOGGER = LoggerFactory.getLogger(StripePaymentAdapter.class);
 
     public StripePaymentAdapter(StripePaymentProperties stripePaymentProperties) {
         this.stripePaymentProperties = stripePaymentProperties;
@@ -101,7 +105,13 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
             Session session = Session.create(params);
             return new CheckoutSessionResult(session.getId(), session.getUrl());
         } catch (StripeException exception) {
-            throw new IllegalStateException("Failed to create Stripe checkout session", exception);
+            LOGGER.error("Stripe checkout session creation failed. statusCode={}, code={}, requestId={}, message={}",
+                    exception.getStatusCode(),
+                    exception.getCode(),
+                    exception.getRequestId(),
+                    exception.getMessage(),
+                    exception);
+            throw new StripeCheckoutSessionCreationException(buildStripeCheckoutErrorMessage(exception), exception);
         }
     }
 
@@ -110,5 +120,13 @@ public class StripePaymentAdapter implements PaymentGatewayPort {
                 .setScale(2, RoundingMode.HALF_UP)
                 .movePointRight(2)
                 .longValueExact();
+    }
+
+    private String buildStripeCheckoutErrorMessage(StripeException exception) {
+        var detail = exception.getMessage();
+        if (detail == null || detail.isBlank()) {
+            return "Failed to create Stripe checkout session";
+        }
+        return "Failed to create Stripe checkout session: %s".formatted(detail);
     }
 }
