@@ -1,12 +1,21 @@
 package com.kiniot.uflex.api.subscription.interfaces.rest.resources;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.math.BigDecimal;
 
 public record CreateSubscriptionResource(
+        @Schema(description = "Subscription tier identifier")
         String tierId,
+        @Schema(description = "Billing period for the subscription tier")
         String billingPeriod,
+        @Schema(
+                description = "Contracted subscription amount as a numeric decimal with exactly 2 fractional digits"
+        )
         BigDecimal amount,
+        @Schema(description = "ISO currency code")
         String currency,
+        @Schema(description = "Total kits requested for the subscription")
         Integer requestedTotalKits
 ) {
     public CreateSubscriptionResource {
