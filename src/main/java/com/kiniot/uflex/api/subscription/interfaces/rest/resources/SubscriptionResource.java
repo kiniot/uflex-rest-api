@@ -1,21 +1,16 @@
 package com.kiniot.uflex.api.subscription.interfaces.rest.resources;
 
-import com.kiniot.uflex.api.subscription.domain.model.valueobjects.BillingCycle;
-import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionStatus;
-
-import java.time.OffsetDateTime;
-import java.util.UUID;
+import java.math.BigDecimal;
 
 public record SubscriptionResource(
-        UUID id,
-        UUID clinicId,
-        PlanResource plan,
-        SubscriptionStatus status,
-        BillingCycle billingCycle,
-        OffsetDateTime currentPeriodStart,
-        OffsetDateTime currentPeriodEnd,
-        OffsetDateTime nextBillingDate,
-        OffsetDateTime trialUntil,
-        PaymentReferenceResource paymentReference
+        String id,
+        String tierId,
+        String billingPeriod,
+        BigDecimal amount,
+        String currency,
+        String status,
+        String startedAt,
+        String renewsAt,
+        String endsAt
 ) {
 }

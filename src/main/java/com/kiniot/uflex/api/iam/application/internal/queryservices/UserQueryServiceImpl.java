@@ -2,10 +2,7 @@ package com.kiniot.uflex.api.iam.application.internal.queryservices;
 
 import com.kiniot.uflex.api.iam.application.internal.outboundservices.identity.IdentityService;
 import com.kiniot.uflex.api.iam.domain.model.aggregates.User;
-import com.kiniot.uflex.api.iam.domain.model.queries.GetAuthenticatedUserIdQuery;
-import com.kiniot.uflex.api.iam.domain.model.queries.GetAuthenticatedUserTenantIdQuery;
-import com.kiniot.uflex.api.iam.domain.model.queries.GetUserByEmailQuery;
-import com.kiniot.uflex.api.iam.domain.model.queries.GetUserByIdQuery;
+import com.kiniot.uflex.api.iam.domain.model.queries.*;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.TenantId;
 import com.kiniot.uflex.api.iam.domain.services.UserQueryService;
 import com.kiniot.uflex.api.iam.infrastructure.persistence.jpa.repositories.UserRepository;
@@ -40,17 +37,38 @@ public class UserQueryServiceImpl implements UserQueryService {
     }
 
     @Override
-    public Optional<UserId> handle(GetAuthenticatedUserIdQuery query) {
+    public Optional<UserId> handle(GetContextUserIdQuery query) {
         return identityService.getUserId()
                 .map(UUID::fromString)
                 .map(UserId::new);
     }
 
     @Override
-    public Optional<TenantId> handle(GetAuthenticatedUserTenantIdQuery query) {
+    public Optional<TenantId> handle(GetContextTenantIdQuery query) {
         return Optional.of(identityService.getTenantId()
                 .map(UUID::fromString)
                 .map(TenantId::new)
                 .orElseThrow(() -> new IllegalStateException("Tenant ID is required but not present")));
+    }
+
+    @Override
+    public Optional<UserId> handle(GetCurrentUserIdQuery query) {
+        var contextUserId = identityService.getUserId()
+                .map(UUID::fromString)
+                .map(UserId::new)
+                .orElseThrow(() -> new IllegalStateException("Authenticated user ID is required but not present"));
+        return userRepository.findById(contextUserId)
+                .map(User::getId);
+    }
+
+    @Override
+    public Optional<TenantId> handle(GetCurrentTenantIdQuery query) {
+        var contextUserId = identityService.getUserId()
+                .map(UUID::fromString)
+                .map(UserId::new)
+                .orElseThrow(() -> new IllegalStateException("Authenticated user ID is required but not present"));
+        return userRepository.findById(contextUserId)
+                .map(User::getTenantId)
+                .filter(TenantId::isAssigned);
     }
 }

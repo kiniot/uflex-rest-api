@@ -1,61 +1,36 @@
 package com.kiniot.uflex.api.subscription.application.internal.queryservices;
 
+import com.kiniot.uflex.api.shared.domain.exceptions.AuthenticatedUserClinicNotFoundException;
+import com.kiniot.uflex.api.subscription.application.internal.outboundservices.acl.ExternalIamService;
 import com.kiniot.uflex.api.subscription.domain.model.aggregates.Subscription;
-import com.kiniot.uflex.api.subscription.domain.model.entities.Invoice;
-import com.kiniot.uflex.api.subscription.domain.model.queries.GetInvoiceHistoryQuery;
-import com.kiniot.uflex.api.subscription.domain.model.queries.GetSubscriptionByClinicQuery;
-import com.kiniot.uflex.api.subscription.domain.model.queries.GetSubscriptionByIdQuery;
-import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionId;
-import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionStatus;
+import com.kiniot.uflex.api.subscription.domain.model.commands.GetCurrentSubscriptionQuery;
 import com.kiniot.uflex.api.subscription.domain.services.SubscriptionQueryService;
-import com.kiniot.uflex.api.subscription.infrastructure.persistence.jpa.repositories.InvoiceRepository;
 import com.kiniot.uflex.api.subscription.infrastructure.persistence.jpa.repositories.SubscriptionRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.time.LocalDate;
 import java.util.Optional;
 
 @Service
 public class SubscriptionQueryServiceImpl implements SubscriptionQueryService {
+
     private final SubscriptionRepository subscriptionRepository;
-    private final InvoiceRepository invoiceRepository;
+    private final ExternalIamService externalIamService;
 
-    public SubscriptionQueryServiceImpl(SubscriptionRepository subscriptionRepository, InvoiceRepository invoiceRepository) {
+    public SubscriptionQueryServiceImpl(
+            SubscriptionRepository subscriptionRepository,
+            ExternalIamService externalIamService
+    ) {
         this.subscriptionRepository = subscriptionRepository;
-        this.invoiceRepository = invoiceRepository;
+        this.externalIamService = externalIamService;
     }
 
     @Override
-    public Optional<Subscription> handle(GetSubscriptionByClinicQuery query) {
-        var activeSubscription = subscriptionRepository.findByClinicIdAndStatus(query.clinicId(), SubscriptionStatus.ACTIVE);
-        if (activeSubscription.isPresent()) return activeSubscription;
-        return subscriptionRepository.findPaidSubscriptionsByClinicId(query.clinicId()).stream().findFirst()
-                .map(this::activateRecoveredPaidSubscription);
-    }
-
-    private Subscription activateRecoveredPaidSubscription(Subscription subscription) {
-        if (subscription.getStatus() != SubscriptionStatus.ACTIVE && subscription.getPaymentReference() != null) {
-            var periodStart = subscription.getCurrentPeriodStart() == null
-                    ? java.time.OffsetDateTime.now()
-                    : subscription.getCurrentPeriodStart();
-            var periodEnd = subscription.getCurrentPeriodEnd() == null
-                    ? (subscription.getBillingCycle() == com.kiniot.uflex.api.subscription.domain.model.valueobjects.BillingCycle.YEARLY
-                    ? periodStart.plusYears(1)
-                    : periodStart.plusMonths(1))
-                    : subscription.getCurrentPeriodEnd();
-            subscription.refreshStripePayment(subscription.getPaymentReference(), periodStart, periodEnd);
-            return subscriptionRepository.save(subscription);
-        }
-        return subscription;
-    }
-
-    @Override
-    public Optional<Subscription> handle(GetSubscriptionByIdQuery query) {
-        return subscriptionRepository.findById(new SubscriptionId(query.subscriptionId()));
-    }
-
-    @Override
-    public List<Invoice> handle(GetInvoiceHistoryQuery query) {
-        return invoiceRepository.findBySubscriptionId(query.subscriptionId());
+    public Optional<Subscription> handle(GetCurrentSubscriptionQuery query) {
+        var clinicId = externalIamService.fetchCurrentClinicId()
+                .orElseThrow(AuthenticatedUserClinicNotFoundException::new);
+        return subscriptionRepository.findAllByClinicId(clinicId).stream()
+                .filter(subscription -> subscription.isCurrentAt(LocalDate.now()))
+                .findFirst();
     }
 }
