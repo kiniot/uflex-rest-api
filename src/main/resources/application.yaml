@@ -2,7 +2,7 @@ spring:
   application:
     name: uflex-rest-api
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE:dev}
+    active: ${SPRING_PROFILES_ACTIVE}
   datasource:
     driver-class-name: org.postgresql.Driver
   jpa:
@@ -40,8 +40,8 @@ stripe:
   enabled: ${STRIPE_ENABLED:true}
   secret-key: ${STRIPE_SECRET_KEY:}
   webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
-  success-url: ${STRIPE_SUCCESS_URL:http://localhost:4200/subscription?payment=success}
-  cancel-url: ${STRIPE_CANCEL_URL:http://localhost:4200/subscription?payment=cancel}
+  success-url: ${STRIPE_SUCCESS_URL:}
+  cancel-url: ${STRIPE_CANCEL_URL:}
 
 scalar:
   enabled: true
