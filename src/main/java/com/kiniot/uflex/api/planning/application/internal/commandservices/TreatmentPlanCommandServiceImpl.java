@@ -2,12 +2,14 @@ package com.kiniot.uflex.api.planning.application.internal.commandservices;
 
 import com.kiniot.uflex.api.planning.application.internal.outboundservices.acl.ExternalIamService;
 import com.kiniot.uflex.api.planning.application.internal.outboundservices.acl.ExternalOrganizationService;
-import com.kiniot.uflex.api.shared.domain.exceptions.AuthenticatedUserClinicNotFoundException;
 import com.kiniot.uflex.api.planning.domain.exceptions.ExerciseClinicMismatchException;
 import com.kiniot.uflex.api.planning.domain.exceptions.OverlappingTreatmentPlanPeriodException;
 import com.kiniot.uflex.api.planning.domain.exceptions.PatientAlreadyHasActiveTreatmentPlanException;
 import com.kiniot.uflex.api.planning.domain.exceptions.TreatmentPlanWithIdNotFoundException;
 import com.kiniot.uflex.api.planning.domain.model.aggregates.TreatmentPlan;
+import com.kiniot.uflex.api.planning.domain.model.commands.ActivateTreatmentPlanCommand;
+import com.kiniot.uflex.api.planning.domain.model.commands.CancelTreatmentPlanCommand;
+import com.kiniot.uflex.api.planning.domain.model.commands.CompleteTreatmentPlanCommand;
 import com.kiniot.uflex.api.planning.domain.model.entities.Routine;
 import com.kiniot.uflex.api.planning.domain.model.commands.CreateRoutineCommand;
 import com.kiniot.uflex.api.planning.domain.model.commands.CreateTreatmentPlanCommand;
@@ -23,6 +25,7 @@ import com.kiniot.uflex.api.planning.domain.services.TreatmentPlanCommandService
 import com.kiniot.uflex.api.planning.infrastructure.persistence.jpa.repositories.ExerciseRepository;
 import com.kiniot.uflex.api.planning.infrastructure.persistence.jpa.repositories.RoutineRepository;
 import com.kiniot.uflex.api.planning.infrastructure.persistence.jpa.repositories.TreatmentPlanRepository;
+import com.kiniot.uflex.api.shared.domain.exceptions.AuthenticatedUserClinicNotFoundException;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
 import org.springframework.stereotype.Service;
@@ -77,6 +80,14 @@ public class TreatmentPlanCommandServiceImpl implements TreatmentPlanCommandServ
     public Optional<TreatmentPlan> handle(UpdateTreatmentPlanCommand command) {
         var treatmentPlan = getTreatmentPlanOrThrow(command.treatmentPlanId());
         treatmentPlan.update(command);
+        return Optional.of(initializePlanGraph(treatmentPlanRepository.save(treatmentPlan)));
+    }
+
+    @Override
+    @Transactional
+    public Optional<TreatmentPlan> handle(ActivateTreatmentPlanCommand command) {
+        var treatmentPlan = getTreatmentPlanOrThrow(command.treatmentPlanId());
+        treatmentPlan.activate();
         validatePatientPlanCoexistence(
                 treatmentPlan.getClinicId(),
                 treatmentPlan.getPatientId(),
@@ -84,6 +95,22 @@ public class TreatmentPlanCommandServiceImpl implements TreatmentPlanCommandServ
                 treatmentPlan.getPeriod(),
                 treatmentPlan.getId()
         );
+        return Optional.of(initializePlanGraph(treatmentPlanRepository.save(treatmentPlan)));
+    }
+
+    @Override
+    @Transactional
+    public Optional<TreatmentPlan> handle(CompleteTreatmentPlanCommand command) {
+        var treatmentPlan = getTreatmentPlanOrThrow(command.treatmentPlanId());
+        treatmentPlan.complete();
+        return Optional.of(initializePlanGraph(treatmentPlanRepository.save(treatmentPlan)));
+    }
+
+    @Override
+    @Transactional
+    public Optional<TreatmentPlan> handle(CancelTreatmentPlanCommand command) {
+        var treatmentPlan = getTreatmentPlanOrThrow(command.treatmentPlanId());
+        treatmentPlan.cancel();
         return Optional.of(initializePlanGraph(treatmentPlanRepository.save(treatmentPlan)));
     }
 

@@ -3,7 +3,6 @@ package com.kiniot.uflex.api.planning.interfaces.rest.transform;
 import com.kiniot.uflex.api.planning.domain.model.commands.UpdateTreatmentPlanCommand;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.PlanName;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanId;
-import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanStatus;
 import com.kiniot.uflex.api.planning.interfaces.rest.resources.UpdateTreatmentPlanResource;
 
 import java.util.UUID;
@@ -13,7 +12,6 @@ public class UpdateTreatmentPlanCommandFromResourceAssembler {
         return new UpdateTreatmentPlanCommand(
                 new TreatmentPlanId(UUID.fromString(treatmentPlanId)),
                 new PlanName(resource.name()),
-                TreatmentPlanStatus.valueOf(resource.status()),
                 TreatmentPlanPeriodFromResourceAssembler.toValueObjectFromResource(resource.period()));
     }
 }

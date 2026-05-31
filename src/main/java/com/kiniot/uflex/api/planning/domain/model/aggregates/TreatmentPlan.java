@@ -3,6 +3,7 @@ package com.kiniot.uflex.api.planning.domain.model.aggregates;
 import com.kiniot.uflex.api.planning.domain.model.commands.*;
 import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateRoutineOrderException;
 import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateRoutineScheduleException;
+import com.kiniot.uflex.api.planning.domain.exceptions.InvalidTreatmentPlanStatusTransitionException;
 import com.kiniot.uflex.api.planning.domain.exceptions.RoutineWithOrderNotFoundException;
 import com.kiniot.uflex.api.planning.domain.model.entities.Routine;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.PlanName;
@@ -64,8 +65,19 @@ public class TreatmentPlan extends AuditableAbstractAggregateRoot<TreatmentPlan,
 
     public void update(UpdateTreatmentPlanCommand command) {
         this.planName = command.name();
-        this.status = command.status();
         this.period = command.period();
+    }
+
+    public void activate() {
+        changeStatusTo(TreatmentPlanStatus.ACTIVE);
+    }
+
+    public void complete() {
+        changeStatusTo(TreatmentPlanStatus.COMPLETED);
+    }
+
+    public void cancel() {
+        changeStatusTo(TreatmentPlanStatus.CANCELED);
     }
 
     public void addRoutine(CreateRoutineCommand command) {
@@ -143,6 +155,24 @@ public class TreatmentPlan extends AuditableAbstractAggregateRoot<TreatmentPlan,
                 .filter(routine -> routine.getOrder().equals(order))
                 .findFirst()
                 .orElseThrow(() -> new RoutineWithOrderNotFoundException(order.value()));
+    }
+
+    private void changeStatusTo(TreatmentPlanStatus targetStatus) {
+        if (this.status == targetStatus) {
+            return;
+        }
+
+        boolean validTransition = switch (this.status) {
+            case SCHEDULED -> targetStatus == TreatmentPlanStatus.ACTIVE || targetStatus == TreatmentPlanStatus.CANCELED;
+            case ACTIVE -> targetStatus == TreatmentPlanStatus.COMPLETED || targetStatus == TreatmentPlanStatus.CANCELED;
+            case COMPLETED, CANCELED -> false;
+        };
+
+        if (!validTransition) {
+            throw new InvalidTreatmentPlanStatusTransitionException(this.status, targetStatus);
+        }
+
+        this.status = targetStatus;
     }
 
     @Override

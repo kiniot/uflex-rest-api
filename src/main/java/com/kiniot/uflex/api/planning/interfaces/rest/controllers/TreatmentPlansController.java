@@ -1,6 +1,9 @@
 package com.kiniot.uflex.api.planning.interfaces.rest.controllers;
 
 import com.kiniot.uflex.api.planning.domain.exceptions.TreatmentPlanWithIdNotFoundException;
+import com.kiniot.uflex.api.planning.domain.model.commands.ActivateTreatmentPlanCommand;
+import com.kiniot.uflex.api.planning.domain.model.commands.CancelTreatmentPlanCommand;
+import com.kiniot.uflex.api.planning.domain.model.commands.CompleteTreatmentPlanCommand;
 import com.kiniot.uflex.api.planning.domain.model.commands.RemoveRoutineCommand;
 import com.kiniot.uflex.api.planning.domain.model.commands.RemoveTreatmentPlanCommand;
 import com.kiniot.uflex.api.planning.domain.model.queries.GetAllTreatmentPlansQuery;
@@ -114,7 +117,7 @@ public class TreatmentPlansController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Update treatment plan",
-            description = "Updates the treatment plan with the specified identifier.")
+            description = "Updates the editable metadata of the treatment plan. This endpoint does not change the plan status.")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Updated treatment plan lifecycle data.",
             required = true,
@@ -125,7 +128,6 @@ public class TreatmentPlansController {
                             value = """
                                     {
                                       "name": "Forearm mobility plan - adjusted",
-                                      "status": "ACTIVE",
                                       "period": {
                                         "startsAt": "2026-06-01",
                                         "endsAt": "2026-06-21"
@@ -144,6 +146,72 @@ public class TreatmentPlansController {
                                                                      @RequestBody UpdateTreatmentPlanResource resource) {
         try {
             var command = UpdateTreatmentPlanCommandFromResourceAssembler.toCommandFromResource(id, resource);
+            return treatmentPlanCommandService.handle(command)
+                    .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
+                    .map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.badRequest().build());
+        } catch (TreatmentPlanWithIdNotFoundException exception) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
+        }
+    }
+
+    @PostMapping("/{id}/activate")
+    @Operation(summary = "Activate treatment plan",
+            description = "Activates the specified treatment plan. Valid transition: SCHEDULED to ACTIVE.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Treatment plan activated successfully"),
+            @ApiResponse(responseCode = "404", description = "Treatment plan not found"),
+            @ApiResponse(responseCode = "409", description = "Transition is invalid or the plan conflicts with another scheduled or active plan")
+    })
+    public ResponseEntity<TreatmentPlanResource> activateTreatmentPlan(@PathVariable String id) {
+        try {
+            var command = new ActivateTreatmentPlanCommand(new TreatmentPlanId(UUID.fromString(id)));
+            return treatmentPlanCommandService.handle(command)
+                    .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
+                    .map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.badRequest().build());
+        } catch (TreatmentPlanWithIdNotFoundException exception) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
+        }
+    }
+
+    @PostMapping("/{id}/complete")
+    @Operation(summary = "Complete treatment plan",
+            description = "Completes the specified treatment plan. Valid transition: ACTIVE to COMPLETED.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Treatment plan completed successfully"),
+            @ApiResponse(responseCode = "404", description = "Treatment plan not found"),
+            @ApiResponse(responseCode = "409", description = "Transition is invalid")
+    })
+    public ResponseEntity<TreatmentPlanResource> completeTreatmentPlan(@PathVariable String id) {
+        try {
+            var command = new CompleteTreatmentPlanCommand(new TreatmentPlanId(UUID.fromString(id)));
+            return treatmentPlanCommandService.handle(command)
+                    .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
+                    .map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.badRequest().build());
+        } catch (TreatmentPlanWithIdNotFoundException exception) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
+        }
+    }
+
+    @PostMapping("/{id}/cancel")
+    @Operation(summary = "Cancel treatment plan",
+            description = "Cancels the specified treatment plan. Valid transitions: SCHEDULED to CANCELED and ACTIVE to CANCELED.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Treatment plan canceled successfully"),
+            @ApiResponse(responseCode = "404", description = "Treatment plan not found"),
+            @ApiResponse(responseCode = "409", description = "Transition is invalid")
+    })
+    public ResponseEntity<TreatmentPlanResource> cancelTreatmentPlan(@PathVariable String id) {
+        try {
+            var command = new CancelTreatmentPlanCommand(new TreatmentPlanId(UUID.fromString(id)));
             return treatmentPlanCommandService.handle(command)
                     .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
                     .map(ResponseEntity::ok)
