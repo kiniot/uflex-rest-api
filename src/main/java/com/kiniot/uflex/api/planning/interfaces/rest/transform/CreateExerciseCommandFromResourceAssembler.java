@@ -4,6 +4,7 @@ import com.kiniot.uflex.api.planning.domain.model.commands.CreateExerciseCommand
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.BodyPart;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseDescription;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseName;
+import com.kiniot.uflex.api.planning.domain.model.valueobjects.MovementType;
 import com.kiniot.uflex.api.planning.interfaces.rest.resources.CreateExerciseResource;
 
 public class CreateExerciseCommandFromResourceAssembler {
@@ -11,6 +12,8 @@ public class CreateExerciseCommandFromResourceAssembler {
         return new CreateExerciseCommand(
                 new ExerciseName(resource.name()),
                 new ExerciseDescription(resource.description()),
-                new BodyPart(resource.bodyPart()));
+                BodyPart.valueOf(resource.bodyPart()),
+                MovementType.valueOf(resource.movementType()),
+                resource.videoUrl());
     }
 }

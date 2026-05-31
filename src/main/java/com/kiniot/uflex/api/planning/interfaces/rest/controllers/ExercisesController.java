@@ -14,6 +14,9 @@ import com.kiniot.uflex.api.planning.interfaces.rest.transform.CreateExerciseCom
 import com.kiniot.uflex.api.planning.interfaces.rest.transform.ExerciseResourceFromEntityAssembler;
 import com.kiniot.uflex.api.planning.interfaces.rest.transform.UpdateExerciseCommandFromResourceAssembler;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -76,7 +79,26 @@ public class ExercisesController {
 
     @PostMapping
     @Operation(summary = "Create exercise",
-            description = "Creates a new exercise in the exercise catalog.")
+            description = "Creates a new therapeutic exercise in the clinic exercise catalog.")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Exercise data to register in the catalog.",
+            required = true,
+            content = @Content(
+                    schema = @Schema(implementation = CreateExerciseResource.class),
+                    examples = @ExampleObject(
+                            name = "Create exercise",
+                            value = """
+                                    {
+                                      "name": "Wrist supination",
+                                      "description": "Controlled wrist supination exercise focused on forearm rotation.",
+                                      "bodyPart": "WRIST",
+                                      "movementType": "SUPINATION",
+                                      "videoUrl": "https://cdn.uflex.app/exercises/wrist-supination.mp4"
+                                    }
+                                    """
+                    )
+            )
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Exercise created successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input data")
@@ -95,7 +117,26 @@ public class ExercisesController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Update exercise",
-            description = "Updates the exercise with the specified identifier.")
+            description = "Updates the exercise with the specified identifier. Allowed bodyPart values: ELBOW, WRIST. Allowed movementType values: PRONATION, SUPINATION, FLEXION, EXTENSION. videoUrl is optional.")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Updated exercise data.",
+            required = true,
+            content = @Content(
+                    schema = @Schema(implementation = UpdateExerciseResource.class),
+                    examples = @ExampleObject(
+                            name = "Update exercise",
+                            value = """
+                                    {
+                                      "name": "Wrist supination progression",
+                                      "description": "Updated wrist supination exercise focused on controlled rotation and endurance.",
+                                      "bodyPart": "WRIST",
+                                      "movementType": "SUPINATION",
+                                      "videoUrl": "https://cdn.uflex.app/exercises/wrist-supination-v2.mp4"
+                                    }
+                                    """
+                    )
+            )
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Exercise updated successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input data"),

@@ -8,7 +8,6 @@ public class ExerciseSeriesResourceFromValueObjectAssembler {
         return new ExerciseSeriesResource(
                 valueObject.order().value(),
                 valueObject.exerciseId().id().toString(),
-                valueObject.movementType().name(),
                 valueObject.rangeOfMotion().degrees(),
                 valueObject.repetitions().value(),
                 valueObject.duration().seconds());

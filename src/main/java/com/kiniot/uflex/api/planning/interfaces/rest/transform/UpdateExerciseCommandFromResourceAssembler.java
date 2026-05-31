@@ -5,6 +5,7 @@ import com.kiniot.uflex.api.planning.domain.model.valueobjects.BodyPart;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseDescription;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseId;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseName;
+import com.kiniot.uflex.api.planning.domain.model.valueobjects.MovementType;
 import com.kiniot.uflex.api.planning.interfaces.rest.resources.UpdateExerciseResource;
 
 import java.util.UUID;
@@ -15,6 +16,8 @@ public class UpdateExerciseCommandFromResourceAssembler {
                 new ExerciseId(UUID.fromString(exerciseId)),
                 new ExerciseName(resource.name()),
                 new ExerciseDescription(resource.description()),
-                new BodyPart(resource.bodyPart()));
+                BodyPart.valueOf(resource.bodyPart()),
+                MovementType.valueOf(resource.movementType()),
+                resource.videoUrl());
     }
 }

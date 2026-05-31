@@ -4,7 +4,6 @@ import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseDuration;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseId;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseSeries;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseSeriesOrder;
-import com.kiniot.uflex.api.planning.domain.model.valueobjects.MovementType;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.RangeOfMotion;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.RepetitionCount;
 import com.kiniot.uflex.api.planning.interfaces.rest.resources.ExerciseSeriesRequestResource;
@@ -17,7 +16,6 @@ public class ExerciseSeriesFromResourceAssembler {
         return new ExerciseSeries(
                 new ExerciseSeriesOrder(resource.order()),
                 new ExerciseId(UUID.fromString(resource.exerciseId())),
-                MovementType.valueOf(resource.movementType()),
                 new RangeOfMotion(resource.rangeOfMotionDegrees()),
                 new RepetitionCount(resource.repetitions()),
                 new ExerciseDuration(resource.durationSeconds()));

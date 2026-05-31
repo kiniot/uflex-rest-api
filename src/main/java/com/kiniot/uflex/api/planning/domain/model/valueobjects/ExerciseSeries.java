@@ -10,9 +10,6 @@ public record ExerciseSeries(
     @Embedded
     @AttributeOverride(name = "id", column = @Column(name = "exercise_id", nullable = false, columnDefinition = "UUID"))
     ExerciseId exerciseId,
-    @Enumerated(EnumType.STRING)
-    @Column(name = "movement_type", nullable = false)
-    MovementType movementType,
     @Embedded
     @AttributeOverride(name = "degrees", column = @Column(name = "range_of_motion", nullable = false))
     RangeOfMotion rangeOfMotion,
@@ -28,9 +25,6 @@ public record ExerciseSeries(
         }
         if (exerciseId == null) {
             throw new IllegalArgumentException("Exercise Id cannot be null");
-        }
-        if (movementType == null) {
-            throw new IllegalArgumentException("Movement type cannot be null");
         }
         if (rangeOfMotion == null) {
             throw new IllegalArgumentException("Range of motion cannot be null");
