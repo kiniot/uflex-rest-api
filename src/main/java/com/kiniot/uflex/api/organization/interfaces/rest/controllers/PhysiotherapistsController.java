@@ -3,8 +3,8 @@ package com.kiniot.uflex.api.organization.interfaces.rest.controllers;
 import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalIamService;
 import com.kiniot.uflex.api.organization.domain.exceptions.ClinicNotFoundException;
 import com.kiniot.uflex.api.organization.domain.exceptions.UserNotFoundException;
+import com.kiniot.uflex.api.organization.domain.model.queries.GetCurrentPhysiotherapistQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPhysiotherapistByIdQuery;
-import com.kiniot.uflex.api.organization.domain.model.queries.GetPhysiotherapistByUserIdQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPatientsByPhysiotherapistIdQuery;
 import com.kiniot.uflex.api.organization.domain.services.PatientQueryService;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPhysiotherapistsByClinicIdQuery;
@@ -18,12 +18,16 @@ import com.kiniot.uflex.api.organization.interfaces.rest.transform.Physiotherapi
 import com.kiniot.uflex.api.organization.interfaces.rest.transform.RegisterPhysiotherapistCommandFromResourceAssembler;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PhysiotherapistId;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -59,7 +63,32 @@ public class PhysiotherapistsController {
     @PostMapping
     @Operation(
             summary = "Register a physiotherapist as a clinic administrator",
-            description = "Creates a physiotherapist profile in the authenticated clinic administrator's clinic."
+            description = "Creates a physiotherapist profile in the authenticated clinic administrator's clinic. "
+                    + "This also provisions the IAM user for that physiotherapist using the provided email."
+    )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Physiotherapist profile data. `specialty` must be one of the documented enum values, "
+                    + "`licenseNumber` must follow the accepted CMP/CTTMP-style format, and the phone must be sent as country code plus local number.",
+            required = true,
+            content = @Content(
+                    schema = @Schema(implementation = RegisterPhysiotherapistResource.class),
+                    examples = @ExampleObject(
+                            name = "Register physiotherapist",
+                            value = """
+                                    {
+                                      "fullName": "Pepito Perez",
+                                      "specialty": "NEUROLOGICAL",
+                                      "email": "fisio@gmail.com",
+                                      "countryCode": "+51",
+                                      "phoneNumber": "987654321",
+                                      "licenseNumber": "CPT12345",
+                                      "professionalSummary": "Fisioterapeuta especializado en rehabilitacion neurologica con mas de 10 anos de experiencia",
+                                      "photoUrl": "https://example.com/photos/pepe.jpg",
+                                      "yearsOfExperience": 10
+                                    }
+                                    """
+                    )
+            )
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Physiotherapist created successfully"),
@@ -93,6 +122,24 @@ public class PhysiotherapistsController {
         return ResponseEntity.ok(PhysiotherapistResourceFromEntityAssembler.toResourceFromEntity(physiotherapist.get()));
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("hasAuthority('ROLE_PHYSIOTHERAPIST')")
+    @Operation(
+            summary = "Get current physiotherapist profile",
+            description = "Returns the physiotherapist profile associated with the authenticated user."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Current physiotherapist retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - missing or invalid token"),
+            @ApiResponse(responseCode = "404", description = "Authenticated physiotherapist profile not found"),
+    })
+    public ResponseEntity<PhysiotherapistResource> getCurrentPhysiotherapist() {
+        return physiotherapistQueryService.handle(new GetCurrentPhysiotherapistQuery())
+                .map(PhysiotherapistResourceFromEntityAssembler::toResourceFromEntity)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @GetMapping
     @Operation(
             summary = "List physiotherapists in the authenticated clinic",
@@ -122,9 +169,7 @@ public class PhysiotherapistsController {
             @ApiResponse(responseCode = "404", description = "Authenticated physiotherapist profile not found"),
     })
     public ResponseEntity<List<PatientResource>> getMyPatients() {
-        var userId = externalIamService.fetchCurrentUserId()
-                .orElseThrow(() -> new UserNotFoundException("Current user not found"));
-        var physiotherapist = physiotherapistQueryService.handle(new GetPhysiotherapistByUserIdQuery(userId))
+        var physiotherapist = physiotherapistQueryService.handle(new GetCurrentPhysiotherapistQuery())
                 .orElseThrow(() -> new UserNotFoundException("Physiotherapist profile not found"));
         var patients = patientQueryService.handle(new GetPatientsByPhysiotherapistIdQuery(physiotherapist.getId()));
         var resources = patients.stream()

@@ -1,6 +1,9 @@
 package com.kiniot.uflex.api.organization.application.internal.queryservices;
 
+import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalIamService;
+import com.kiniot.uflex.api.organization.domain.exceptions.UserNotFoundException;
 import com.kiniot.uflex.api.organization.domain.model.aggregates.Patient;
+import com.kiniot.uflex.api.organization.domain.model.queries.GetCurrentPatientQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPatientByIdQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPatientByUserIdQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPatientsByClinicIdQuery;
@@ -16,9 +19,21 @@ import java.util.Optional;
 public class PatientQueryServiceImpl implements PatientQueryService {
 
     private final PatientRepository patientRepository;
+    private final ExternalIamService externalIamService;
 
-    public PatientQueryServiceImpl(PatientRepository patientRepository) {
+    public PatientQueryServiceImpl(
+            PatientRepository patientRepository,
+            ExternalIamService externalIamService
+    ) {
         this.patientRepository = patientRepository;
+        this.externalIamService = externalIamService;
+    }
+
+    @Override
+    public Optional<Patient> handle(GetCurrentPatientQuery query) {
+        var userId = externalIamService.fetchCurrentUserId()
+                .orElseThrow(() -> new UserNotFoundException("Current user not found"));
+        return patientRepository.findByUserId(userId);
     }
 
     @Override

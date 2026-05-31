@@ -1,13 +1,13 @@
 package com.kiniot.uflex.api.organization.application.internal.commandservices;
 
 import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalIamService;
+import com.kiniot.uflex.api.organization.domain.exceptions.ClinicNotFoundException;
 import com.kiniot.uflex.api.organization.domain.exceptions.UserNotFoundException;
 import com.kiniot.uflex.api.organization.domain.model.entities.ClinicAdmin;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterClinicAdminCommand;
 import com.kiniot.uflex.api.organization.domain.services.ClinicAdminCommandService;
 import com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.repositories.ClinicAdminRepository;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
-import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -33,7 +33,7 @@ public class ClinicAdminCommandServiceImpl implements ClinicAdminCommandService 
         var userId = externalIamService.fetchCurrentUserId()
                 .orElseThrow(() -> new UserNotFoundException("Current user not found"));
         var clinicId = externalIamService.fetchCurrentClinicId()
-                .orElseThrow(() -> new com.kiniot.uflex.api.organization.domain.exceptions.ClinicNotFoundException("Current clinic not found"));
+                .orElseThrow(() -> new ClinicNotFoundException("Current clinic not found"));
         var userEmail = externalIamService.fetchUserEmailAddressByUserId(userId.id().toString())
                 .orElseThrow(() -> new IllegalArgumentException("User email not found"));
 

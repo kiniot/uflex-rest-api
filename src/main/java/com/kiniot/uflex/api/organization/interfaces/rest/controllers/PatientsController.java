@@ -4,10 +4,11 @@ import com.kiniot.uflex.api.organization.application.internal.outboundservices.a
 import com.kiniot.uflex.api.organization.domain.exceptions.UserNotFoundException;
 import com.kiniot.uflex.api.organization.domain.model.commands.AssignPatientToPhysiotherapistCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.DischargePatientCommand;
+import com.kiniot.uflex.api.organization.domain.model.queries.GetCurrentPatientQuery;
+import com.kiniot.uflex.api.organization.domain.model.queries.GetCurrentPhysiotherapistQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPatientByIdQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPatientsByClinicIdQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPatientsByPhysiotherapistIdQuery;
-import com.kiniot.uflex.api.organization.domain.model.queries.GetPhysiotherapistByUserIdQuery;
 import com.kiniot.uflex.api.organization.domain.services.PatientCommandService;
 import com.kiniot.uflex.api.organization.domain.services.PatientQueryService;
 import com.kiniot.uflex.api.organization.domain.services.PhysiotherapistQueryService;
@@ -58,14 +59,16 @@ public class PatientsController {
         this.externalIamService = externalIamService;
     }
 
-    @PostMapping
+    @PostMapping(value = "/by-clinic-admin")
     @Operation(
             summary = "Register a patient as a clinic administrator",
             description = "Creates a patient profile in the authenticated clinic administrator's clinic. "
                     + "The patient may also be assigned to a physiotherapist from the same clinic."
     )
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Patient profile data to register from a clinic administrator context.",
+            description = "Patient profile data to register from a clinic administrator context. "
+                    + "`gender` must be `MALE`, `FEMALE`, or `OTHER`. "
+                    + "If `assignedPhysiotherapistId` is provided, it must belong to the same clinic.",
             required = true,
             content = @Content(
                     schema = @Schema(implementation = RegisterPatientByClinicAdminResource.class),
@@ -112,7 +115,9 @@ public class PatientsController {
                     + "the patient to that physiotherapist."
     )
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Patient profile data to register from a physiotherapist context. The physiotherapist assignment is inferred from the authenticated user.",
+            description = "Patient profile data to register from a physiotherapist context. "
+                    + "`gender` must be `MALE`, `FEMALE`, or `OTHER`. "
+                    + "The physiotherapist assignment is inferred from the authenticated user.",
             required = true,
             content = @Content(
                     schema = @Schema(implementation = RegisterPatientByPhysiotherapistResource.class),
@@ -142,9 +147,7 @@ public class PatientsController {
     })
     @PreAuthorize("hasAuthority('ROLE_PHYSIOTHERAPIST')")
     public ResponseEntity<PatientResource> registerPatientByPhysiotherapist(@RequestBody RegisterPatientByPhysiotherapistResource resource) {
-        var userId = externalIamService.fetchCurrentUserId()
-                .orElseThrow(() -> new UserNotFoundException("Current user not found"));
-        var physiotherapist = physiotherapistQueryService.handle(new GetPhysiotherapistByUserIdQuery(userId))
+        var physiotherapist = physiotherapistQueryService.handle(new GetCurrentPhysiotherapistQuery())
                 .orElseThrow(() -> new UserNotFoundException("Physiotherapist profile not found"));
 
         var command = RegisterPatientCommandFromResourceAssembler.toRegisterPatientByPhysiotherapistCommand(resource, physiotherapist.getId());
@@ -172,6 +175,24 @@ public class PatientsController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(PatientResourceFromEntityAssembler.toResourceFromEntity(patient.get()));
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasAuthority('ROLE_PATIENT')")
+    @Operation(
+            summary = "Get current patient profile",
+            description = "Returns the patient profile associated with the authenticated user."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Current patient retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - missing or invalid token"),
+            @ApiResponse(responseCode = "404", description = "Authenticated patient profile not found"),
+    })
+    public ResponseEntity<PatientResource> getCurrentPatient() {
+        return patientQueryService.handle(new GetCurrentPatientQuery())
+                .map(PatientResourceFromEntityAssembler::toResourceFromEntity)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping
@@ -256,9 +277,7 @@ public class PatientsController {
             @ApiResponse(responseCode = "400", description = "Invalid input or patient not found"),
     })
     public ResponseEntity<Void> dischargePatient(@PathVariable String id) {
-        var userId = externalIamService.fetchCurrentUserId()
-                .orElseThrow(() -> new UserNotFoundException("Current user not found"));
-        var physiotherapist = physiotherapistQueryService.handle(new GetPhysiotherapistByUserIdQuery(userId))
+        var physiotherapist = physiotherapistQueryService.handle(new GetCurrentPhysiotherapistQuery())
                 .orElseThrow(() -> new UserNotFoundException("Physiotherapist profile not found"));
 
         var patient = patientQueryService.handle(new GetPatientByIdQuery(new PatientId(UUID.fromString(id))))

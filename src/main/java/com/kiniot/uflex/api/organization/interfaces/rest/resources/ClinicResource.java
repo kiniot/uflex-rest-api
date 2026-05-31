@@ -1,7 +1,5 @@
 package com.kiniot.uflex.api.organization.interfaces.rest.resources;
 
-import java.time.LocalDateTime;
-
 public record ClinicResource(
         String id,
         String legalName,
@@ -9,7 +7,5 @@ public record ClinicResource(
         String ruc,
         String email,
         String countryCode,
-        String phoneNumber,
-        String createdAt,
-        String updatedAt
+        String phoneNumber
 ) {}
