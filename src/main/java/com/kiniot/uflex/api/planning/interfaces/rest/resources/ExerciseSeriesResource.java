@@ -5,6 +5,7 @@ public record ExerciseSeriesResource(
         String exerciseId,
         Integer rangeOfMotionDegrees,
         Integer repetitions,
-        Integer durationSeconds
+        Integer durationSeconds,
+        Integer restDurationSeconds
 ) {
 }

@@ -10,16 +10,17 @@ import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanId;
 import com.kiniot.uflex.api.planning.domain.services.TreatmentPlanCommandService;
 import com.kiniot.uflex.api.planning.domain.services.TreatmentPlanQueryService;
 import com.kiniot.uflex.api.planning.interfaces.rest.resources.CreateRoutineResource;
-import com.kiniot.uflex.api.planning.interfaces.rest.resources.CreateTreatmentPlanResource;
 import com.kiniot.uflex.api.planning.interfaces.rest.resources.TreatmentPlanResource;
 import com.kiniot.uflex.api.planning.interfaces.rest.resources.UpdateRoutineResource;
 import com.kiniot.uflex.api.planning.interfaces.rest.resources.UpdateTreatmentPlanResource;
 import com.kiniot.uflex.api.planning.interfaces.rest.transform.CreateRoutineCommandFromResourceAssembler;
-import com.kiniot.uflex.api.planning.interfaces.rest.transform.CreateTreatmentPlanCommandFromResourceAssembler;
 import com.kiniot.uflex.api.planning.interfaces.rest.transform.TreatmentPlanResourceFromEntityAssembler;
 import com.kiniot.uflex.api.planning.interfaces.rest.transform.UpdateRoutineCommandFromResourceAssembler;
 import com.kiniot.uflex.api.planning.interfaces.rest.transform.UpdateTreatmentPlanCommandFromResourceAssembler;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -81,29 +82,29 @@ public class TreatmentPlansController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @PostMapping
-    @Operation(summary = "Create treatment plan",
-            description = "Creates a new treatment plan for the authenticated user's clinic.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Treatment plan created successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid input data"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized or authenticated user has no clinic")
-    })
-    public ResponseEntity<TreatmentPlanResource> createTreatmentPlan(@RequestBody CreateTreatmentPlanResource resource) {
-        try {
-            var command = CreateTreatmentPlanCommandFromResourceAssembler.toCommandFromResource(resource);
-            return treatmentPlanCommandService.handle(command)
-                    .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
-                    .map(treatmentPlan -> new ResponseEntity<>(treatmentPlan, HttpStatus.CREATED))
-                    .orElseGet(() -> ResponseEntity.badRequest().build());
-        } catch (IllegalArgumentException | IllegalStateException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
-        }
-    }
-
     @PutMapping("/{id}")
     @Operation(summary = "Update treatment plan",
             description = "Updates the treatment plan with the specified identifier.")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Updated treatment plan lifecycle data.",
+            required = true,
+            content = @Content(
+                    schema = @Schema(implementation = UpdateTreatmentPlanResource.class),
+                    examples = @ExampleObject(
+                            name = "Update treatment plan",
+                            value = """
+                                    {
+                                      "name": "Forearm mobility plan - adjusted",
+                                      "status": "ACTIVE",
+                                      "period": {
+                                        "startsAt": "2026-06-01",
+                                        "endsAt": "2026-06-21"
+                                      }
+                                    }
+                                    """
+                    )
+            )
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Treatment plan updated successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input data"),
@@ -144,17 +145,48 @@ public class TreatmentPlansController {
         }
     }
 
-    @PostMapping("/routines")
+    @PostMapping("/{treatmentPlanId}/routines")
     @Operation(summary = "Add routine to treatment plan",
             description = "Creates a new routine inside the specified treatment plan.")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Routine data to add to the treatment plan.",
+            required = true,
+            content = @Content(
+                    schema = @Schema(implementation = CreateRoutineResource.class),
+                    examples = @ExampleObject(
+                            name = "Add routine",
+                            value = """
+                                    {
+                                      "name": "Wednesday mobility",
+                                      "order": 2,
+                                      "schedule": {
+                                        "dayOfWeek": "WEDNESDAY",
+                                        "scheduledTime": "08:00:00"
+                                      },
+                                      "exerciseSeries": [
+                                        {
+                                          "order": 1,
+                                          "exerciseId": "019e1e7d-80c3-71c5-ae4b-2358fa9ae43c",
+                                          "rangeOfMotionDegrees": 70,
+                                          "repetitions": 10,
+                                          "durationSeconds": 50,
+                                          "restDurationSeconds": 25
+                                        }
+                                      ]
+                                    }
+                                    """
+                    )
+            )
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Routine created successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input data"),
             @ApiResponse(responseCode = "404", description = "Treatment plan not found")
     })
-    public ResponseEntity<TreatmentPlanResource> createRoutine(@RequestBody CreateRoutineResource resource) {
+    public ResponseEntity<TreatmentPlanResource> createRoutine(@PathVariable String treatmentPlanId,
+                                                               @RequestBody CreateRoutineResource resource) {
         try {
-            var command = CreateRoutineCommandFromResourceAssembler.toCommandFromResource(resource);
+            var command = CreateRoutineCommandFromResourceAssembler.toCommandFromResource(treatmentPlanId, resource);
             return treatmentPlanCommandService.handle(command)
                     .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
                     .map(ResponseEntity::ok)
@@ -166,17 +198,49 @@ public class TreatmentPlansController {
         }
     }
 
-    @PutMapping("/routines")
+    @PutMapping("/{treatmentPlanId}/routines/{routineOrder}")
     @Operation(summary = "Update routine",
             description = "Updates an existing routine inside the specified treatment plan.")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Updated routine data.",
+            required = true,
+            content = @Content(
+                    schema = @Schema(implementation = UpdateRoutineResource.class),
+                    examples = @ExampleObject(
+                            name = "Update routine",
+                            value = """
+                                    {
+                                      "name": "Wednesday mobility progression",
+                                      "newOrder": 2,
+                                      "schedule": {
+                                        "dayOfWeek": "WEDNESDAY",
+                                        "scheduledTime": "09:00:00"
+                                      },
+                                      "exerciseSeries": [
+                                        {
+                                          "order": 1,
+                                          "exerciseId": "019e1e7d-80c3-71c5-ae4b-2358fa9ae43c",
+                                          "rangeOfMotionDegrees": 80,
+                                          "repetitions": 12,
+                                          "durationSeconds": 55,
+                                          "restDurationSeconds": 30
+                                        }
+                                      ]
+                                    }
+                                    """
+                    )
+            )
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Routine updated successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input data"),
             @ApiResponse(responseCode = "404", description = "Treatment plan or routine not found")
     })
-    public ResponseEntity<TreatmentPlanResource> updateRoutine(@RequestBody UpdateRoutineResource resource) {
+    public ResponseEntity<TreatmentPlanResource> updateRoutine(@PathVariable String treatmentPlanId,
+                                                               @PathVariable Integer routineOrder,
+                                                               @RequestBody UpdateRoutineResource resource) {
         try {
-            var command = UpdateRoutineCommandFromResourceAssembler.toCommandFromResource(resource);
+            var command = UpdateRoutineCommandFromResourceAssembler.toCommandFromResource(treatmentPlanId, routineOrder, resource);
             return treatmentPlanCommandService.handle(command)
                     .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
                     .map(ResponseEntity::ok)

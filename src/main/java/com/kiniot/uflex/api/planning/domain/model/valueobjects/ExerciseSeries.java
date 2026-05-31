@@ -17,7 +17,9 @@ public record ExerciseSeries(
     @AttributeOverride(name = "value", column = @Column(name = "repetitions", nullable = false))
     RepetitionCount repetitions,
     @Embedded
-    ExerciseDuration duration
+    ExerciseDuration duration,
+    @Embedded
+    RestDuration restDuration
 ) {
     public ExerciseSeries {
         if (order == null) {
@@ -34,6 +36,9 @@ public record ExerciseSeries(
         }
         if (duration == null) {
             throw new IllegalArgumentException("Duration cannot be null");
+        }
+        if (restDuration == null) {
+            throw new IllegalArgumentException("Rest duration cannot be null");
         }
     }
 }

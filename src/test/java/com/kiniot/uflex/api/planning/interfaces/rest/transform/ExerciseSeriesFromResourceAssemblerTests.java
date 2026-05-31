@@ -13,7 +13,7 @@ class ExerciseSeriesFromResourceAssemblerTests {
     @Test
     void toValueObjectFromResourceMapsSeriesWithoutMovementType() {
         var exerciseId = UUID.randomUUID().toString();
-        var resource = new ExerciseSeriesRequestResource(1, exerciseId, 60, 12, 45);
+        var resource = new ExerciseSeriesRequestResource(1, exerciseId, 60, 12, 45, 20);
 
         var valueObject = ExerciseSeriesFromResourceAssembler.toValueObjectFromResource(resource);
 
@@ -22,6 +22,7 @@ class ExerciseSeriesFromResourceAssemblerTests {
         assertEquals(60, valueObject.rangeOfMotion().degrees());
         assertEquals(12, valueObject.repetitions().value());
         assertEquals(45, valueObject.duration().seconds());
+        assertEquals(20, valueObject.restDuration().seconds());
     }
 
     @Test

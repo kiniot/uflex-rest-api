@@ -10,6 +10,7 @@ public class ExerciseSeriesResourceFromValueObjectAssembler {
                 valueObject.exerciseId().id().toString(),
                 valueObject.rangeOfMotion().degrees(),
                 valueObject.repetitions().value(),
-                valueObject.duration().seconds());
+                valueObject.duration().seconds(),
+                valueObject.restDuration().seconds());
     }
 }

@@ -8,6 +8,7 @@ import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
 import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -53,9 +54,6 @@ public class Patient extends AuditableAbstractAggregateRoot<Patient, PatientId> 
 
     @Embedded
     private PhysiotherapistId assignedPhysiotherapistId;
-
-    @Embedded
-    private TreatmentPlanId treatmentPlanId;
 
     @Enumerated(EnumType.STRING)
     private PatientStatus status;
@@ -145,13 +143,6 @@ public class Patient extends AuditableAbstractAggregateRoot<Patient, PatientId> 
                 physiotherapistId,
                 this.clinicId
         ));
-    }
-
-    public void assignTreatmentPlan(TreatmentPlanId treatmentPlanId) {
-        if (this.treatmentPlanId != null) {
-            throw new IllegalStateException("Patient already has a treatment plan assigned");
-        }
-        this.treatmentPlanId = treatmentPlanId;
     }
 
     public void updateMedicalCondition(MedicalCondition condition) {
