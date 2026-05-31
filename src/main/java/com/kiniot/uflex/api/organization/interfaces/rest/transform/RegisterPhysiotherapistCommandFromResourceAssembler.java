@@ -10,7 +10,7 @@ public class RegisterPhysiotherapistCommandFromResourceAssembler {
     public static RegisterPhysiotherapistCommand toCommandFromResource(RegisterPhysiotherapistResource resource) {
         return new RegisterPhysiotherapistCommand(
                 resource.fullName(),
-                Specialty.valueOf(resource.specialty().toUpperCase()),
+                parseSpecialty(resource.specialty()),
                 new Email(resource.email()),
                 new PhoneNumber(resource.countryCode(), resource.phoneNumber()),
                 new LicenseNumber(resource.licenseNumber()),
@@ -18,5 +18,20 @@ public class RegisterPhysiotherapistCommandFromResourceAssembler {
                 new PhotoUrl(resource.photoUrl()),
                 resource.yearsOfExperience()
         );
+    }
+
+    private static Specialty parseSpecialty(String specialty) {
+        if (specialty == null || specialty.isBlank()) {
+            throw new IllegalArgumentException("Specialty cannot be null or blank");
+        }
+
+        try {
+            return Specialty.valueOf(specialty.trim().toUpperCase());
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException(
+                    "Invalid specialty '%s'. Allowed values: %s"
+                            .formatted(specialty, String.join(", ", Specialty.valuesAsStrings()))
+            );
+        }
     }
 }

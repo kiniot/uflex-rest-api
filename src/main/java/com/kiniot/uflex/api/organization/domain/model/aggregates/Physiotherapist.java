@@ -36,7 +36,8 @@ public class Physiotherapist extends AuditableAbstractAggregateRoot<Physiotherap
 
     private String fullName;
 
-    @Embedded
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
     private Specialty specialty;
 
     @Embedded
