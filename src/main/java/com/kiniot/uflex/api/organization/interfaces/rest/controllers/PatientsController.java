@@ -60,9 +60,9 @@ public class PatientsController {
 
     @PostMapping
     @Operation(
-            summary = "Register a new patient as clinic admin",
-            description = "Creates a patient profile under the authenticated clinic administrator's clinic. "
-                    + "This endpoint may optionally assign the patient to a physiotherapist from the same clinic."
+            summary = "Register a patient as a clinic administrator",
+            description = "Creates a patient profile in the authenticated clinic administrator's clinic. "
+                    + "The patient may also be assigned to a physiotherapist from the same clinic."
     )
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Patient profile data to register from a clinic administrator context.",
@@ -107,9 +107,9 @@ public class PatientsController {
 
     @PostMapping(value = "/by-physiotherapist")
     @Operation(
-            summary = "Register a new patient as physiotherapist",
-            description = "Creates a patient profile under the authenticated physiotherapist's clinic and automatically assigns "
-                    + "the patient to that same physiotherapist as part of the registration flow."
+            summary = "Register a patient as a physiotherapist",
+            description = "Creates a patient profile in the authenticated physiotherapist's clinic and automatically assigns "
+                    + "the patient to that physiotherapist."
     )
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Patient profile data to register from a physiotherapist context. The physiotherapist assignment is inferred from the authenticated user.",
@@ -157,7 +157,10 @@ public class PatientsController {
     }
 
     @GetMapping(value = "/{id}")
-    @Operation(summary = "Get patient by ID", description = "CLINIC ADMIN or PHYSIOTHERAPIST: Retrieves a patient by their ID")
+    @Operation(
+            summary = "Get a patient by ID",
+            description = "Retrieves a patient by ID. This endpoint is intended for clinic administrators and physiotherapists."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Patient found"),
             @ApiResponse(responseCode = "404", description = "Patient not found"),
@@ -172,7 +175,10 @@ public class PatientsController {
     }
 
     @GetMapping
-    @Operation(summary = "Get all patients for clinic", description = "CLINIC ADMIN: Retrieves all patients belonging to the admin's clinic")
+    @Operation(
+            summary = "List patients in the authenticated clinic",
+            description = "Returns all patients who belong to the authenticated clinic administrator's clinic."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Patients retrieved successfully"),
     })
@@ -187,7 +193,10 @@ public class PatientsController {
     }
 
     @GetMapping(value = "/by-clinic/{clinicId}")
-    @Operation(summary = "Get all patients by clinic ID", description = "CLINIC ADMIN: Retrieves all patients belonging to a specific clinic")
+    @Operation(
+            summary = "List patients by clinic ID",
+            description = "Returns all patients who belong to the specified clinic. This endpoint is intended for clinic administrators."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Patients retrieved successfully"),
     })
@@ -201,7 +210,10 @@ public class PatientsController {
     }
 
     @GetMapping(value = "/by-physiotherapist/{physiotherapistId}")
-    @Operation(summary = "Get all patients by physiotherapist ID", description = "CLINIC ADMIN or PHYSIOTHERAPIST: Retrieves all patients assigned to a specific physiotherapist")
+    @Operation(
+            summary = "List patients by physiotherapist ID",
+            description = "Returns all patients assigned to the specified physiotherapist. This endpoint is intended for clinic administrators and physiotherapists."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Patients retrieved successfully"),
     })
@@ -215,7 +227,10 @@ public class PatientsController {
     }
 
     @PutMapping(value = "/{id}/assign")
-    @Operation(summary = "Assign patient to physiotherapist", description = "CLINIC ADMIN: Assigns a patient to a physiotherapist within the same clinic")
+    @Operation(
+            summary = "Assign a patient to a physiotherapist",
+            description = "Assigns a patient to a physiotherapist within the same clinic. This endpoint is intended for clinic administrators."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Patient assigned successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input or patient not found"),
@@ -232,7 +247,10 @@ public class PatientsController {
     }
 
     @PutMapping(value = "/{id}/discharge")
-    @Operation(summary = "Discharge patient", description = "PHYSIOTHERAPIST: Changes patient status to DISCHARGED (only own patients)")
+    @Operation(
+            summary = "Discharge a patient",
+            description = "Marks a patient as discharged. The authenticated physiotherapist may discharge only patients assigned to them."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Patient discharged successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input or patient not found"),

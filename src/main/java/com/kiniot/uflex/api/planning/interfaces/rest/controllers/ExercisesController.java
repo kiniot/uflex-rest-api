@@ -117,7 +117,7 @@ public class ExercisesController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Update exercise",
-            description = "Updates the exercise with the specified identifier. Allowed bodyPart values: ELBOW, WRIST. Allowed movementType values: PRONATION, SUPINATION, FLEXION, EXTENSION. videoUrl is optional.")
+            description = "Updates the exercise with the specified identifier.")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Updated exercise data.",
             required = true,

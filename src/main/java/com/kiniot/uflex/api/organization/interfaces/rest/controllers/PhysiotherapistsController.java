@@ -57,7 +57,10 @@ public class PhysiotherapistsController {
     }
 
     @PostMapping
-    @Operation(summary = "Register a new physiotherapist", description = "Creates a new physiotherapist profile for the authenticated user")
+    @Operation(
+            summary = "Register a physiotherapist as a clinic administrator",
+            description = "Creates a physiotherapist profile in the authenticated clinic administrator's clinic."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Physiotherapist created successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input data"),
@@ -73,7 +76,10 @@ public class PhysiotherapistsController {
     }
 
     @GetMapping(value = "/{id}")
-    @Operation(summary = "Get physiotherapist by ID", description = "Retrieves a physiotherapist by their ID")
+    @Operation(
+            summary = "Get a physiotherapist by ID",
+            description = "Retrieves a physiotherapist by ID."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Physiotherapist found"),
             @ApiResponse(responseCode = "404", description = "Physiotherapist not found"),
@@ -88,7 +94,10 @@ public class PhysiotherapistsController {
     }
 
     @GetMapping
-    @Operation(summary = "Get all physiotherapists for current clinic", description = "Retrieves all physiotherapists belonging to the authenticated user's clinic")
+    @Operation(
+            summary = "List physiotherapists in the authenticated clinic",
+            description = "Returns all physiotherapists who belong to the authenticated user's clinic."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Physiotherapists retrieved successfully"),
     })
@@ -104,7 +113,10 @@ public class PhysiotherapistsController {
     }
 
     @GetMapping(value = "/me/patients")
-    @Operation(summary = "Get my patients", description = "PHYSIOTHERAPIST: Retrieves all patients assigned to the authenticated physiotherapist")
+    @Operation(
+            summary = "List patients assigned to the authenticated physiotherapist",
+            description = "Returns all patients assigned to the authenticated physiotherapist."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Patients retrieved successfully"),
             @ApiResponse(responseCode = "404", description = "Authenticated physiotherapist profile not found"),
