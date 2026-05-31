@@ -8,4 +8,6 @@ public interface OrganizationContextFacade {
     boolean existsPatientByIdAndClinicId(String patientId, String clinicId);
 
     List<String> findPatientIdsByPhysiotherapistIdAndClinicId(String physiotherapistId, String clinicId);
+
+    String findPatientIdByUserId(String userId);
 }

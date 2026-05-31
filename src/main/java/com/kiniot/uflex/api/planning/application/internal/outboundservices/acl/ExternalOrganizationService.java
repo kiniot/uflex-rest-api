@@ -1,11 +1,13 @@
 package com.kiniot.uflex.api.planning.application.internal.outboundservices.acl;
 
 import com.kiniot.uflex.api.organization.interfaces.acl.OrganizationContextFacade;
+import com.kiniot.uflex.api.planning.domain.exceptions.CurrentUserPatientProfileNotFoundException;
 import com.kiniot.uflex.api.planning.domain.exceptions.PatientClinicMismatchException;
 import com.kiniot.uflex.api.planning.domain.exceptions.PatientWithIdNotFoundException;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PhysiotherapistId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -40,5 +42,13 @@ public class ExternalOrganizationService {
                 .map(java.util.UUID::fromString)
                 .map(PatientId::new)
                 .toList();
+    }
+
+    public PatientId findPatientIdByUserId(UserId userId) {
+        var patientId = organizationContextFacade.findPatientIdByUserId(userId.id().toString());
+        if (patientId == null || patientId.isBlank()) {
+            throw new CurrentUserPatientProfileNotFoundException();
+        }
+        return new PatientId(java.util.UUID.fromString(patientId));
     }
 }

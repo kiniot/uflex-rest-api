@@ -16,6 +16,7 @@ import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateRoutineOrderExce
 import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateRoutineScheduleException;
 import com.kiniot.uflex.api.planning.domain.exceptions.ExerciseClinicMismatchException;
 import com.kiniot.uflex.api.planning.domain.exceptions.ExerciseWithIdNotFoundException;
+import com.kiniot.uflex.api.planning.domain.exceptions.CurrentUserPatientProfileNotFoundException;
 import com.kiniot.uflex.api.planning.domain.exceptions.InvalidTreatmentPlanStatusTransitionException;
 import com.kiniot.uflex.api.planning.domain.exceptions.OverlappingTreatmentPlanPeriodException;
 import com.kiniot.uflex.api.planning.domain.exceptions.PatientAlreadyHasActiveTreatmentPlanException;
@@ -70,6 +71,7 @@ public class GlobalExceptionHandler {
             ExerciseWithIdNotFoundException.class,
             RoutineWithOrderNotFoundException.class,
             PatientWithIdNotFoundException.class,
+            CurrentUserPatientProfileNotFoundException.class,
             AuthenticatedUserClinicNotFoundException.class
     })
     public ResponseEntity<ErrorResource> handleNotFoundExceptions(RuntimeException exception, HttpServletRequest request) {

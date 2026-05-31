@@ -5,6 +5,7 @@ import com.kiniot.uflex.api.organization.interfaces.acl.OrganizationContextFacad
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PhysiotherapistId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -40,5 +41,12 @@ public class OrganizationContextFacadeImpl implements OrganizationContextFacade 
                 ).stream()
                 .map(patient -> patient.getId().patientId().toString())
                 .toList();
+    }
+
+    @Override
+    public String findPatientIdByUserId(String userId) {
+        return patientRepository.findByUserId(new UserId(UUID.fromString(userId)))
+                .map(patient -> patient.getId().patientId().toString())
+                .orElse("");
     }
 }
