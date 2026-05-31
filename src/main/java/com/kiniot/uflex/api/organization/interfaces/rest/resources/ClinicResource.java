@@ -7,5 +7,6 @@ public record ClinicResource(
         String ruc,
         String email,
         String countryCode,
-        String phoneNumber
+        String phoneNumber,
+        AddressResource address
 ) {}

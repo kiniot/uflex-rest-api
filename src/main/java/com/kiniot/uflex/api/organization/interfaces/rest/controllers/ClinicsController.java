@@ -52,7 +52,9 @@ public class ClinicsController {
     )
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Clinic registration data. `ruc` must contain exactly 11 digits, "
-                    + "`legalName` and `commercialName` are required, and the phone must be sent as country code plus local number.",
+                    + "`legalName` and `commercialName` are required, the phone must be sent as country code plus local number, "
+                    + "and `address.countryCode` must be a valid ISO 3166-1 alpha-2 code such as `PE` or `US`. "
+                    + "`address.addressLine2` and `address.postalCode` are optional.",
             required = true,
             content = @Content(
                     schema = @Schema(implementation = RegisterClinicResource.class),
@@ -65,7 +67,15 @@ public class ClinicsController {
                                       "ruc": "20601234567",
                                       "email": "contacto@rehabcenter.pe",
                                       "countryCode": "+51",
-                                      "phoneNumber": "987654321"
+                                      "phoneNumber": "987654321",
+                                      "address": {
+                                        "countryCode": "PE",
+                                        "region": "Lima",
+                                        "city": "Lima",
+                                        "addressLine1": "Av. Javier Prado Este 1234",
+                                        "addressLine2": "Piso 4",
+                                        "postalCode": "15036"
+                                      }
                                     }
                                     """
                     )
