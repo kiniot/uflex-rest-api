@@ -2,12 +2,18 @@ package com.kiniot.uflex.api.organization.interfaces.rest.controllers;
 
 import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalIamService;
 import com.kiniot.uflex.api.organization.domain.exceptions.ClinicNotFoundException;
+import com.kiniot.uflex.api.organization.domain.exceptions.UserNotFoundException;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPhysiotherapistByIdQuery;
+import com.kiniot.uflex.api.organization.domain.model.queries.GetPhysiotherapistByUserIdQuery;
+import com.kiniot.uflex.api.organization.domain.model.queries.GetPatientsByPhysiotherapistIdQuery;
+import com.kiniot.uflex.api.organization.domain.services.PatientQueryService;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPhysiotherapistsByClinicIdQuery;
 import com.kiniot.uflex.api.organization.domain.services.PhysiotherapistCommandService;
 import com.kiniot.uflex.api.organization.domain.services.PhysiotherapistQueryService;
+import com.kiniot.uflex.api.organization.interfaces.rest.resources.PatientResource;
 import com.kiniot.uflex.api.organization.interfaces.rest.resources.PhysiotherapistResource;
 import com.kiniot.uflex.api.organization.interfaces.rest.resources.RegisterPhysiotherapistResource;
+import com.kiniot.uflex.api.organization.interfaces.rest.transform.PatientResourceFromEntityAssembler;
 import com.kiniot.uflex.api.organization.interfaces.rest.transform.PhysiotherapistResourceFromEntityAssembler;
 import com.kiniot.uflex.api.organization.interfaces.rest.transform.RegisterPhysiotherapistCommandFromResourceAssembler;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PhysiotherapistId;
@@ -35,15 +41,18 @@ public class PhysiotherapistsController {
 
     private final PhysiotherapistCommandService physiotherapistCommandService;
     private final PhysiotherapistQueryService physiotherapistQueryService;
+    private final PatientQueryService patientQueryService;
     private final ExternalIamService externalIamService;
 
     public PhysiotherapistsController(
             PhysiotherapistCommandService physiotherapistCommandService,
             PhysiotherapistQueryService physiotherapistQueryService,
+            PatientQueryService patientQueryService,
             ExternalIamService externalIamService
     ) {
         this.physiotherapistCommandService = physiotherapistCommandService;
         this.physiotherapistQueryService = physiotherapistQueryService;
+        this.patientQueryService = patientQueryService;
         this.externalIamService = externalIamService;
     }
 
@@ -90,6 +99,24 @@ public class PhysiotherapistsController {
         var physiotherapists = physiotherapistQueryService.handle(query);
         var resources = physiotherapists.stream()
                 .map(PhysiotherapistResourceFromEntityAssembler::toResourceFromEntity)
+                .toList();
+        return ResponseEntity.ok(resources);
+    }
+
+    @GetMapping(value = "/me/patients")
+    @Operation(summary = "Get my patients", description = "PHYSIOTHERAPIST: Retrieves all patients assigned to the authenticated physiotherapist")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Patients retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Authenticated physiotherapist profile not found"),
+    })
+    public ResponseEntity<List<PatientResource>> getMyPatients() {
+        var userId = externalIamService.fetchCurrentUserId()
+                .orElseThrow(() -> new UserNotFoundException("Current user not found"));
+        var physiotherapist = physiotherapistQueryService.handle(new GetPhysiotherapistByUserIdQuery(userId))
+                .orElseThrow(() -> new UserNotFoundException("Physiotherapist profile not found"));
+        var patients = patientQueryService.handle(new GetPatientsByPhysiotherapistIdQuery(physiotherapist.getId()));
+        var resources = patients.stream()
+                .map(PatientResourceFromEntityAssembler::toResourceFromEntity)
                 .toList();
         return ResponseEntity.ok(resources);
     }

@@ -1,6 +1,11 @@
 package com.kiniot.uflex.api.planning.interfaces.rest.controllers;
 
+import com.kiniot.uflex.api.planning.domain.model.queries.GetActiveTreatmentPlanByPatientIdQuery;
+import com.kiniot.uflex.api.planning.domain.model.queries.GetNextScheduledTreatmentPlanByPatientIdQuery;
+import com.kiniot.uflex.api.planning.domain.model.queries.GetScheduledTreatmentPlansByPatientIdQuery;
+import com.kiniot.uflex.api.planning.domain.model.queries.GetTreatmentPlanByPatientIdAndTreatmentPlanIdQuery;
 import com.kiniot.uflex.api.planning.domain.model.queries.GetTreatmentPlansByPatientIdQuery;
+import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanId;
 import com.kiniot.uflex.api.planning.domain.services.TreatmentPlanCommandService;
 import com.kiniot.uflex.api.planning.domain.services.TreatmentPlanQueryService;
 import com.kiniot.uflex.api.planning.interfaces.rest.resources.CreateTreatmentPlanResource;
@@ -62,6 +67,84 @@ public class PatientTreatmentPlansController {
                 .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
                 .toList();
         return ResponseEntity.ok(treatmentPlans);
+    }
+
+    @GetMapping("/active")
+    @Operation(
+            summary = "Get active treatment plan by patient",
+            description = "Returns the active treatment plan of the specified patient."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Active treatment plan retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Patient or active treatment plan not found"),
+            @ApiResponse(responseCode = "409", description = "Patient belongs to a different clinic")
+    })
+    public ResponseEntity<TreatmentPlanResource> getActiveTreatmentPlanByPatient(@PathVariable String patientId) {
+        return treatmentPlanQueryService.handle(new GetActiveTreatmentPlanByPatientIdQuery(new PatientId(UUID.fromString(patientId))))
+                .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/scheduled")
+    @Operation(
+            summary = "Get scheduled treatment plans by patient",
+            description = "Returns the scheduled treatment plans of the specified patient ordered by start date."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Scheduled treatment plans retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Patient not found"),
+            @ApiResponse(responseCode = "409", description = "Patient belongs to a different clinic")
+    })
+    public ResponseEntity<List<TreatmentPlanResource>> getScheduledTreatmentPlansByPatient(@PathVariable String patientId) {
+        var treatmentPlans = treatmentPlanQueryService.handle(
+                        new GetScheduledTreatmentPlansByPatientIdQuery(new PatientId(UUID.fromString(patientId))))
+                .stream()
+                .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
+                .toList();
+        return ResponseEntity.ok(treatmentPlans);
+    }
+
+    @GetMapping("/next-scheduled")
+    @Operation(
+            summary = "Get next scheduled treatment plan by patient",
+            description = "Returns the next scheduled treatment plan of the specified patient."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Next scheduled treatment plan retrieved successfully"),
+            @ApiResponse(responseCode = "204", description = "No next scheduled treatment plan exists"),
+            @ApiResponse(responseCode = "404", description = "Patient not found"),
+            @ApiResponse(responseCode = "409", description = "Patient belongs to a different clinic")
+    })
+    public ResponseEntity<TreatmentPlanResource> getNextScheduledTreatmentPlanByPatient(@PathVariable String patientId) {
+        return treatmentPlanQueryService.handle(new GetNextScheduledTreatmentPlanByPatientIdQuery(new PatientId(UUID.fromString(patientId))))
+                .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+    @GetMapping("/{treatmentPlanId}")
+    @Operation(
+            summary = "Get treatment plan by patient and id",
+            description = "Returns the specified treatment plan only if it belongs to the specified patient."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Treatment plan retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Patient or treatment plan not found"),
+            @ApiResponse(responseCode = "409", description = "Patient belongs to a different clinic")
+    })
+    public ResponseEntity<TreatmentPlanResource> getTreatmentPlanByPatientAndId(
+            @PathVariable String patientId,
+            @PathVariable String treatmentPlanId
+    ) {
+        return treatmentPlanQueryService.handle(
+                        new GetTreatmentPlanByPatientIdAndTreatmentPlanIdQuery(
+                                new PatientId(UUID.fromString(patientId)),
+                                new TreatmentPlanId(UUID.fromString(treatmentPlanId))
+                        ))
+                .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping

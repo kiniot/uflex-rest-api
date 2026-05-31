@@ -171,23 +171,6 @@ public class PatientsController {
         return ResponseEntity.ok(PatientResourceFromEntityAssembler.toResourceFromEntity(patient.get()));
     }
 
-    @GetMapping(value = "/my")
-    @Operation(summary = "Get my patients", description = "PHYSIOTHERAPIST: Retrieves all patients assigned to the authenticated physiotherapist")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Patients retrieved successfully"),
-    })
-    public ResponseEntity<List<PatientResource>> getMyPatients() {
-        var userId = externalIamService.fetchCurrentUserId()
-                .orElseThrow(() -> new UserNotFoundException("Current user not found"));
-        var physiotherapist = physiotherapistQueryService.handle(new GetPhysiotherapistByUserIdQuery(userId))
-                .orElseThrow(() -> new UserNotFoundException("Physiotherapist profile not found"));
-        var patients = patientQueryService.handle(new GetPatientsByPhysiotherapistIdQuery(physiotherapist.getId()));
-        var resources = patients.stream()
-                .map(PatientResourceFromEntityAssembler::toResourceFromEntity)
-                .toList();
-        return ResponseEntity.ok(resources);
-    }
-
     @GetMapping
     @Operation(summary = "Get all patients for clinic", description = "CLINIC ADMIN: Retrieves all patients belonging to the admin's clinic")
     @ApiResponses(value = {

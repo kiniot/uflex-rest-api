@@ -5,9 +5,14 @@ import com.kiniot.uflex.api.planning.application.internal.outboundservices.acl.E
 import com.kiniot.uflex.api.shared.domain.exceptions.AuthenticatedUserClinicNotFoundException;
 import com.kiniot.uflex.api.planning.domain.model.aggregates.TreatmentPlan;
 import com.kiniot.uflex.api.planning.domain.model.entities.Routine;
+import com.kiniot.uflex.api.planning.domain.model.queries.GetActiveTreatmentPlanByPatientIdQuery;
 import com.kiniot.uflex.api.planning.domain.model.queries.GetAllTreatmentPlansQuery;
+import com.kiniot.uflex.api.planning.domain.model.queries.GetNextScheduledTreatmentPlanByPatientIdQuery;
+import com.kiniot.uflex.api.planning.domain.model.queries.GetScheduledTreatmentPlansByPatientIdQuery;
 import com.kiniot.uflex.api.planning.domain.model.queries.GetTreatmentPlanByIdQuery;
+import com.kiniot.uflex.api.planning.domain.model.queries.GetTreatmentPlanByPatientIdAndTreatmentPlanIdQuery;
 import com.kiniot.uflex.api.planning.domain.model.queries.GetTreatmentPlansByPatientIdQuery;
+import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanStatus;
 import com.kiniot.uflex.api.planning.domain.services.TreatmentPlanQueryService;
 import com.kiniot.uflex.api.planning.infrastructure.persistence.jpa.repositories.RoutineRepository;
 import com.kiniot.uflex.api.planning.infrastructure.persistence.jpa.repositories.TreatmentPlanRepository;
@@ -75,6 +80,55 @@ public class TreatmentPlanQueryServiceImpl implements TreatmentPlanQueryService 
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<TreatmentPlan> handle(GetActiveTreatmentPlanByPatientIdQuery query) {
+        var clinicId = fetchAndValidatePatientClinic(query.patientId());
+        return treatmentPlanRepository.findFirstWithRoutinesAndExerciseSeriesByClinicIdAndPatientIdAndStatusOrderByPeriodStartsAtAsc(
+                        clinicId,
+                        query.patientId(),
+                        TreatmentPlanStatus.ACTIVE
+                )
+                .map(this::initializePlanGraph);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TreatmentPlan> handle(GetScheduledTreatmentPlansByPatientIdQuery query) {
+        var clinicId = fetchAndValidatePatientClinic(query.patientId());
+        return treatmentPlanRepository.findAllWithRoutinesAndExerciseSeriesByClinicIdAndPatientIdAndStatusOrderByPeriodStartsAtAsc(
+                        clinicId,
+                        query.patientId(),
+                        TreatmentPlanStatus.SCHEDULED
+                ).stream()
+                .map(this::initializePlanGraph)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<TreatmentPlan> handle(GetTreatmentPlanByPatientIdAndTreatmentPlanIdQuery query) {
+        var clinicId = fetchAndValidatePatientClinic(query.patientId());
+        return treatmentPlanRepository.findWithRoutinesAndExerciseSeriesByIdAndClinicIdAndPatientId(
+                        query.treatmentPlanId(),
+                        clinicId,
+                        query.patientId()
+                )
+                .map(this::initializePlanGraph);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<TreatmentPlan> handle(GetNextScheduledTreatmentPlanByPatientIdQuery query) {
+        var clinicId = fetchAndValidatePatientClinic(query.patientId());
+        return treatmentPlanRepository.findFirstWithRoutinesAndExerciseSeriesByClinicIdAndPatientIdAndStatusOrderByPeriodStartsAtAsc(
+                        clinicId,
+                        query.patientId(),
+                        TreatmentPlanStatus.SCHEDULED
+                )
+                .map(this::initializePlanGraph);
+    }
+
     private TreatmentPlan initializePlanGraph(TreatmentPlan treatmentPlan) {
         loadExerciseSeriesForRoutines(List.of(treatmentPlan));
         return treatmentPlan;
@@ -103,5 +157,12 @@ public class TreatmentPlanQueryServiceImpl implements TreatmentPlanQueryService 
             specificationBuilder.withPatientIds(patientIds);
         }
         return specificationBuilder.build();
+    }
+
+    private ClinicId fetchAndValidatePatientClinic(com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId patientId) {
+        var clinicId = externalIamService.fetchCurrentClinicId()
+                .orElseThrow(AuthenticatedUserClinicNotFoundException::new);
+        externalOrganizationService.validatePatientBelongsToClinic(patientId, clinicId);
+        return clinicId;
     }
 }
