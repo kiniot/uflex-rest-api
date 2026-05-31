@@ -1,6 +1,7 @@
 package com.kiniot.uflex.api.planning.domain.model.entities;
 
 import com.kiniot.uflex.api.planning.domain.model.commands.CreateRoutineCommand;
+import com.kiniot.uflex.api.planning.domain.model.commands.CreateTreatmentPlanRoutineCommand;
 import com.kiniot.uflex.api.planning.domain.model.commands.UpdateRoutineCommand;
 import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateExerciseSeriesOrderException;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseSeries;
@@ -39,6 +40,15 @@ public class Routine extends AuditableModel<RoutineId> {
     private List<ExerciseSeries> exerciseSeries;
 
     protected Routine() {}
+
+    public Routine(CreateTreatmentPlanRoutineCommand command) {
+        this.id = new RoutineId();
+        this.name = command.name();
+        this.order = command.order();
+        this.schedule = command.schedule();
+        this.exerciseSeries = new ArrayList<>(command.exerciseSeries());
+        validateUniqueExerciseSeriesOrder(this.exerciseSeries);
+    }
 
     public Routine(CreateRoutineCommand command) {
         this.id = new RoutineId();

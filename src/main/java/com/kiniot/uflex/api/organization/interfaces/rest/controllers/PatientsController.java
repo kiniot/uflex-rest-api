@@ -8,7 +8,6 @@ import com.kiniot.uflex.api.organization.domain.model.queries.GetPatientByIdQuer
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPatientsByClinicIdQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPatientsByPhysiotherapistIdQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPhysiotherapistByUserIdQuery;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
 import com.kiniot.uflex.api.organization.domain.services.PatientCommandService;
 import com.kiniot.uflex.api.organization.domain.services.PatientQueryService;
 import com.kiniot.uflex.api.organization.domain.services.PhysiotherapistQueryService;
@@ -19,6 +18,8 @@ import com.kiniot.uflex.api.organization.interfaces.rest.resources.RegisterPatie
 import com.kiniot.uflex.api.organization.interfaces.rest.transform.PatientResourceFromEntityAssembler;
 import com.kiniot.uflex.api.organization.interfaces.rest.transform.RegisterPatientCommandFromResourceAssembler;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.PhysiotherapistId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -59,9 +60,9 @@ public class PatientsController {
 
     @PostMapping
     @Operation(
-            summary = "Register a new patient as clinic admin",
-            description = "Creates a patient profile under the authenticated clinic administrator's clinic. "
-                    + "This endpoint may optionally assign the patient to a physiotherapist from the same clinic."
+            summary = "Register a patient as a clinic administrator",
+            description = "Creates a patient profile in the authenticated clinic administrator's clinic. "
+                    + "The patient may also be assigned to a physiotherapist from the same clinic."
     )
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Patient profile data to register from a clinic administrator context.",
@@ -106,9 +107,9 @@ public class PatientsController {
 
     @PostMapping(value = "/by-physiotherapist")
     @Operation(
-            summary = "Register a new patient as physiotherapist",
-            description = "Creates a patient profile under the authenticated physiotherapist's clinic and automatically assigns "
-                    + "the patient to that same physiotherapist as part of the registration flow."
+            summary = "Register a patient as a physiotherapist",
+            description = "Creates a patient profile in the authenticated physiotherapist's clinic and automatically assigns "
+                    + "the patient to that physiotherapist."
     )
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Patient profile data to register from a physiotherapist context. The physiotherapist assignment is inferred from the authenticated user.",
@@ -156,7 +157,10 @@ public class PatientsController {
     }
 
     @GetMapping(value = "/{id}")
-    @Operation(summary = "Get patient by ID", description = "CLINIC ADMIN or PHYSIOTHERAPIST: Retrieves a patient by their ID")
+    @Operation(
+            summary = "Get a patient by ID",
+            description = "Retrieves a patient by ID. This endpoint is intended for clinic administrators and physiotherapists."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Patient found"),
             @ApiResponse(responseCode = "404", description = "Patient not found"),
@@ -170,25 +174,11 @@ public class PatientsController {
         return ResponseEntity.ok(PatientResourceFromEntityAssembler.toResourceFromEntity(patient.get()));
     }
 
-    @GetMapping(value = "/my")
-    @Operation(summary = "Get my patients", description = "PHYSIOTHERAPIST: Retrieves all patients assigned to the authenticated physiotherapist")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Patients retrieved successfully"),
-    })
-    public ResponseEntity<List<PatientResource>> getMyPatients() {
-        var userId = externalIamService.fetchCurrentUserId()
-                .orElseThrow(() -> new UserNotFoundException("Current user not found"));
-        var physiotherapist = physiotherapistQueryService.handle(new GetPhysiotherapistByUserIdQuery(userId))
-                .orElseThrow(() -> new UserNotFoundException("Physiotherapist profile not found"));
-        var patients = patientQueryService.handle(new GetPatientsByPhysiotherapistIdQuery(physiotherapist.getId()));
-        var resources = patients.stream()
-                .map(PatientResourceFromEntityAssembler::toResourceFromEntity)
-                .toList();
-        return ResponseEntity.ok(resources);
-    }
-
     @GetMapping
-    @Operation(summary = "Get all patients for clinic", description = "CLINIC ADMIN: Retrieves all patients belonging to the admin's clinic")
+    @Operation(
+            summary = "List patients in the authenticated clinic",
+            description = "Returns all patients who belong to the authenticated clinic administrator's clinic."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Patients retrieved successfully"),
     })
@@ -203,7 +193,10 @@ public class PatientsController {
     }
 
     @GetMapping(value = "/by-clinic/{clinicId}")
-    @Operation(summary = "Get all patients by clinic ID", description = "CLINIC ADMIN: Retrieves all patients belonging to a specific clinic")
+    @Operation(
+            summary = "List patients by clinic ID",
+            description = "Returns all patients who belong to the specified clinic. This endpoint is intended for clinic administrators."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Patients retrieved successfully"),
     })
@@ -217,7 +210,10 @@ public class PatientsController {
     }
 
     @GetMapping(value = "/by-physiotherapist/{physiotherapistId}")
-    @Operation(summary = "Get all patients by physiotherapist ID", description = "CLINIC ADMIN or PHYSIOTHERAPIST: Retrieves all patients assigned to a specific physiotherapist")
+    @Operation(
+            summary = "List patients by physiotherapist ID",
+            description = "Returns all patients assigned to the specified physiotherapist. This endpoint is intended for clinic administrators and physiotherapists."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Patients retrieved successfully"),
     })
@@ -231,7 +227,10 @@ public class PatientsController {
     }
 
     @PutMapping(value = "/{id}/assign")
-    @Operation(summary = "Assign patient to physiotherapist", description = "CLINIC ADMIN: Assigns a patient to a physiotherapist within the same clinic")
+    @Operation(
+            summary = "Assign a patient to a physiotherapist",
+            description = "Assigns a patient to a physiotherapist within the same clinic. This endpoint is intended for clinic administrators."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Patient assigned successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input or patient not found"),
@@ -248,7 +247,10 @@ public class PatientsController {
     }
 
     @PutMapping(value = "/{id}/discharge")
-    @Operation(summary = "Discharge patient", description = "PHYSIOTHERAPIST: Changes patient status to DISCHARGED (only own patients)")
+    @Operation(
+            summary = "Discharge a patient",
+            description = "Marks a patient as discharged. The authenticated physiotherapist may discharge only patients assigned to them."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Patient discharged successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input or patient not found"),

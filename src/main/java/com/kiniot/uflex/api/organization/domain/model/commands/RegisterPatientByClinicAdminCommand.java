@@ -2,6 +2,7 @@ package com.kiniot.uflex.api.organization.domain.model.commands;
 
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.PhysiotherapistId;
 
 public record RegisterPatientByClinicAdminCommand(
         FirstName firstName,

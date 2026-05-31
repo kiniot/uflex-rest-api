@@ -1,4 +1,4 @@
-package com.kiniot.uflex.api.organization.domain.model.valueobjects;
+package com.kiniot.uflex.api.shared.domain.model.valueobjects;
 
 import com.fasterxml.uuid.Generators;
 import jakarta.persistence.Column;

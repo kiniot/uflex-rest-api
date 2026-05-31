@@ -6,6 +6,7 @@ import com.kiniot.uflex.api.planning.domain.model.valueobjects.BodyPart;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseDescription;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseId;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseName;
+import com.kiniot.uflex.api.planning.domain.model.valueobjects.MovementType;
 import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import jakarta.persistence.*;
@@ -24,9 +25,16 @@ public class Exercise extends AuditableAbstractAggregateRoot<Exercise, ExerciseI
     @Embedded
     private ExerciseDescription description;
 
-    @Embedded
-    @AttributeOverride(name = "name", column = @Column(name = "body_part", nullable = false, length = 40))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "body_part", nullable = false, length = 40)
     private BodyPart bodyPart;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "movement_type", nullable = false, length = 40)
+    private MovementType movementType;
+
+    @Column(name = "video_url", length = 2048)
+    private String videoUrl;
 
     @Embedded
     @AttributeOverride(name = "id", column = @Column(name = "clinic_id", columnDefinition = "UUID", nullable = false))
@@ -39,6 +47,8 @@ public class Exercise extends AuditableAbstractAggregateRoot<Exercise, ExerciseI
         this.name = command.name();
         this.description = command.description();
         this.bodyPart = command.bodyPart();
+        this.movementType = command.movementType();
+        this.videoUrl = normalizeVideoUrl(command.videoUrl());
         this.clinicId = clinicId;
     }
 
@@ -46,10 +56,20 @@ public class Exercise extends AuditableAbstractAggregateRoot<Exercise, ExerciseI
         this.name = command.name();
         this.description = command.description();
         this.bodyPart = command.bodyPart();
+        this.movementType = command.movementType();
+        this.videoUrl = normalizeVideoUrl(command.videoUrl());
     }
 
     @Override
     public ExerciseId getId() {
         return id;
+    }
+
+    private String normalizeVideoUrl(String videoUrl) {
+        if (videoUrl == null) {
+            return null;
+        }
+        var trimmed = videoUrl.trim();
+        return trimmed.isBlank() ? null : trimmed;
     }
 }

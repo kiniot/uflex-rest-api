@@ -1,6 +1,6 @@
 package com.kiniot.uflex.api.organization.domain.model.commands;
 
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.PatientId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
 
 public record DischargePatientCommand(
         PatientId patientId

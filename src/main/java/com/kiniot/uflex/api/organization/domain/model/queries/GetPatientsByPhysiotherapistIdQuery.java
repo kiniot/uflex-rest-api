@@ -1,6 +1,6 @@
 package com.kiniot.uflex.api.organization.domain.model.queries;
 
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhysiotherapistId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.PhysiotherapistId;
 
 public record GetPatientsByPhysiotherapistIdQuery(
         PhysiotherapistId physiotherapistId

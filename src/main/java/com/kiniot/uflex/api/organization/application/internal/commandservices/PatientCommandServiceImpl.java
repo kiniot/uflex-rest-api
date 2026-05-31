@@ -6,11 +6,10 @@ import com.kiniot.uflex.api.organization.domain.exceptions.CrossClinicAssignment
 import com.kiniot.uflex.api.organization.domain.exceptions.PatientAlreadyRegisteredException;
 import com.kiniot.uflex.api.organization.domain.model.aggregates.Patient;
 import com.kiniot.uflex.api.organization.domain.model.commands.AssignPatientToPhysiotherapistCommand;
-import com.kiniot.uflex.api.organization.domain.model.commands.AssignTreatmentPlanToPatientCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.DischargePatientCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPatientByClinicAdminCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPatientByPhysiotherapistCommand;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhysiotherapistId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.PhysiotherapistId;
 import com.kiniot.uflex.api.organization.domain.services.PatientCommandService;
 import com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.repositories.PatientRepository;
 import com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.repositories.PhysiotherapistRepository;
@@ -137,12 +136,4 @@ public class PatientCommandServiceImpl implements PatientCommandService {
         patientRepository.save(patient);
     }
 
-    @Override
-    @Transactional
-    public void handle(AssignTreatmentPlanToPatientCommand command) {
-        var patient = patientRepository.findById(command.patientId())
-                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
-        patient.assignTreatmentPlan(command.treatmentPlanId());
-        patientRepository.save(patient);
-    }
 }

@@ -12,7 +12,6 @@ public record PatientResource(
         String phoneNumber,
         String medicalCondition,
         String assignedPhysiotherapistId,
-        String treatmentPlanId,
         String status,
         String clinicId
 ) {}

@@ -1,23 +1,34 @@
 package com.kiniot.uflex.api.planning.domain.model.commands;
 
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.PlanName;
-import com.kiniot.uflex.api.planning.domain.model.valueobjects.PlanFrequency;
-import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanId;
+import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanPeriod;
+import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanStatus;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
+
+import java.util.List;
 
 public record CreateTreatmentPlanCommand(
-        TreatmentPlanId id,
+        PatientId patientId,
         PlanName name,
-        PlanFrequency frequency
+        TreatmentPlanStatus status,
+        TreatmentPlanPeriod period,
+        List<CreateTreatmentPlanRoutineCommand> routines
 ) {
     public CreateTreatmentPlanCommand {
-        if (id == null) {
-            throw new IllegalArgumentException("Treatment plan ID cannot be null");
+        if (patientId == null) {
+            throw new IllegalArgumentException("Patient ID cannot be null");
         }
         if (name == null || name.name().isBlank()) {
             throw new IllegalArgumentException("Plan name cannot be null or blank");
         }
-        if (frequency == null) {
-            throw new IllegalArgumentException("Plan frequency cannot be null");
+        if (status == null) {
+            throw new IllegalArgumentException("Treatment plan status cannot be null");
+        }
+        if (period == null) {
+            throw new IllegalArgumentException("Treatment plan period cannot be null");
+        }
+        if (routines == null || routines.isEmpty()) {
+            throw new IllegalArgumentException("Treatment plan must contain at least one routine");
         }
     }
 }

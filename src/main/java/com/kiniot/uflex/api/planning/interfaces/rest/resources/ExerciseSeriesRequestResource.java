@@ -3,9 +3,9 @@ package com.kiniot.uflex.api.planning.interfaces.rest.resources;
 public record ExerciseSeriesRequestResource(
         Integer order,
         String exerciseId,
-        String movementType,
         Integer rangeOfMotionDegrees,
         Integer repetitions,
-        Integer durationSeconds
+        Integer durationSeconds,
+        Integer restDurationSeconds
 ) {
 }

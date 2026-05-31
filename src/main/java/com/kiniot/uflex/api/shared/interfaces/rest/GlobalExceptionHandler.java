@@ -2,14 +2,26 @@ package com.kiniot.uflex.api.shared.interfaces.rest;
 
 import com.kiniot.uflex.api.iam.domain.exceptions.UserWithEmailNotFound;
 import com.kiniot.uflex.api.iam.domain.exceptions.UserWithIdNotFoundException;
+import com.kiniot.uflex.api.iam.domain.exceptions.TenantAssignmentException;
 import com.kiniot.uflex.api.organization.domain.exceptions.ClinicAlreadyRegisteredException;
 import com.kiniot.uflex.api.organization.domain.exceptions.ClinicNotFoundException;
 import com.kiniot.uflex.api.organization.domain.exceptions.CrossClinicAssignmentException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PatientAlreadyRegisteredException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistAlreadyRegisteredException;
+import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistLicenseInvalidException;
 import com.kiniot.uflex.api.organization.domain.exceptions.ProfileNotFoundException;
 import com.kiniot.uflex.api.organization.domain.exceptions.UserNotFoundException;
+import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateExerciseSeriesOrderException;
+import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateRoutineOrderException;
+import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateRoutineScheduleException;
+import com.kiniot.uflex.api.planning.domain.exceptions.ExerciseClinicMismatchException;
 import com.kiniot.uflex.api.planning.domain.exceptions.ExerciseWithIdNotFoundException;
+import com.kiniot.uflex.api.planning.domain.exceptions.CurrentUserPatientProfileNotFoundException;
+import com.kiniot.uflex.api.planning.domain.exceptions.InvalidTreatmentPlanStatusTransitionException;
+import com.kiniot.uflex.api.planning.domain.exceptions.OverlappingTreatmentPlanPeriodException;
+import com.kiniot.uflex.api.planning.domain.exceptions.PatientAlreadyHasActiveTreatmentPlanException;
+import com.kiniot.uflex.api.planning.domain.exceptions.PatientClinicMismatchException;
+import com.kiniot.uflex.api.planning.domain.exceptions.PatientWithIdNotFoundException;
 import com.kiniot.uflex.api.planning.domain.exceptions.RoutineWithOrderNotFoundException;
 import com.kiniot.uflex.api.planning.domain.exceptions.TreatmentPlanWithIdNotFoundException;
 import com.kiniot.uflex.api.shared.domain.exceptions.AuthenticatedUserClinicNotFoundException;
@@ -33,7 +45,17 @@ public class GlobalExceptionHandler {
             PatientAlreadyRegisteredException.class,
             ClinicAlreadyRegisteredException.class,
             PhysiotherapistAlreadyRegisteredException.class,
-            CrossClinicAssignmentException.class
+            PhysiotherapistLicenseInvalidException.class,
+            CrossClinicAssignmentException.class,
+            TenantAssignmentException.class,
+            ExerciseClinicMismatchException.class,
+            DuplicateRoutineOrderException.class,
+            DuplicateRoutineScheduleException.class,
+            DuplicateExerciseSeriesOrderException.class,
+            InvalidTreatmentPlanStatusTransitionException.class,
+            PatientClinicMismatchException.class,
+            PatientAlreadyHasActiveTreatmentPlanException.class,
+            OverlappingTreatmentPlanPeriodException.class
     })
     public ResponseEntity<ErrorResource> handleConflictExceptions(RuntimeException exception, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.CONFLICT, exception.getMessage(), request);
@@ -48,6 +70,8 @@ public class GlobalExceptionHandler {
             TreatmentPlanWithIdNotFoundException.class,
             ExerciseWithIdNotFoundException.class,
             RoutineWithOrderNotFoundException.class,
+            PatientWithIdNotFoundException.class,
+            CurrentUserPatientProfileNotFoundException.class,
             AuthenticatedUserClinicNotFoundException.class
     })
     public ResponseEntity<ErrorResource> handleNotFoundExceptions(RuntimeException exception, HttpServletRequest request) {
