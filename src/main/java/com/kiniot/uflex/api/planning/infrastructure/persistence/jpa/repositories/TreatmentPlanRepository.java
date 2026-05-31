@@ -7,6 +7,7 @@ import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -14,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface TreatmentPlanRepository extends JpaRepository<TreatmentPlan, TreatmentPlanId> {
+public interface TreatmentPlanRepository extends JpaRepository<TreatmentPlan, TreatmentPlanId>, JpaSpecificationExecutor<TreatmentPlan> {
 
     @EntityGraph(attributePaths = {"routines"})
     Optional<TreatmentPlan> findWithRoutinesAndExerciseSeriesById(TreatmentPlanId id);

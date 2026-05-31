@@ -11,8 +11,12 @@ import com.kiniot.uflex.api.planning.domain.model.queries.GetTreatmentPlansByPat
 import com.kiniot.uflex.api.planning.domain.services.TreatmentPlanQueryService;
 import com.kiniot.uflex.api.planning.infrastructure.persistence.jpa.repositories.RoutineRepository;
 import com.kiniot.uflex.api.planning.infrastructure.persistence.jpa.repositories.TreatmentPlanRepository;
+import com.kiniot.uflex.api.planning.infrastructure.persistence.jpa.specifications.TreatmentPlanSpecificationBuilder;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
@@ -51,7 +55,8 @@ public class TreatmentPlanQueryServiceImpl implements TreatmentPlanQueryService 
     public List<TreatmentPlan> handle(GetAllTreatmentPlansQuery query) {
         var clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(AuthenticatedUserClinicNotFoundException::new);
-        return treatmentPlanRepository.findAllWithRoutinesAndExerciseSeriesByClinicId(clinicId).stream()
+        var specification = buildSpecification(query, clinicId);
+        return treatmentPlanRepository.findAll(specification, Sort.by(Sort.Direction.DESC, "period.startsAt")).stream()
                 .map(this::initializePlanGraph)
                 .toList();
     }
@@ -86,5 +91,17 @@ public class TreatmentPlanQueryServiceImpl implements TreatmentPlanQueryService 
         }
 
         routineRepository.findAllByIdIn(routineIds);
+    }
+
+    private Specification<TreatmentPlan> buildSpecification(GetAllTreatmentPlansQuery query, ClinicId clinicId) {
+        if (query.patientId() != null)
+            externalOrganizationService.validatePatientBelongsToClinic(query.patientId(), clinicId);
+        var specificationBuilder = TreatmentPlanSpecificationBuilder.forClinic(clinicId)
+                .withQuery(query);
+        if (query.physiotherapistId() != null) {
+            var patientIds = externalOrganizationService.findPatientIdsByPhysiotherapistAndClinic(query.physiotherapistId(), clinicId);
+            specificationBuilder.withPatientIds(patientIds);
+        }
+        return specificationBuilder.build();
     }
 }

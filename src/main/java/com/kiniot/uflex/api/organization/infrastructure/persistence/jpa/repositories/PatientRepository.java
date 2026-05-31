@@ -2,7 +2,7 @@ package com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.reposit
 
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.organization.domain.model.aggregates.Patient;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhysiotherapistId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.PhysiotherapistId;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
@@ -17,6 +17,7 @@ public interface PatientRepository extends JpaRepository<Patient, PatientId> {
     Optional<Patient> findByUserId(UserId userId);
     List<Patient> findAllByClinicId(ClinicId clinicId);
     List<Patient> findAllByAssignedPhysiotherapistId(PhysiotherapistId physiotherapistId);
+    List<Patient> findAllByAssignedPhysiotherapistIdAndClinicId(PhysiotherapistId physiotherapistId, ClinicId clinicId);
     boolean existsByIdAndClinicId(PatientId patientId, ClinicId clinicId);
     boolean existsByUserId(UserId userId);
     boolean existsByEmailAddress(Email emailAddress);

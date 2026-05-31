@@ -6,10 +6,7 @@ import com.kiniot.uflex.api.organization.domain.model.events.PatientAssignedToPh
 import com.kiniot.uflex.api.organization.domain.model.events.PatientProfileRegisteredEvent;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
 import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
-import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
-import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
-import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
-import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.*;
 import jakarta.persistence.*;
 import lombok.Getter;
 

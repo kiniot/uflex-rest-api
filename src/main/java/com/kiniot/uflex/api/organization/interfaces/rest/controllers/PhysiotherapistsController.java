@@ -2,7 +2,6 @@ package com.kiniot.uflex.api.organization.interfaces.rest.controllers;
 
 import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalIamService;
 import com.kiniot.uflex.api.organization.domain.exceptions.ClinicNotFoundException;
-import com.kiniot.uflex.api.organization.domain.model.aggregates.Physiotherapist;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPhysiotherapistByIdQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPhysiotherapistsByClinicIdQuery;
 import com.kiniot.uflex.api.organization.domain.services.PhysiotherapistCommandService;
@@ -11,6 +10,7 @@ import com.kiniot.uflex.api.organization.interfaces.rest.resources.Physiotherapi
 import com.kiniot.uflex.api.organization.interfaces.rest.resources.RegisterPhysiotherapistResource;
 import com.kiniot.uflex.api.organization.interfaces.rest.transform.PhysiotherapistResourceFromEntityAssembler;
 import com.kiniot.uflex.api.organization.interfaces.rest.transform.RegisterPhysiotherapistCommandFromResourceAssembler;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.PhysiotherapistId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -70,7 +70,7 @@ public class PhysiotherapistsController {
             @ApiResponse(responseCode = "404", description = "Physiotherapist not found"),
     })
     public ResponseEntity<PhysiotherapistResource> getPhysiotherapistById(@PathVariable String id) {
-        var query = new GetPhysiotherapistByIdQuery(new com.kiniot.uflex.api.organization.domain.model.valueobjects.PhysiotherapistId(UUID.fromString(id)));
+        var query = new GetPhysiotherapistByIdQuery(new PhysiotherapistId(UUID.fromString(id)));
         var physiotherapist = physiotherapistQueryService.handle(query);
         if (physiotherapist.isEmpty()) {
             return ResponseEntity.notFound().build();

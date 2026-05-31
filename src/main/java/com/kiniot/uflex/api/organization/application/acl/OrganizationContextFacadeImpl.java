@@ -4,8 +4,10 @@ import com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.reposito
 import com.kiniot.uflex.api.organization.interfaces.acl.OrganizationContextFacade;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.PhysiotherapistId;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -28,5 +30,15 @@ public class OrganizationContextFacadeImpl implements OrganizationContextFacade 
                 new PatientId(UUID.fromString(patientId)),
                 new ClinicId(UUID.fromString(clinicId))
         );
+    }
+
+    @Override
+    public List<String> findPatientIdsByPhysiotherapistIdAndClinicId(String physiotherapistId, String clinicId) {
+        return patientRepository.findAllByAssignedPhysiotherapistIdAndClinicId(
+                        new PhysiotherapistId(UUID.fromString(physiotherapistId)),
+                        new ClinicId(UUID.fromString(clinicId))
+                ).stream()
+                .map(patient -> patient.getId().patientId().toString())
+                .toList();
     }
 }

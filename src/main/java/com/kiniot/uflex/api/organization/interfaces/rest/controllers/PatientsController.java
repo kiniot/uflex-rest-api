@@ -8,7 +8,6 @@ import com.kiniot.uflex.api.organization.domain.model.queries.GetPatientByIdQuer
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPatientsByClinicIdQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPatientsByPhysiotherapistIdQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPhysiotherapistByUserIdQuery;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
 import com.kiniot.uflex.api.organization.domain.services.PatientCommandService;
 import com.kiniot.uflex.api.organization.domain.services.PatientQueryService;
 import com.kiniot.uflex.api.organization.domain.services.PhysiotherapistQueryService;
@@ -20,6 +19,7 @@ import com.kiniot.uflex.api.organization.interfaces.rest.transform.PatientResour
 import com.kiniot.uflex.api.organization.interfaces.rest.transform.RegisterPatientCommandFromResourceAssembler;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.PhysiotherapistId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;

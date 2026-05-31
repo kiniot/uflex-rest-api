@@ -9,7 +9,7 @@ import com.kiniot.uflex.api.organization.domain.model.commands.AssignPatientToPh
 import com.kiniot.uflex.api.organization.domain.model.commands.DischargePatientCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPatientByClinicAdminCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPatientByPhysiotherapistCommand;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhysiotherapistId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.PhysiotherapistId;
 import com.kiniot.uflex.api.organization.domain.services.PatientCommandService;
 import com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.repositories.PatientRepository;
 import com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.repositories.PhysiotherapistRepository;

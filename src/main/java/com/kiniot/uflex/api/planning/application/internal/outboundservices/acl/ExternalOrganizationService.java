@@ -5,7 +5,10 @@ import com.kiniot.uflex.api.planning.domain.exceptions.PatientClinicMismatchExce
 import com.kiniot.uflex.api.planning.domain.exceptions.PatientWithIdNotFoundException;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.PhysiotherapistId;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class ExternalOrganizationService {
@@ -27,5 +30,15 @@ public class ExternalOrganizationService {
         if (!organizationContextFacade.existsPatientByIdAndClinicId(patientIdText, clinicIdText)) {
             throw new PatientClinicMismatchException(patientIdText, clinicIdText);
         }
+    }
+
+    public List<PatientId> findPatientIdsByPhysiotherapistAndClinic(PhysiotherapistId physiotherapistId, ClinicId clinicId) {
+        return organizationContextFacade.findPatientIdsByPhysiotherapistIdAndClinicId(
+                        physiotherapistId.physiotherapistId().toString(),
+                        clinicId.id().toString()
+                ).stream()
+                .map(java.util.UUID::fromString)
+                .map(PatientId::new)
+                .toList();
     }
 }

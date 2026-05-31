@@ -7,6 +7,7 @@ import com.kiniot.uflex.api.planning.domain.model.queries.GetAllTreatmentPlansQu
 import com.kiniot.uflex.api.planning.domain.model.queries.GetTreatmentPlanByIdQuery;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.RoutineOrder;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanId;
+import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanStatus;
 import com.kiniot.uflex.api.planning.domain.services.TreatmentPlanCommandService;
 import com.kiniot.uflex.api.planning.domain.services.TreatmentPlanQueryService;
 import com.kiniot.uflex.api.planning.interfaces.rest.resources.CreateRoutineResource;
@@ -17,7 +18,10 @@ import com.kiniot.uflex.api.planning.interfaces.rest.transform.CreateRoutineComm
 import com.kiniot.uflex.api.planning.interfaces.rest.transform.TreatmentPlanResourceFromEntityAssembler;
 import com.kiniot.uflex.api.planning.interfaces.rest.transform.UpdateRoutineCommandFromResourceAssembler;
 import com.kiniot.uflex.api.planning.interfaces.rest.transform.UpdateTreatmentPlanCommandFromResourceAssembler;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.PhysiotherapistId;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -35,8 +39,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -56,13 +62,37 @@ public class TreatmentPlansController {
 
     @GetMapping
     @Operation(summary = "Get treatment plans",
-            description = "Returns all treatment plans associated with the authenticated user's clinic.")
+            description = "Returns treatment plans of the authenticated clinic. Optional filters: patientId, physiotherapistId, status, startsAtFrom/startsAtTo, and endsAtFrom/endsAtTo.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Treatment plans retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized or authenticated user has no clinic")
     })
-    public ResponseEntity<List<TreatmentPlanResource>> getTreatmentPlans() {
-        var treatmentPlans = treatmentPlanQueryService.handle(new GetAllTreatmentPlansQuery()).stream()
+    public ResponseEntity<List<TreatmentPlanResource>> getTreatmentPlans(
+            @Parameter(description = "Filter by patient id", example = "019e7e3d-61cb-73fc-990f-91dc6c19a3fa")
+            @RequestParam(required = false) String patientId,
+            @Parameter(description = "Filter by physiotherapist id", example = "019e1e7d-80c3-71c5-ae4b-2358fa9ae43c")
+            @RequestParam(required = false) String physiotherapistId,
+            @Parameter(description = "Filter by treatment plan status", schema = @Schema(allowableValues = {"SCHEDULED", "ACTIVE", "COMPLETED", "CANCELED"}))
+            @RequestParam(required = false) String status,
+            @Parameter(description = "Filter plans whose startsAt is on or after this date", example = "2026-06-01")
+            @RequestParam(required = false) LocalDate startsAtFrom,
+            @Parameter(description = "Filter plans whose startsAt is on or before this date", example = "2026-06-30")
+            @RequestParam(required = false) LocalDate startsAtTo,
+            @Parameter(description = "Filter plans whose endsAt is on or after this date", example = "2026-06-01")
+            @RequestParam(required = false) LocalDate endsAtFrom,
+            @Parameter(description = "Filter plans whose endsAt is on or before this date", example = "2026-06-30")
+            @RequestParam(required = false) LocalDate endsAtTo
+    ) {
+        var query = new GetAllTreatmentPlansQuery(
+                patientId != null && !patientId.isBlank() ? new PatientId(UUID.fromString(patientId)) : null,
+                physiotherapistId != null && !physiotherapistId.isBlank() ? new PhysiotherapistId(UUID.fromString(physiotherapistId)) : null,
+                status != null && !status.isBlank() ? TreatmentPlanStatus.valueOf(status) : null,
+                startsAtFrom,
+                startsAtTo,
+                endsAtFrom,
+                endsAtTo
+        );
+        var treatmentPlans = treatmentPlanQueryService.handle(query).stream()
                 .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
                 .toList();
         return ResponseEntity.ok(treatmentPlans);
