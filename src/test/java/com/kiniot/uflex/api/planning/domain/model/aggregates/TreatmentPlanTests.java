@@ -31,8 +31,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class TreatmentPlanTests {
 
     @Test
+    void createDefaultsTreatmentPlanToScheduled() {
+        var treatmentPlan = createTreatmentPlan();
+
+        assertEquals(TreatmentPlanStatus.SCHEDULED, treatmentPlan.getStatus());
+    }
+
+    @Test
     void activateChangesScheduledPlanToActive() {
-        var treatmentPlan = createTreatmentPlan(TreatmentPlanStatus.SCHEDULED);
+        var treatmentPlan = createTreatmentPlan();
 
         treatmentPlan.activate();
 
@@ -41,7 +48,8 @@ class TreatmentPlanTests {
 
     @Test
     void completeChangesActivePlanToCompleted() {
-        var treatmentPlan = createTreatmentPlan(TreatmentPlanStatus.ACTIVE);
+        var treatmentPlan = createTreatmentPlan();
+        treatmentPlan.activate();
 
         treatmentPlan.complete();
 
@@ -50,7 +58,7 @@ class TreatmentPlanTests {
 
     @Test
     void cancelChangesScheduledPlanToCanceled() {
-        var treatmentPlan = createTreatmentPlan(TreatmentPlanStatus.SCHEDULED);
+        var treatmentPlan = createTreatmentPlan();
 
         treatmentPlan.cancel();
 
@@ -59,23 +67,26 @@ class TreatmentPlanTests {
 
     @Test
     void activateRejectedForCompletedPlan() {
-        var treatmentPlan = createTreatmentPlan(TreatmentPlanStatus.COMPLETED);
+        var treatmentPlan = createTreatmentPlan();
+        treatmentPlan.activate();
+        treatmentPlan.complete();
 
         assertThrows(InvalidTreatmentPlanStatusTransitionException.class, treatmentPlan::activate);
     }
 
     @Test
     void cancelRejectedForCompletedPlan() {
-        var treatmentPlan = createTreatmentPlan(TreatmentPlanStatus.COMPLETED);
+        var treatmentPlan = createTreatmentPlan();
+        treatmentPlan.activate();
+        treatmentPlan.complete();
 
         assertThrows(InvalidTreatmentPlanStatusTransitionException.class, treatmentPlan::cancel);
     }
 
-    private TreatmentPlan createTreatmentPlan(TreatmentPlanStatus status) {
+    private TreatmentPlan createTreatmentPlan() {
         var command = new CreateTreatmentPlanCommand(
                 new PatientId(),
                 new PlanName("Forearm mobility plan"),
-                status,
                 new TreatmentPlanPeriod(LocalDate.now(), LocalDate.now().plusDays(7)),
                 List.of(new CreateTreatmentPlanRoutineCommand(
                         new RoutineName("Morning mobility"),

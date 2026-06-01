@@ -2,7 +2,6 @@ package com.kiniot.uflex.api.planning.interfaces.rest.transform;
 
 import com.kiniot.uflex.api.planning.domain.model.commands.CreateTreatmentPlanCommand;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.PlanName;
-import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanStatus;
 import com.kiniot.uflex.api.planning.interfaces.rest.resources.CreateTreatmentPlanResource;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
 
@@ -13,7 +12,6 @@ public class CreateTreatmentPlanCommandFromResourceAssembler {
         return new CreateTreatmentPlanCommand(
                 new PatientId(UUID.fromString(patientId)),
                 new PlanName(resource.name()),
-                TreatmentPlanStatus.valueOf(resource.status()),
                 TreatmentPlanPeriodFromResourceAssembler.toValueObjectFromResource(resource.period()),
                 resource.routines().stream()
                         .map(CreateTreatmentPlanRoutineCommandFromResourceAssembler::toCommandFromResource)

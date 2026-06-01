@@ -70,7 +70,7 @@ public class TreatmentPlanCommandServiceImpl implements TreatmentPlanCommandServ
                         .map(series -> series.exerciseId())
                         .toList(),
                 clinicId);
-        validatePatientPlanCoexistence(clinicId, command.patientId(), command.status(), command.period(), null);
+        validatePatientPlanCoexistence(clinicId, command.patientId(), TreatmentPlanStatus.SCHEDULED, command.period(), null);
         var treatmentPlan = new TreatmentPlan(command, clinicId);
         return Optional.of(initializePlanGraph(treatmentPlanRepository.save(treatmentPlan)));
     }

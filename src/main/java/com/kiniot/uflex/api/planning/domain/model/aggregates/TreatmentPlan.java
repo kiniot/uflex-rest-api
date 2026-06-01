@@ -56,7 +56,7 @@ public class TreatmentPlan extends AuditableAbstractAggregateRoot<TreatmentPlan,
         this.id = new TreatmentPlanId();
         this.patientId = command.patientId();
         this.planName = command.name();
-        this.status = command.status();
+        this.status = TreatmentPlanStatus.SCHEDULED;
         this.period = command.period();
         this.routines = new ArrayList<>();
         this.clinicId = clinicId;
