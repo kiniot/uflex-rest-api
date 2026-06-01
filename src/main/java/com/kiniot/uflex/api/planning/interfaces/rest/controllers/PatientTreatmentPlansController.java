@@ -150,10 +150,10 @@ public class PatientTreatmentPlansController {
     @PostMapping
     @Operation(
             summary = "Create treatment plan for patient",
-            description = "Creates a treatment plan for the specified patient. The patient must exist in the authenticated clinic. Scheduled and active plans cannot overlap, and only one active plan is allowed per patient."
+            description = "Creates a treatment plan for the specified patient. The plan is always created with SCHEDULED status. The patient must exist in the authenticated clinic. Scheduled and active plans cannot overlap, and only one active plan is allowed per patient."
     )
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Treatment plan data and initial routines.",
+            description = "Treatment plan data and initial routines. The status is assigned automatically as SCHEDULED.",
             required = true,
             content = @Content(
                     schema = @Schema(implementation = CreateTreatmentPlanResource.class),
@@ -162,7 +162,6 @@ public class PatientTreatmentPlansController {
                             value = """
                                     {
                                       "name": "Forearm mobility plan",
-                                      "status": "SCHEDULED",
                                       "period": {
                                         "startsAt": "2026-06-01",
                                         "endsAt": "2026-06-21"
