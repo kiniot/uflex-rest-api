@@ -129,17 +129,23 @@ public class Patient extends AuditableAbstractAggregateRoot<Patient, PatientId> 
         if (!this.clinicId.equals(physiotherapistClinicId)) {
             throw new IllegalStateException("Cannot assign patient to a physiotherapist from a different clinic");
         }
-        if (this.status != PatientStatus.UNASSIGNED) {
-            throw new IllegalStateException("Patient can only be assigned from UNASSIGNED status");
+        if (this.status == PatientStatus.DISCHARGED) {
+            throw new IllegalStateException("Discharged patients cannot be assigned to a physiotherapist");
         }
         this.assignedPhysiotherapistId = physiotherapistId;
-        this.status = PatientStatus.IN_TREATMENT;
+        if (this.status == PatientStatus.UNASSIGNED) {
+            this.status = PatientStatus.IN_TREATMENT;
+        }
         this.addDomainEvent(new PatientAssignedToPhysiotherapistEvent(
                 this,
                 this.id,
                 physiotherapistId,
                 this.clinicId
         ));
+    }
+
+    public void unassignPhysiotherapist() {
+        this.assignedPhysiotherapistId = null;
     }
 
     public void updateMedicalCondition(MedicalCondition condition) {

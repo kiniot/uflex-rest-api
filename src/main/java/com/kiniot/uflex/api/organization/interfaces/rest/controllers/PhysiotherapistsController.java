@@ -3,6 +3,8 @@ package com.kiniot.uflex.api.organization.interfaces.rest.controllers;
 import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalIamService;
 import com.kiniot.uflex.api.organization.domain.exceptions.ClinicNotFoundException;
 import com.kiniot.uflex.api.organization.domain.exceptions.UserNotFoundException;
+import com.kiniot.uflex.api.organization.domain.model.commands.ReactivatePhysiotherapistCommand;
+import com.kiniot.uflex.api.organization.domain.model.commands.SuspendPhysiotherapistCommand;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetCurrentPhysiotherapistQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPhysiotherapistByIdQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPatientsByPhysiotherapistIdQuery;
@@ -176,5 +178,37 @@ public class PhysiotherapistsController {
                 .map(PatientResourceFromEntityAssembler::toResourceFromEntity)
                 .toList();
         return ResponseEntity.ok(resources);
+    }
+
+    @PostMapping("/{id}/suspend")
+    @PreAuthorize("hasAuthority('ROLE_CLINIC_ADMIN')")
+    @Operation(
+            summary = "Suspend a physiotherapist",
+            description = "Suspends the specified physiotherapist in the authenticated clinic and removes the physiotherapist assignment from all of their patients without changing those patients' clinical status."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Physiotherapist suspended successfully"),
+            @ApiResponse(responseCode = "404", description = "Physiotherapist not found"),
+            @ApiResponse(responseCode = "409", description = "Physiotherapist is already suspended or does not belong to the authenticated clinic")
+    })
+    public ResponseEntity<Void> suspendPhysiotherapist(@PathVariable String id) {
+        physiotherapistCommandService.handle(new SuspendPhysiotherapistCommand(new PhysiotherapistId(UUID.fromString(id))));
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/reactivate")
+    @PreAuthorize("hasAuthority('ROLE_CLINIC_ADMIN')")
+    @Operation(
+            summary = "Reactivate a physiotherapist",
+            description = "Reactivates the specified suspended physiotherapist in the authenticated clinic and recalculates whether the resulting status should be ACTIVE or INACTIVE based on their currently assigned patients."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Physiotherapist reactivated successfully"),
+            @ApiResponse(responseCode = "404", description = "Physiotherapist not found"),
+            @ApiResponse(responseCode = "409", description = "Physiotherapist is not suspended or does not belong to the authenticated clinic")
+    })
+    public ResponseEntity<Void> reactivatePhysiotherapist(@PathVariable String id) {
+        physiotherapistCommandService.handle(new ReactivatePhysiotherapistCommand(new PhysiotherapistId(UUID.fromString(id))));
+        return ResponseEntity.noContent().build();
     }
 }

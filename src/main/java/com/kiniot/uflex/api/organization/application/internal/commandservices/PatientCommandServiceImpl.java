@@ -4,11 +4,16 @@ import com.kiniot.uflex.api.organization.application.internal.outboundservices.a
 import com.kiniot.uflex.api.organization.domain.exceptions.ClinicNotFoundException;
 import com.kiniot.uflex.api.organization.domain.exceptions.CrossClinicAssignmentException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PatientAlreadyRegisteredException;
+import com.kiniot.uflex.api.organization.domain.exceptions.SuspendedPhysiotherapistAssignmentException;
 import com.kiniot.uflex.api.organization.domain.model.aggregates.Patient;
 import com.kiniot.uflex.api.organization.domain.model.commands.AssignPatientToPhysiotherapistCommand;
+import com.kiniot.uflex.api.organization.domain.model.commands.CompletePatientCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.DischargePatientCommand;
+import com.kiniot.uflex.api.organization.domain.model.commands.MarkPatientInactiveCommand;
+import com.kiniot.uflex.api.organization.domain.model.commands.ReactivatePatientCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPatientByClinicAdminCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPatientByPhysiotherapistCommand;
+import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhysiotherapistStatus;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PhysiotherapistId;
 import com.kiniot.uflex.api.organization.domain.services.PatientCommandService;
 import com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.repositories.PatientRepository;
@@ -25,15 +30,18 @@ public class PatientCommandServiceImpl implements PatientCommandService {
     private final PatientRepository patientRepository;
     private final PhysiotherapistRepository physiotherapistRepository;
     private final ExternalIamService externalIamService;
+    private final PhysiotherapistStatusSynchronizationService physiotherapistStatusSynchronizationService;
 
     public PatientCommandServiceImpl(
             PatientRepository patientRepository,
             PhysiotherapistRepository physiotherapistRepository,
-            ExternalIamService externalIamService
+            ExternalIamService externalIamService,
+            PhysiotherapistStatusSynchronizationService physiotherapistStatusSynchronizationService
     ) {
         this.patientRepository = patientRepository;
         this.physiotherapistRepository = physiotherapistRepository;
         this.externalIamService = externalIamService;
+        this.physiotherapistStatusSynchronizationService = physiotherapistStatusSynchronizationService;
     }
 
     @Override
@@ -49,14 +57,15 @@ public class PatientCommandServiceImpl implements PatientCommandService {
         Patient patient;
         try {
             if (command.assignedPhysiotherapistId() != null) {
-                var physiotherapist = physiotherapistRepository.findById(command.assignedPhysiotherapistId())
-                        .orElseThrow(() -> new IllegalArgumentException("Physiotherapist not found"));
+                var physiotherapist = getAssignablePhysiotherapist(command.assignedPhysiotherapistId());
                 patient = new Patient(command, userId, clinicId, physiotherapist.getClinicId());
             } else {
                 patient = new Patient(command, userId, clinicId);
             }
             patient.register();
-            return Optional.of(patientRepository.save(patient));
+            var savedPatient = patientRepository.save(patient);
+            synchronizeAssignedPhysiotherapist(savedPatient.getAssignedPhysiotherapistId());
+            return Optional.of(savedPatient);
         } catch (RuntimeException exception) {
             compensateProvisionedPatientUser(userId, exception);
             throw exception;
@@ -74,11 +83,12 @@ public class PatientCommandServiceImpl implements PatientCommandService {
                 .orElseThrow(() -> new RuntimeException("Failed to register patient in IAM"));
 
         try {
-            var physiotherapist = physiotherapistRepository.findById(command.assignedPhysiotherapistId())
-                    .orElseThrow(() -> new IllegalArgumentException("Physiotherapist not found"));
+            var physiotherapist = getAssignablePhysiotherapist(command.assignedPhysiotherapistId());
             var patient = new Patient(command, userId, clinicId, physiotherapist.getClinicId());
             patient.register();
-            return Optional.of(patientRepository.save(patient));
+            var savedPatient = patientRepository.save(patient);
+            synchronizeAssignedPhysiotherapist(savedPatient.getAssignedPhysiotherapistId());
+            return Optional.of(savedPatient);
         } catch (RuntimeException exception) {
             compensateProvisionedPatientUser(userId, exception);
             throw exception;
@@ -103,6 +113,9 @@ public class PatientCommandServiceImpl implements PatientCommandService {
         if (!clinicId.equals(physiotherapist.getClinicId())) {
             throw new CrossClinicAssignmentException();
         }
+        if (physiotherapist.getStatus() == PhysiotherapistStatus.SUSPENDED) {
+            throw new SuspendedPhysiotherapistAssignmentException();
+        }
     }
 
     private void compensateProvisionedPatientUser(UserId userId, RuntimeException originalException) {
@@ -118,13 +131,45 @@ public class PatientCommandServiceImpl implements PatientCommandService {
     public void handle(AssignPatientToPhysiotherapistCommand command) {
         var patient = patientRepository.findById(command.patientId())
                 .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
-        var physiotherapist = physiotherapistRepository.findById(command.physiotherapistId())
-                .orElseThrow(() -> new IllegalArgumentException("Physiotherapist not found"));
+        var previousPhysiotherapistId = patient.getAssignedPhysiotherapistId();
+        var physiotherapist = getAssignablePhysiotherapist(command.physiotherapistId());
         if (!patient.getClinicId().equals(physiotherapist.getClinicId())) {
             throw new com.kiniot.uflex.api.organization.domain.exceptions.CrossClinicAssignmentException();
         }
         patient.assignPhysiotherapist(command.physiotherapistId(), physiotherapist.getClinicId());
         patientRepository.save(patient);
+        synchronizeAssignedPhysiotherapist(previousPhysiotherapistId);
+        synchronizeAssignedPhysiotherapist(command.physiotherapistId());
+    }
+
+    @Override
+    @Transactional
+    public void handle(CompletePatientCommand command) {
+        var patient = patientRepository.findById(command.patientId())
+                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+        patient.complete();
+        patientRepository.save(patient);
+        synchronizeAssignedPhysiotherapist(patient.getAssignedPhysiotherapistId());
+    }
+
+    @Override
+    @Transactional
+    public void handle(MarkPatientInactiveCommand command) {
+        var patient = patientRepository.findById(command.patientId())
+                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+        patient.markInactive();
+        patientRepository.save(patient);
+        synchronizeAssignedPhysiotherapist(patient.getAssignedPhysiotherapistId());
+    }
+
+    @Override
+    @Transactional
+    public void handle(ReactivatePatientCommand command) {
+        var patient = patientRepository.findById(command.patientId())
+                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+        patient.reactivate();
+        patientRepository.save(patient);
+        synchronizeAssignedPhysiotherapist(patient.getAssignedPhysiotherapistId());
     }
 
     @Override
@@ -134,6 +179,24 @@ public class PatientCommandServiceImpl implements PatientCommandService {
                 .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
         patient.discharge();
         patientRepository.save(patient);
+        synchronizeAssignedPhysiotherapist(patient.getAssignedPhysiotherapistId());
+    }
+
+    private com.kiniot.uflex.api.organization.domain.model.aggregates.Physiotherapist getAssignablePhysiotherapist(PhysiotherapistId physiotherapistId) {
+        var physiotherapist = physiotherapistRepository.findById(physiotherapistId)
+                .orElseThrow(() -> new IllegalArgumentException("Physiotherapist not found"));
+        if (physiotherapist.getStatus() == PhysiotherapistStatus.SUSPENDED) {
+            throw new SuspendedPhysiotherapistAssignmentException();
+        }
+        return physiotherapist;
+    }
+
+    private void synchronizeAssignedPhysiotherapist(PhysiotherapistId physiotherapistId) {
+        if (physiotherapistId == null) {
+            return;
+        }
+        physiotherapistRepository.findById(physiotherapistId)
+                .ifPresent(physiotherapistStatusSynchronizationService::synchronize);
     }
 
 }

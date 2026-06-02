@@ -1,5 +1,7 @@
 package com.kiniot.uflex.api.organization.domain.model.aggregates;
 
+import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistAlreadySuspendedException;
+import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistNotSuspendedException;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPhysiotherapistCommand;
 import com.kiniot.uflex.api.organization.domain.model.events.PhysiotherapistProfileActivatedEvent;
 import com.kiniot.uflex.api.organization.domain.model.events.PhysiotherapistProfileRegisteredEvent;
@@ -110,9 +112,23 @@ public class Physiotherapist extends AuditableAbstractAggregateRoot<Physiotherap
         ));
     }
 
+    public void reactivate(boolean hasAssignedPatientsInCharge) {
+        if (this.status != PhysiotherapistStatus.SUSPENDED) {
+            throw new PhysiotherapistNotSuspendedException();
+        }
+        this.status = hasAssignedPatientsInCharge ? PhysiotherapistStatus.ACTIVE : PhysiotherapistStatus.INACTIVE;
+    }
+
+    public void synchronizeAvailability(boolean hasAssignedPatientsInCharge) {
+        if (this.status == PhysiotherapistStatus.SUSPENDED) {
+            return;
+        }
+        this.status = hasAssignedPatientsInCharge ? PhysiotherapistStatus.ACTIVE : PhysiotherapistStatus.INACTIVE;
+    }
+
     public void suspend() {
-        if (this.status != PhysiotherapistStatus.ACTIVE) {
-            throw new IllegalStateException("Only active profiles can be suspended");
+        if (this.status == PhysiotherapistStatus.SUSPENDED) {
+            throw new PhysiotherapistAlreadySuspendedException();
         }
         this.status = PhysiotherapistStatus.SUSPENDED;
     }

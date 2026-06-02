@@ -3,7 +3,10 @@ package com.kiniot.uflex.api.organization.interfaces.rest.controllers;
 import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalIamService;
 import com.kiniot.uflex.api.organization.domain.exceptions.UserNotFoundException;
 import com.kiniot.uflex.api.organization.domain.model.commands.AssignPatientToPhysiotherapistCommand;
+import com.kiniot.uflex.api.organization.domain.model.commands.CompletePatientCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.DischargePatientCommand;
+import com.kiniot.uflex.api.organization.domain.model.commands.MarkPatientInactiveCommand;
+import com.kiniot.uflex.api.organization.domain.model.commands.ReactivatePatientCommand;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetCurrentPatientQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetCurrentPhysiotherapistQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPatientByIdQuery;
@@ -249,13 +252,14 @@ public class PatientsController {
 
     @PutMapping(value = "/{id}/assign")
     @Operation(
-            summary = "Assign a patient to a physiotherapist",
-            description = "Assigns a patient to a physiotherapist within the same clinic. This endpoint is intended for clinic administrators."
+            summary = "Assign or reassign a patient to a physiotherapist",
+            description = "Assigns or reassigns a patient to a physiotherapist within the same clinic. Suspended physiotherapists cannot receive new assignments. This endpoint is intended for clinic administrators."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Patient assigned successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input or patient not found"),
     })
+    @PreAuthorize("hasAuthority('ROLE_CLINIC_ADMIN')")
     public ResponseEntity<Void> assignPatientToPhysiotherapist(
             @PathVariable String id,
             @RequestBody AssignPhysiotherapistResource resource
@@ -276,20 +280,72 @@ public class PatientsController {
             @ApiResponse(responseCode = "204", description = "Patient discharged successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input or patient not found"),
     })
+    @PreAuthorize("hasAuthority('ROLE_PHYSIOTHERAPIST')")
     public ResponseEntity<Void> dischargePatient(@PathVariable String id) {
-        var physiotherapist = physiotherapistQueryService.handle(new GetCurrentPhysiotherapistQuery())
-                .orElseThrow(() -> new UserNotFoundException("Physiotherapist profile not found"));
-
-        var patient = patientQueryService.handle(new GetPatientByIdQuery(new PatientId(UUID.fromString(id))))
-                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
-
-        if (patient.getAssignedPhysiotherapistId() == null ||
-            !patient.getAssignedPhysiotherapistId().equals(physiotherapist.getId())) {
-            throw new IllegalStateException("You can only discharge your own patients");
-        }
-
+        ensurePatientBelongsToCurrentPhysiotherapist(id);
         var command = new DischargePatientCommand(new PatientId(UUID.fromString(id)));
         patientCommandService.handle(command);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(value = "/{id}/complete")
+    @PreAuthorize("hasAuthority('ROLE_PHYSIOTHERAPIST')")
+    @Operation(
+            summary = "Complete a patient treatment",
+            description = "Marks a patient as completed. The authenticated physiotherapist may complete only patients assigned to them."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Patient marked as completed successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input or patient not found"),
+    })
+    public ResponseEntity<Void> completePatient(@PathVariable String id) {
+        ensurePatientBelongsToCurrentPhysiotherapist(id);
+        patientCommandService.handle(new CompletePatientCommand(new PatientId(UUID.fromString(id))));
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(value = "/{id}/inactive")
+    @PreAuthorize("hasAuthority('ROLE_PHYSIOTHERAPIST')")
+    @Operation(
+            summary = "Mark a patient inactive",
+            description = "Marks a patient as inactive. The authenticated physiotherapist may change only patients assigned to them."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Patient marked inactive successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input or patient not found"),
+    })
+    public ResponseEntity<Void> markPatientInactive(@PathVariable String id) {
+        ensurePatientBelongsToCurrentPhysiotherapist(id);
+        patientCommandService.handle(new MarkPatientInactiveCommand(new PatientId(UUID.fromString(id))));
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(value = "/{id}/reactivate")
+    @PreAuthorize("hasAuthority('ROLE_PHYSIOTHERAPIST')")
+    @Operation(
+            summary = "Reactivate a patient",
+            description = "Reactivates a patient back to in-treatment status. The authenticated physiotherapist may reactivate only patients assigned to them."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Patient reactivated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input or patient not found"),
+    })
+    public ResponseEntity<Void> reactivatePatient(@PathVariable String id) {
+        ensurePatientBelongsToCurrentPhysiotherapist(id);
+        patientCommandService.handle(new ReactivatePatientCommand(new PatientId(UUID.fromString(id))));
+        return ResponseEntity.noContent().build();
+    }
+
+    private void ensurePatientBelongsToCurrentPhysiotherapist(String patientId) {
+        var physiotherapist = physiotherapistQueryService.handle(new GetCurrentPhysiotherapistQuery())
+                .orElseThrow(() -> new UserNotFoundException("Physiotherapist profile not found"));
+
+        var patient = patientQueryService.handle(new GetPatientByIdQuery(new PatientId(UUID.fromString(patientId))))
+                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+
+        if (patient.getAssignedPhysiotherapistId() == null ||
+                !patient.getAssignedPhysiotherapistId().equals(physiotherapist.getId())) {
+            throw new IllegalStateException("You can only manage your own patients");
+        }
     }
 }
