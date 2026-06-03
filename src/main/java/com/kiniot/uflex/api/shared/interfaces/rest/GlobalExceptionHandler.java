@@ -8,8 +8,11 @@ import com.kiniot.uflex.api.organization.domain.exceptions.ClinicNotFoundExcepti
 import com.kiniot.uflex.api.organization.domain.exceptions.CrossClinicAssignmentException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PatientAlreadyRegisteredException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistAlreadyRegisteredException;
+import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistAlreadySuspendedException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistLicenseInvalidException;
+import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistNotSuspendedException;
 import com.kiniot.uflex.api.organization.domain.exceptions.ProfileNotFoundException;
+import com.kiniot.uflex.api.organization.domain.exceptions.SuspendedPhysiotherapistAssignmentException;
 import com.kiniot.uflex.api.organization.domain.exceptions.UserNotFoundException;
 import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateExerciseSeriesOrderException;
 import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateRoutineOrderException;
@@ -45,7 +48,10 @@ public class GlobalExceptionHandler {
             PatientAlreadyRegisteredException.class,
             ClinicAlreadyRegisteredException.class,
             PhysiotherapistAlreadyRegisteredException.class,
+            PhysiotherapistAlreadySuspendedException.class,
             PhysiotherapistLicenseInvalidException.class,
+            PhysiotherapistNotSuspendedException.class,
+            SuspendedPhysiotherapistAssignmentException.class,
             CrossClinicAssignmentException.class,
             TenantAssignmentException.class,
             ExerciseClinicMismatchException.class,

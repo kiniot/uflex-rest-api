@@ -107,6 +107,10 @@ public class User extends AuditableAbstractAggregateRoot<User, UserId> {
         this.password = newHashedPassword;
     }
 
+    public void changeEmail(Email email) {
+        this.email = email;
+    }
+
     /**
      * Publishes a {@link UserCreatedEvent} domain event.
      */

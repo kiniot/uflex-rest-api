@@ -18,6 +18,7 @@ public interface PatientRepository extends JpaRepository<Patient, PatientId> {
     List<Patient> findAllByClinicId(ClinicId clinicId);
     List<Patient> findAllByAssignedPhysiotherapistId(PhysiotherapistId physiotherapistId);
     List<Patient> findAllByAssignedPhysiotherapistIdAndClinicId(PhysiotherapistId physiotherapistId, ClinicId clinicId);
+    boolean existsByAssignedPhysiotherapistId(PhysiotherapistId physiotherapistId);
     boolean existsByIdAndClinicId(PatientId patientId, ClinicId clinicId);
     boolean existsByUserId(UserId userId);
     boolean existsByEmailAddress(Email emailAddress);
