@@ -148,6 +148,45 @@ public class Patient extends AuditableAbstractAggregateRoot<Patient, PatientId> 
         this.assignedPhysiotherapistId = null;
     }
 
+    public void updateByClinicAdmin(
+            FirstName firstName,
+            LastName lastName,
+            Dni dni,
+            BirthDate birthDate,
+            Gender gender,
+            Email emailAddress,
+            PhoneNumber phoneNumber,
+            MedicalCondition medicalCondition
+    ) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.dni = dni;
+        this.birthDate = birthDate;
+        this.gender = gender;
+        this.emailAddress = emailAddress;
+        this.phoneNumber = phoneNumber;
+        this.medicalCondition = medicalCondition;
+    }
+
+    public void updateByPhysiotherapist(
+            FirstName firstName,
+            LastName lastName,
+            Email emailAddress,
+            PhoneNumber phoneNumber,
+            MedicalCondition medicalCondition
+    ) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.emailAddress = emailAddress;
+        this.phoneNumber = phoneNumber;
+        this.medicalCondition = medicalCondition;
+    }
+
+    public void updateContactInformation(Email emailAddress, PhoneNumber phoneNumber) {
+        this.emailAddress = emailAddress;
+        this.phoneNumber = phoneNumber;
+    }
+
     public void updateMedicalCondition(MedicalCondition condition) {
         if (this.status != PatientStatus.IN_TREATMENT) {
             throw new IllegalStateException("Cannot update medical condition of patient not in treatment");

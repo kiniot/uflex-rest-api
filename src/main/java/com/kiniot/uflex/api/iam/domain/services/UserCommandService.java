@@ -21,5 +21,7 @@ public interface UserCommandService {
 
     void handle(ChangePasswordCommand command);
 
+    void handle(UpdateUserEmailCommand command);
+
     void handle(DeleteUserCommand command);
 }

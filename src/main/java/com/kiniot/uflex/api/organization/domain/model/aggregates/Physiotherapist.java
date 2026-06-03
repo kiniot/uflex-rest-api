@@ -133,6 +133,26 @@ public class Physiotherapist extends AuditableAbstractAggregateRoot<Physiotherap
         this.status = PhysiotherapistStatus.SUSPENDED;
     }
 
+    public void updateProfile(
+            String fullName,
+            Specialty specialty,
+            Email emailAddress,
+            PhoneNumber phoneNumber,
+            LicenseNumber licenseNumber,
+            ProfessionalSummary professionalSummary,
+            PhotoUrl photoUrl,
+            int yearsOfExperience
+    ) {
+        this.fullName = fullName;
+        this.specialty = specialty;
+        this.emailAddress = emailAddress;
+        this.phoneNumber = phoneNumber;
+        this.licenseNumber = licenseNumber;
+        this.professionalSummary = professionalSummary;
+        this.photoUrl = photoUrl;
+        this.yearsOfExperience = yearsOfExperience;
+    }
+
     @Override
     public PhysiotherapistId getId() {
         return id;

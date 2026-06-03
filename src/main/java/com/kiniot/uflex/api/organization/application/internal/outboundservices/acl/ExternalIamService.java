@@ -53,4 +53,8 @@ public class ExternalIamService {
     public void deleteUserById(UserId userId) {
         iamContextFacade.deleteUserById(userId.id().toString());
     }
+
+    public void updateUserEmail(UserId userId, String email) {
+        iamContextFacade.updateUserEmail(userId.id().toString(), email);
+    }
 }

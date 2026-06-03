@@ -114,6 +114,18 @@ public class UserCommandServiceImpl implements UserCommandService {
 
     @Override
     @Transactional
+    public void handle(UpdateUserEmailCommand command) {
+        var user = userRepository.findById(command.userId())
+                .orElseThrow(() -> new UserWithIdNotFoundException(command.userId().toString()));
+        if (!user.getEmail().equals(command.email()) && userRepository.existsByEmail(command.email())) {
+            throw new IllegalArgumentException("Email already in use");
+        }
+        user.changeEmail(command.email());
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
     public void handle(AssignUserTenantId command) {
         var user = userRepository.findById(command.userId())
                 .orElseThrow(() -> new UserWithIdNotFoundException(command.userId().toString()));

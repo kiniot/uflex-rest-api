@@ -1,18 +1,24 @@
 package com.kiniot.uflex.api.organization.application.internal.commandservices;
 
 import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalIamService;
+import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalPlanningService;
 import com.kiniot.uflex.api.organization.domain.exceptions.ClinicNotFoundException;
 import com.kiniot.uflex.api.organization.domain.exceptions.CrossClinicAssignmentException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PatientAlreadyRegisteredException;
+import com.kiniot.uflex.api.organization.domain.exceptions.PatientHasTreatmentPlansException;
 import com.kiniot.uflex.api.organization.domain.exceptions.SuspendedPhysiotherapistAssignmentException;
 import com.kiniot.uflex.api.organization.domain.model.aggregates.Patient;
 import com.kiniot.uflex.api.organization.domain.model.commands.AssignPatientToPhysiotherapistCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.CompletePatientCommand;
+import com.kiniot.uflex.api.organization.domain.model.commands.DeletePatientCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.DischargePatientCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.MarkPatientInactiveCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.ReactivatePatientCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPatientByClinicAdminCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPatientByPhysiotherapistCommand;
+import com.kiniot.uflex.api.organization.domain.model.commands.UpdateCurrentPatientProfileCommand;
+import com.kiniot.uflex.api.organization.domain.model.commands.UpdatePatientByClinicAdminCommand;
+import com.kiniot.uflex.api.organization.domain.model.commands.UpdatePatientByPhysiotherapistCommand;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhysiotherapistStatus;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PhysiotherapistId;
 import com.kiniot.uflex.api.organization.domain.services.PatientCommandService;
@@ -30,17 +36,20 @@ public class PatientCommandServiceImpl implements PatientCommandService {
     private final PatientRepository patientRepository;
     private final PhysiotherapistRepository physiotherapistRepository;
     private final ExternalIamService externalIamService;
+    private final ExternalPlanningService externalPlanningService;
     private final PhysiotherapistStatusSynchronizationService physiotherapistStatusSynchronizationService;
 
     public PatientCommandServiceImpl(
             PatientRepository patientRepository,
             PhysiotherapistRepository physiotherapistRepository,
             ExternalIamService externalIamService,
+            ExternalPlanningService externalPlanningService,
             PhysiotherapistStatusSynchronizationService physiotherapistStatusSynchronizationService
     ) {
         this.patientRepository = patientRepository;
         this.physiotherapistRepository = physiotherapistRepository;
         this.externalIamService = externalIamService;
+        this.externalPlanningService = externalPlanningService;
         this.physiotherapistStatusSynchronizationService = physiotherapistStatusSynchronizationService;
     }
 
@@ -93,6 +102,70 @@ public class PatientCommandServiceImpl implements PatientCommandService {
             compensateProvisionedPatientUser(userId, exception);
             throw exception;
         }
+    }
+
+    @Override
+    @Transactional
+    public Optional<Patient> handle(UpdatePatientByClinicAdminCommand command) {
+        var clinicId = externalIamService.fetchCurrentClinicId()
+                .orElseThrow(() -> new ClinicNotFoundException("Current clinic not found"));
+        var patient = patientRepository.findById(command.patientId())
+                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+        if (!patient.getClinicId().equals(clinicId)) {
+            throw new IllegalStateException("Patient does not belong to the authenticated clinic");
+        }
+        validateEmailUpdate(patient, command.emailAddress());
+        var previousPhysiotherapistId = patient.getAssignedPhysiotherapistId();
+        patient.updateByClinicAdmin(
+                command.firstName(),
+                command.lastName(),
+                command.dni(),
+                command.birthDate(),
+                command.gender(),
+                command.emailAddress(),
+                command.phoneNumber(),
+                command.medicalCondition()
+        );
+        updatePatientAssignment(patient, command.assignedPhysiotherapistId());
+        var savedPatient = patientRepository.save(patient);
+        synchronizeEmailIfChanged(savedPatient.getUserId(), patient.getEmailAddress(), command.emailAddress());
+        synchronizeAssignedPhysiotherapist(previousPhysiotherapistId);
+        synchronizeAssignedPhysiotherapist(savedPatient.getAssignedPhysiotherapistId());
+        return Optional.of(savedPatient);
+    }
+
+    @Override
+    @Transactional
+    public Optional<Patient> handle(UpdatePatientByPhysiotherapistCommand command) {
+        var patient = patientRepository.findById(command.patientId())
+                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+        validateCurrentPhysiotherapistOwnsPatient(patient);
+        validateEmailUpdate(patient, command.emailAddress());
+        var previousEmail = patient.getEmailAddress();
+        patient.updateByPhysiotherapist(
+                command.firstName(),
+                command.lastName(),
+                command.emailAddress(),
+                command.phoneNumber(),
+                command.medicalCondition()
+        );
+        var savedPatient = patientRepository.save(patient);
+        synchronizeEmailIfChanged(savedPatient.getUserId(), previousEmail, command.emailAddress());
+        return Optional.of(savedPatient);
+    }
+
+    @Override
+    @Transactional
+    public Optional<Patient> handle(UpdateCurrentPatientProfileCommand command) {
+        var patient = patientRepository.findById(command.patientId())
+                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+        validateCurrentPatientOwnsProfile(patient);
+        validateEmailUpdate(patient, command.emailAddress());
+        var previousEmail = patient.getEmailAddress();
+        patient.updateContactInformation(command.emailAddress(), command.phoneNumber());
+        var savedPatient = patientRepository.save(patient);
+        synchronizeEmailIfChanged(savedPatient.getUserId(), previousEmail, command.emailAddress());
+        return Optional.of(savedPatient);
     }
 
     private void validatePatientRegistration(
@@ -182,6 +255,21 @@ public class PatientCommandServiceImpl implements PatientCommandService {
         synchronizeAssignedPhysiotherapist(patient.getAssignedPhysiotherapistId());
     }
 
+    @Override
+    @Transactional
+    public void handle(DeletePatientCommand command) {
+        var patient = patientRepository.findById(command.patientId())
+                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+        if (externalPlanningService.existsTreatmentPlanByPatientId(patient.getId())) {
+            throw new PatientHasTreatmentPlansException(patient.getId().patientId().toString());
+        }
+        var assignedPhysiotherapistId = patient.getAssignedPhysiotherapistId();
+        var userId = patient.getUserId();
+        patientRepository.delete(patient);
+        synchronizeAssignedPhysiotherapist(assignedPhysiotherapistId);
+        externalIamService.deleteUserById(userId);
+    }
+
     private com.kiniot.uflex.api.organization.domain.model.aggregates.Physiotherapist getAssignablePhysiotherapist(PhysiotherapistId physiotherapistId) {
         var physiotherapist = physiotherapistRepository.findById(physiotherapistId)
                 .orElseThrow(() -> new IllegalArgumentException("Physiotherapist not found"));
@@ -197,6 +285,50 @@ public class PatientCommandServiceImpl implements PatientCommandService {
         }
         physiotherapistRepository.findById(physiotherapistId)
                 .ifPresent(physiotherapistStatusSynchronizationService::synchronize);
+    }
+
+    private void validateEmailUpdate(Patient patient, com.kiniot.uflex.api.shared.domain.model.valueobjects.Email updatedEmail) {
+        if (!patient.getEmailAddress().equals(updatedEmail) && patientRepository.existsByEmailAddress(updatedEmail)) {
+            throw new PatientAlreadyRegisteredException(updatedEmail.email());
+        }
+    }
+
+    private void synchronizeEmailIfChanged(UserId userId,
+                                           com.kiniot.uflex.api.shared.domain.model.valueobjects.Email previousEmail,
+                                           com.kiniot.uflex.api.shared.domain.model.valueobjects.Email newEmail) {
+        if (!previousEmail.equals(newEmail)) {
+            externalIamService.updateUserEmail(userId, newEmail.email());
+        }
+    }
+
+    private void updatePatientAssignment(Patient patient, PhysiotherapistId assignedPhysiotherapistId) {
+        if (assignedPhysiotherapistId == null) {
+            patient.unassignPhysiotherapist();
+            return;
+        }
+        var physiotherapist = getAssignablePhysiotherapist(assignedPhysiotherapistId);
+        if (!patient.getClinicId().equals(physiotherapist.getClinicId())) {
+            throw new CrossClinicAssignmentException();
+        }
+        patient.assignPhysiotherapist(assignedPhysiotherapistId, physiotherapist.getClinicId());
+    }
+
+    private void validateCurrentPhysiotherapistOwnsPatient(Patient patient) {
+        var currentPhysiotherapist = physiotherapistRepository.findByUserId(
+                        externalIamService.fetchCurrentUserId()
+                                .orElseThrow(() -> new ClinicNotFoundException("Current user not found")))
+                .orElseThrow(() -> new IllegalArgumentException("Physiotherapist not found"));
+        if (patient.getAssignedPhysiotherapistId() == null || !patient.getAssignedPhysiotherapistId().equals(currentPhysiotherapist.getId())) {
+            throw new IllegalStateException("You can only manage your own patients");
+        }
+    }
+
+    private void validateCurrentPatientOwnsProfile(Patient patient) {
+        var currentUserId = externalIamService.fetchCurrentUserId()
+                .orElseThrow(() -> new ClinicNotFoundException("Current user not found"));
+        if (!patient.getUserId().equals(currentUserId)) {
+            throw new IllegalStateException("You can only edit your own patient profile");
+        }
     }
 
 }

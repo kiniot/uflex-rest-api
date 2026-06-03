@@ -38,6 +38,8 @@ public interface TreatmentPlanRepository extends JpaRepository<TreatmentPlan, Tr
 
     List<TreatmentPlan> findAllByClinicIdAndPatientId(ClinicId clinicId, PatientId patientId);
 
+    boolean existsByPatientId(PatientId patientId);
+
     @EntityGraph(attributePaths = {"routines"})
     @Query("select t from TreatmentPlan t where t.clinicId = :clinicId and t.patientId = :patientId order by t.period.startsAt desc")
     List<TreatmentPlan> findAllWithRoutinesAndExerciseSeriesByClinicIdAndPatientIdOrderByPeriodStartsAtDesc(

@@ -9,6 +9,7 @@ import com.kiniot.uflex.api.iam.domain.services.UserCommandService;
 import com.kiniot.uflex.api.iam.domain.services.UserQueryService;
 import com.kiniot.uflex.api.iam.interfaces.acl.IamContextFacade;
 import com.kiniot.uflex.api.iam.domain.model.commands.SignUpVerifiedUserCommand;
+import com.kiniot.uflex.api.iam.domain.model.commands.UpdateUserEmailCommand;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import org.springframework.stereotype.Service;
 
@@ -52,6 +53,14 @@ public class IamContextFacadeImpl implements IamContextFacade {
                 .map(UserId::id)
                 .map(UUID::toString)
                 .orElseThrow(() -> new IllegalStateException("User ID is null"));
+    }
+
+    @Override
+    public void updateUserEmail(String userId, String email) {
+        userCommandService.handle(new UpdateUserEmailCommand(
+                new UserId(UUID.fromString(userId)),
+                new Email(email)
+        ));
     }
 
     @Override
