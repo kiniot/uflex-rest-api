@@ -53,7 +53,7 @@ public class DevicesController {
                 .orElseThrow(() -> new IllegalStateException("Clinic not found"));
         var command = RegisterDeviceCommandFromResourceAssembler.toCommandFromResource(resource);
         var device = deviceCommandService.handle(command, clinicId);
-        return new ResponseEntity<>(DeviceResourceFromEntityAssembler.toResourceFromEntity(device, externalOrganizationService), HttpStatus.CREATED);
+        return new ResponseEntity<>(DeviceResourceFromEntityAssembler.toResourceFromEntity(device, null), HttpStatus.CREATED);
     }
 
     @GetMapping
@@ -65,7 +65,12 @@ public class DevicesController {
         var query = new GetAllDevicesByClinicIdQuery(clinicId, null);
         var devices = deviceQueryService.handle(query);
         var resources = devices.stream()
-                .map(d -> DeviceResourceFromEntityAssembler.toResourceFromEntity(d, externalOrganizationService))
+                .map(d -> {
+                    String patientName = d.getCurrentPatientId() != null
+                            ? externalOrganizationService.getPatientFullName(d.getCurrentPatientId().patientId().toString())
+                            : null;
+                    return DeviceResourceFromEntityAssembler.toResourceFromEntity(d, patientName);
+                })
                 .toList();
         return ResponseEntity.ok(resources);
     }
@@ -98,8 +103,12 @@ public class DevicesController {
         var command = new UpdateDeviceStatusCommand(new SerialNumber(serialNumber), resource.status());
         deviceCommandService.handle(command);
         var device = deviceQueryService.handle(new GetDeviceBySerialNumberQuery(new SerialNumber(serialNumber)));
-        return device.map(d -> ResponseEntity.ok(DeviceResourceFromEntityAssembler.toResourceFromEntity(d, externalOrganizationService)))
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        return device.map(d -> {
+            String patientName = d.getCurrentPatientId() != null
+                    ? externalOrganizationService.getPatientFullName(d.getCurrentPatientId().patientId().toString())
+                    : null;
+            return ResponseEntity.ok(DeviceResourceFromEntityAssembler.toResourceFromEntity(d, patientName));
+        }).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PatchMapping("/{serialNumber}/calibration")
@@ -118,8 +127,12 @@ public class DevicesController {
             deviceCommandService.handle(command);
         }
         var device = deviceQueryService.handle(new GetDeviceBySerialNumberQuery(new SerialNumber(serialNumber)));
-        return device.map(d -> ResponseEntity.ok(DeviceResourceFromEntityAssembler.toResourceFromEntity(d, externalOrganizationService)))
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        return device.map(d -> {
+            String patientName = d.getCurrentPatientId() != null
+                    ? externalOrganizationService.getPatientFullName(d.getCurrentPatientId().patientId().toString())
+                    : null;
+            return ResponseEntity.ok(DeviceResourceFromEntityAssembler.toResourceFromEntity(d, patientName));
+        }).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping("/{serialNumber}/patient-assignments")
@@ -133,8 +146,12 @@ public class DevicesController {
         var command = new AssignDeviceToPatientCommand(new SerialNumber(serialNumber), patientId);
         deviceCommandService.handle(command);
         var device = deviceQueryService.handle(new GetDeviceBySerialNumberQuery(new SerialNumber(serialNumber)));
-        return device.map(d -> ResponseEntity.ok(DeviceResourceFromEntityAssembler.toResourceFromEntity(d, externalOrganizationService)))
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        return device.map(d -> {
+            String patientName = d.getCurrentPatientId() != null
+                    ? externalOrganizationService.getPatientFullName(d.getCurrentPatientId().patientId().toString())
+                    : null;
+            return ResponseEntity.ok(DeviceResourceFromEntityAssembler.toResourceFromEntity(d, patientName));
+        }).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{serialNumber}/patient-assignments")
@@ -155,8 +172,12 @@ public class DevicesController {
             return ResponseEntity.notFound().build();
         }
         var device = deviceQueryService.handle(new GetMyAssignedDeviceQuery(patientIdOpt.get()));
-        return device.map(d -> ResponseEntity.ok(DeviceResourceFromEntityAssembler.toResourceFromEntity(d, externalOrganizationService)))
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        return device.map(d -> {
+            String patientName = d.getCurrentPatientId() != null
+                    ? externalOrganizationService.getPatientFullName(d.getCurrentPatientId().patientId().toString())
+                    : null;
+            return ResponseEntity.ok(DeviceResourceFromEntityAssembler.toResourceFromEntity(d, patientName));
+        }).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PatchMapping("/{serialNumber}/telemetry")
