@@ -12,4 +12,5 @@ public interface DeviceCommandService {
     void handle(RegisterSuccessfulCalibrationCommand command);
     void handle(MarkCalibrationAsInvalidCommand command);
     void handle(UpdateDeviceStatusCommand command);
+    void handle(DeleteDeviceCommand command);
 }

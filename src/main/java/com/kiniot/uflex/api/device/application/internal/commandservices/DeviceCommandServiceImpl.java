@@ -99,6 +99,18 @@ public class DeviceCommandServiceImpl implements DeviceCommandService {
         deviceRepository.save(device);
     }
 
+    @Override
+    @Transactional
+    public void handle(DeleteDeviceCommand command) {
+        var device = getDeviceOrThrow(command.serialNumber());
+        var clinicId = externalIamService.fetchCurrentClinicId()
+                .orElseThrow(() -> new IllegalStateException("Clinic not found"));
+        if (!device.getClinicId().equals(clinicId)) {
+            throw new IllegalStateException("Device does not belong to your clinic");
+        }
+        deviceRepository.delete(device);
+    }
+
     private Device getDeviceOrThrow(SerialNumber serialNumber) {
         return deviceRepository.findBySerialNumber(serialNumber)
                 .orElseThrow(() -> new IllegalStateException("Device not found with serial number: " + serialNumber.value()));

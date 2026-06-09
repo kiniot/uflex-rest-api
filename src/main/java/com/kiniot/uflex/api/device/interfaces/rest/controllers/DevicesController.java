@@ -10,7 +10,6 @@ import com.kiniot.uflex.api.device.domain.services.DeviceQueryService;
 import com.kiniot.uflex.api.device.interfaces.rest.resources.*;
 import com.kiniot.uflex.api.device.interfaces.rest.transform.DeviceResourceFromEntityAssembler;
 import com.kiniot.uflex.api.device.interfaces.rest.transform.RegisterDeviceCommandFromResourceAssembler;
-import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -75,7 +74,7 @@ public class DevicesController {
         return ResponseEntity.ok(resources);
     }
 
-    @GetMapping("/devices/metrics")
+    @GetMapping("/metrics")
     @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
     @Operation(summary = "Get clinic fleet metrics", description = "Returns device fleet metrics for the authenticated clinic.")
     public ResponseEntity<ClinicFleetMetricsResource> getClinicFleetMetrics() {
@@ -178,6 +177,15 @@ public class DevicesController {
                     : null;
             return ResponseEntity.ok(DeviceResourceFromEntityAssembler.toResourceFromEntity(d, patientName));
         }).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{serialNumber}")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
+    @Operation(summary = "Delete a device", description = "Deletes a device by serial number.")
+    public ResponseEntity<Void> deleteDevice(@PathVariable String serialNumber) {
+        var command = new DeleteDeviceCommand(new SerialNumber(serialNumber));
+        deviceCommandService.handle(command);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{serialNumber}/telemetry")
