@@ -1,5 +1,6 @@
 package com.kiniot.uflex.api.organization.application.acl;
 
+import com.kiniot.uflex.api.organization.domain.model.aggregates.Patient;
 import com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.repositories.PatientRepository;
 import com.kiniot.uflex.api.organization.interfaces.acl.OrganizationContextFacade;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
@@ -48,5 +49,21 @@ public class OrganizationContextFacadeImpl implements OrganizationContextFacade 
         return patientRepository.findByUserId(new UserId(UUID.fromString(userId)))
                 .map(patient -> patient.getId().patientId().toString())
                 .orElse("");
+    }
+
+    @Override
+    public String getPatientFullName(String patientId) {
+        if (patientId == null || patientId.isBlank()) {
+            return null;
+        }
+        return patientRepository.findById(new PatientId(UUID.fromString(patientId)))
+                .map(this::formatPatientName)
+                .orElse(null);
+    }
+
+    private String formatPatientName(Patient patient) {
+        var firstName = patient.getFirstName() != null ? patient.getFirstName().firstName() : "";
+        var lastName = patient.getLastName() != null ? patient.getLastName().lastName() : "";
+        return (firstName + " " + lastName).trim();
     }
 }

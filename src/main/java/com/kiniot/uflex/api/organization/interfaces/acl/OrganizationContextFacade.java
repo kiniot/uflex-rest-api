@@ -10,4 +10,6 @@ public interface OrganizationContextFacade {
     List<String> findPatientIdsByPhysiotherapistIdAndClinicId(String physiotherapistId, String clinicId);
 
     String findPatientIdByUserId(String userId);
+
+    String getPatientFullName(String patientId);
 }
