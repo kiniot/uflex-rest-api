@@ -1,0 +1,85 @@
+package com.kiniot.uflex.api.therapy.interfaces.rest.controllers;
+
+import com.kiniot.uflex.api.therapy.domain.model.queries.GetActiveTherapySessionByPatientIdQuery;
+import com.kiniot.uflex.api.therapy.domain.model.queries.GetSessionSummaryQuery;
+import com.kiniot.uflex.api.therapy.domain.services.TherapySessionCommandService;
+import com.kiniot.uflex.api.therapy.domain.services.TherapySessionQueryService;
+import com.kiniot.uflex.api.therapy.interfaces.rest.resources.CancelTherapySessionResource;
+import com.kiniot.uflex.api.therapy.interfaces.rest.resources.ConfirmHardwareReadinessResource;
+import com.kiniot.uflex.api.therapy.interfaces.rest.resources.InitiateTherapyPreparationResource;
+import com.kiniot.uflex.api.therapy.interfaces.rest.resources.SessionSummaryResource;
+import com.kiniot.uflex.api.therapy.interfaces.rest.resources.TherapySessionResource;
+import com.kiniot.uflex.api.therapy.interfaces.rest.transform.SessionSummaryResourceFromEntityAssembler;
+import com.kiniot.uflex.api.therapy.interfaces.rest.transform.TherapySessionResourceFromEntityAssembler;
+import com.kiniot.uflex.api.therapy.interfaces.rest.transform.CancelTherapySessionCommandFromResourceAssembler;
+import com.kiniot.uflex.api.therapy.interfaces.rest.transform.ConfirmHardwareReadinessCommandFromResourceAssembler;
+import com.kiniot.uflex.api.therapy.interfaces.rest.transform.InitiateTherapyPreparationCommandFromResourceAssembler;
+import com.kiniot.uflex.api.therapy.domain.model.commands.FinalizeTherapySessionCommand;
+import com.kiniot.uflex.api.therapy.domain.model.commands.StartTherapySessionCommand;
+import com.kiniot.uflex.api.therapy.interfaces.rest.swagger.TherapySessionController;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.net.URI;
+import java.util.UUID;
+
+@RestController
+@RequiredArgsConstructor
+public class TherapySessionControllerImpl implements TherapySessionController {
+
+    private final TherapySessionCommandService therapySessionCommandService;
+    private final TherapySessionQueryService therapySessionQueryService;
+
+    @Override
+    public ResponseEntity<TherapySessionResource> initiateTherapyPreparation(InitiateTherapyPreparationResource resource) {
+        var command = InitiateTherapyPreparationCommandFromResourceAssembler.toCommandFromResource(resource);
+        var session = therapySessionCommandService.handle(command);
+        var response = TherapySessionResourceFromEntityAssembler.toResponseFromEntity(session);
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(response.id())
+                .toUri();
+        return ResponseEntity.created(location).body(response);
+    }
+
+    @Override
+    public ResponseEntity<TherapySessionResource> confirmHardwareReadiness(UUID id, ConfirmHardwareReadinessResource resource) {
+        var command = ConfirmHardwareReadinessCommandFromResourceAssembler.toCommandFromResource(id, resource);
+        var session = therapySessionCommandService.handle(command);
+        return ResponseEntity.ok(TherapySessionResourceFromEntityAssembler.toResponseFromEntity(session));
+    }
+
+    @Override
+    public ResponseEntity<TherapySessionResource> startTherapySession(UUID id) {
+        var session = therapySessionCommandService.handle(new StartTherapySessionCommand(id));
+        return ResponseEntity.ok(TherapySessionResourceFromEntityAssembler.toResponseFromEntity(session));
+    }
+
+    @Override
+    public ResponseEntity<TherapySessionResource> finalizeTherapySession(UUID id) {
+        var session = therapySessionCommandService.handle(new FinalizeTherapySessionCommand(id));
+        return ResponseEntity.ok(TherapySessionResourceFromEntityAssembler.toResponseFromEntity(session));
+    }
+
+    @Override
+    public ResponseEntity<TherapySessionResource> cancelTherapySession(UUID id, CancelTherapySessionResource resource) {
+        var command = CancelTherapySessionCommandFromResourceAssembler.toCommandFromResource(id, resource);
+        var session = therapySessionCommandService.handle(command);
+        return ResponseEntity.ok(TherapySessionResourceFromEntityAssembler.toResponseFromEntity(session));
+    }
+
+    @Override
+    public ResponseEntity<TherapySessionResource> getActiveTherapySession(UUID patientId) {
+        var session = therapySessionQueryService.handle(new GetActiveTherapySessionByPatientIdQuery(patientId));
+        return ResponseEntity.ok(TherapySessionResourceFromEntityAssembler.toResponseFromEntity(session));
+    }
+
+    @Override
+    public ResponseEntity<SessionSummaryResource> getSessionSummary(UUID id) {
+        var session = therapySessionQueryService.handle(new GetSessionSummaryQuery(id));
+        return ResponseEntity.ok(SessionSummaryResourceFromEntityAssembler.toResponseFromEntity(session));
+    }
+}
