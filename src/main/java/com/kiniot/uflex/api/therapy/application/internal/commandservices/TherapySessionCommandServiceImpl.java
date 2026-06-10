@@ -3,6 +3,7 @@ package com.kiniot.uflex.api.therapy.application.internal.commandservices;
 import com.kiniot.uflex.api.planning.interfaces.acl.dto.RoutineDetailsDto;
 import com.kiniot.uflex.api.planning.interfaces.acl.dto.SerieDetailsDto;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
+import com.kiniot.uflex.api.therapy.application.internal.outboundservices.acl.ExternalDeviceService;
 import com.kiniot.uflex.api.therapy.application.internal.outboundservices.acl.ExternalIamService;
 import com.kiniot.uflex.api.therapy.application.internal.outboundservices.acl.ExternalPlanningService;
 import com.kiniot.uflex.api.therapy.domain.exceptions.PatientAlreadyInActiveSessionException;
@@ -35,6 +36,7 @@ public class TherapySessionCommandServiceImpl implements TherapySessionCommandSe
     private final ApplicationEventPublisher eventPublisher;
     private final ExternalPlanningService externalPlanningService;
     private final ExternalIamService externalIamService;
+    private final ExternalDeviceService externalDeviceService;
 
     @Override
     @Transactional
@@ -44,6 +46,21 @@ public class TherapySessionCommandServiceImpl implements TherapySessionCommandSe
 
         if (therapySessionRepository.existsActiveByPatientId(command.patientId(), clinicId.id(), ACTIVE_STATUSES)) {
             throw PatientAlreadyInActiveSessionException.forPatient(command.patientId().toString());
+        }
+
+        if (!externalDeviceService.isDeviceAssignedToPatient(
+                command.iotDeviceId(), clinicId.id().toString(), command.patientId().toString())) {
+            throw new IllegalArgumentException(
+                    "Device %s is not assigned to patient %s in this clinic".formatted(command.iotDeviceId(), command.patientId()));
+        }
+
+        if (!externalPlanningService.isRoutineInPatientTreatmentPlan(
+                command.planningRoutineId().toString(),
+                command.treatmentPlanId().toString(),
+                command.patientId().toString())) {
+            throw new IllegalArgumentException(
+                    "Routine %s does not belong to treatment plan %s of patient %s"
+                            .formatted(command.planningRoutineId(), command.treatmentPlanId(), command.patientId()));
         }
 
         RoutineDetailsDto routineDto = externalPlanningService.getRoutineDetails(command.planningRoutineId().toString());
@@ -151,16 +168,19 @@ public class TherapySessionCommandServiceImpl implements TherapySessionCommandSe
                 .orElseThrow(() -> TherapySessionNotFoundException.withId(command.sessionId().toString()));
 
         SerieId serieId = SerieId.of(command.serieId());
-        session.recordRepetition(serieId, command.achievedAngle(), command.recordedAt(), command.edgeSequenceId());
+        boolean recorded = session.recordRepetition(
+                serieId, command.achievedAngle(), command.recordedAt(), command.edgeSequenceId());
         TherapySession saved = therapySessionRepository.save(session);
 
-        eventPublisher.publishEvent(saved.publishRepetitionRecorded(serieId, command.achievedAngle(), command.recordedAt()));
+        if (recorded) {
+            eventPublisher.publishEvent(saved.publishRepetitionRecorded(serieId, command.achievedAngle(), command.recordedAt()));
 
-        saved.findSerie(serieId).ifPresent(serie -> {
-            if (serie.getStatus() == SerieStatus.Validated) {
-                eventPublisher.publishEvent(saved.publishSerieAchieved(serieId));
-            }
-        });
+            saved.findSerie(serieId).ifPresent(serie -> {
+                if (serie.getStatus() == SerieStatus.Validated) {
+                    eventPublisher.publishEvent(saved.publishSerieAchieved(serieId));
+                }
+            });
+        }
 
         log.info("Repetition recorded: sessionId={}, serieId={}, achievedAngle={}",
                 command.sessionId(), command.serieId(), command.achievedAngle());
@@ -201,11 +221,14 @@ public class TherapySessionCommandServiceImpl implements TherapySessionCommandSe
     }
 
     private Serie buildSerie(SerieDetailsDto dto) {
+        // Therapy defines the valid range as [0, rangeOfMotion]: planning only
+        // prescribes the target range of motion, not a lower bound.
         return new Serie(
                 ExerciseId.of(java.util.UUID.fromString(dto.exerciseId())),
                 dto.targetRepetitions(),
-                AngleThreshold.of(dto.minAngle(), dto.maxAngle()),
-                dto.instructionalVideoUrl()
+                AngleThreshold.of(0.0, dto.rangeOfMotion()),
+                dto.durationSeconds(),
+                dto.restDurationSeconds()
         );
     }
 }
