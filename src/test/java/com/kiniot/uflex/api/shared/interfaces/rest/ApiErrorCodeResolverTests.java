@@ -4,8 +4,12 @@ import com.kiniot.uflex.api.iam.domain.exceptions.UserWithIdNotFoundException;
 import com.kiniot.uflex.api.organization.domain.exceptions.CrossClinicAssignmentException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.mock.http.MockHttpInputMessage;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,6 +58,31 @@ class ApiErrorCodeResolverTests {
         String code = resolver.resolve(new BadCredentialsException("Invalid token"));
 
         assertEquals("AUTH_REQUIRED", code);
+    }
+
+    @Test
+    void shouldResolveMethodArgumentTypeMismatchExceptionToBadRequest() {
+        String code = resolver.resolve(
+                new MethodArgumentTypeMismatchException("{routineOrder}", Integer.class, "routineOrder", null, null)
+        );
+
+        assertEquals("BAD_REQUEST", code);
+    }
+
+    @Test
+    void shouldResolveMissingServletRequestParameterExceptionToBadRequest() {
+        String code = resolver.resolve(new MissingServletRequestParameterException("requiredValue", "String"));
+
+        assertEquals("BAD_REQUEST", code);
+    }
+
+    @Test
+    void shouldResolveHttpMessageNotReadableExceptionToBadRequest() {
+        String code = resolver.resolve(
+                new HttpMessageNotReadableException("Malformed JSON", new MockHttpInputMessage(new byte[0]))
+        );
+
+        assertEquals("BAD_REQUEST", code);
     }
 
     @Test

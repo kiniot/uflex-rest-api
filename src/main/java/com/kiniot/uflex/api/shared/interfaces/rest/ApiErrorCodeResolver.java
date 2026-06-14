@@ -1,10 +1,16 @@
 package com.kiniot.uflex.api.shared.interfaces.rest;
 
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.converter.HttpMessageConversionException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.web.ErrorResponseException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.ServletRequestBindingException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.Locale;
 
@@ -26,6 +32,14 @@ public class ApiErrorCodeResolver {
         }
         if (throwable instanceof IllegalStateException) {
             return "CONFLICT";
+        }
+        if (throwable instanceof MethodArgumentTypeMismatchException
+                || throwable instanceof TypeMismatchException
+                || throwable instanceof MissingServletRequestParameterException
+                || throwable instanceof ServletRequestBindingException
+                || throwable instanceof HttpMessageNotReadableException
+                || throwable instanceof HttpMessageConversionException) {
+            return "BAD_REQUEST";
         }
         if (throwable instanceof ErrorResponseException errorResponseException) {
             return resolveFromStatus(errorResponseException.getStatusCode());

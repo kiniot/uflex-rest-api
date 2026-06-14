@@ -54,12 +54,20 @@ import com.kiniot.uflex.api.subscription.domain.exceptions.SubscriptionOperation
 import com.kiniot.uflex.api.subscription.domain.exceptions.SubscriptionPriceMismatchException;
 import com.kiniot.uflex.api.subscription.domain.exceptions.TierNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageConversionException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+import java.util.Locale;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -156,6 +164,70 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request, exception);
     }
 
+    @ExceptionHandler({
+            MethodArgumentTypeMismatchException.class,
+            TypeMismatchException.class
+    })
+    public ResponseEntity<ErrorResource> handleMethodArgumentTypeMismatchException(
+            Exception exception,
+            HttpServletRequest request
+    ) {
+        String parameterName = "parameter";
+        String expectedType = "valid value";
+        String rejectedValue = "null";
+
+        if (exception instanceof MethodArgumentTypeMismatchException methodArgumentTypeMismatchException) {
+            parameterName = methodArgumentTypeMismatchException.getName();
+            expectedType = methodArgumentTypeMismatchException.getRequiredType() != null
+                    ? humanReadableTypeName(methodArgumentTypeMismatchException.getRequiredType())
+                    : "valid value";
+            rejectedValue = methodArgumentTypeMismatchException.getValue() != null
+                    ? methodArgumentTypeMismatchException.getValue().toString()
+                    : "null";
+        } else if (exception instanceof TypeMismatchException typeMismatchException) {
+            expectedType = typeMismatchException.getRequiredType() != null
+                    ? humanReadableTypeName(typeMismatchException.getRequiredType())
+                    : "valid value";
+            rejectedValue = typeMismatchException.getValue() != null
+                    ? typeMismatchException.getValue().toString()
+                    : "null";
+        }
+
+        String message = "Parameter '%s' must be a valid %s. Received: \"%s\""
+                .formatted(parameterName, expectedType, rejectedValue);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request, exception);
+    }
+
+    @ExceptionHandler({
+            MissingServletRequestParameterException.class,
+            ServletRequestBindingException.class
+    })
+    public ResponseEntity<ErrorResource> handleMissingServletRequestParameterException(
+            Exception exception,
+            HttpServletRequest request
+    ) {
+        String message;
+        if (exception instanceof MissingServletRequestParameterException missingServletRequestParameterException) {
+            message = "Required request parameter '%s' is missing"
+                    .formatted(missingServletRequestParameterException.getParameterName());
+        } else {
+            message = exception.getMessage();
+        }
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request, exception);
+    }
+
+    @ExceptionHandler({
+            HttpMessageNotReadableException.class,
+            HttpMessageConversionException.class
+    })
+    public ResponseEntity<ErrorResource> handleHttpMessageNotReadableException(
+            Exception exception,
+            HttpServletRequest request
+    ) {
+        String message = "Request body is malformed or contains invalid values";
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request, exception);
+    }
+
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ErrorResource> handleIllegalStateException(IllegalStateException exception, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.CONFLICT, exception.getMessage(), request, exception);
@@ -188,5 +260,21 @@ public class GlobalExceptionHandler {
             Throwable throwable
     ) {
         return errorResponseFactory.buildResponse(status, message, request, throwable);
+    }
+
+    private String humanReadableTypeName(Class<?> type) {
+        if (Integer.class.equals(type) || int.class.equals(type)) {
+            return "integer";
+        }
+        if (Long.class.equals(type) || long.class.equals(type)) {
+            return "long";
+        }
+        if (java.util.UUID.class.equals(type)) {
+            return "UUID";
+        }
+        if (Boolean.class.equals(type) || boolean.class.equals(type)) {
+            return "boolean";
+        }
+        return type.getSimpleName().toLowerCase(Locale.ROOT);
     }
 }

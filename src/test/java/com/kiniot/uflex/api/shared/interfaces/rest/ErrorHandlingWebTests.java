@@ -8,14 +8,19 @@ import com.kiniot.uflex.api.planning.domain.exceptions.PatientWithIdNotFoundExce
 import com.kiniot.uflex.api.shared.interfaces.rest.resources.ErrorResource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.mock.http.MockHttpInputMessage;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -27,6 +32,7 @@ class ErrorHandlingWebTests {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final ErrorResponseFactory errorResponseFactory = new ErrorResponseFactory(new ApiErrorCodeResolver());
+    private final GlobalExceptionHandler globalExceptionHandler = new GlobalExceptionHandler(errorResponseFactory);
     private MockMvc mockMvc;
 
     @BeforeEach
@@ -92,6 +98,48 @@ class ErrorHandlingWebTests {
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.title").value("Conflict"))
                 .andExpect(jsonPath("$.path").value("/test-errors/conflict"));
+    }
+
+    @Test
+    void shouldReturnClear400ForMethodArgumentTypeMismatch() throws Exception {
+        var request = new MockHttpServletRequest("GET", "/test-errors/routines/%7BroutineOrder%7D");
+        var exception = new MethodArgumentTypeMismatchException("{routineOrder}", Integer.class, "routineOrder", null, null);
+
+        ResponseEntity<ErrorResource> response = globalExceptionHandler.handleMethodArgumentTypeMismatchException(exception, request);
+
+        assertEquals(400, response.getStatusCode().value());
+        assertEquals("BAD_REQUEST", response.getBody().code());
+        assertEquals("Parameter 'routineOrder' must be a valid integer. Received: \"{routineOrder}\"", response.getBody().message());
+        assertEquals("/test-errors/routines/%7BroutineOrder%7D", response.getBody().path());
+    }
+
+    @Test
+    void shouldReturnClear400ForMissingRequestParameter() throws Exception {
+        var request = new MockHttpServletRequest("GET", "/test-errors/missing-param");
+        var exception = new MissingServletRequestParameterException("requiredValue", "String");
+
+        ResponseEntity<ErrorResource> response = globalExceptionHandler.handleMissingServletRequestParameterException(exception, request);
+
+        assertEquals(400, response.getStatusCode().value());
+        assertEquals("BAD_REQUEST", response.getBody().code());
+        assertEquals("Required request parameter 'requiredValue' is missing", response.getBody().message());
+        assertEquals("/test-errors/missing-param", response.getBody().path());
+    }
+
+    @Test
+    void shouldReturnClear400ForMalformedRequestBody() throws Exception {
+        var request = new MockHttpServletRequest("POST", "/test-errors/malformed-body");
+        var exception = new HttpMessageNotReadableException(
+                "Malformed JSON",
+                new MockHttpInputMessage(new byte[0])
+        );
+
+        ResponseEntity<ErrorResource> response = globalExceptionHandler.handleHttpMessageNotReadableException(exception, request);
+
+        assertEquals(400, response.getStatusCode().value());
+        assertEquals("BAD_REQUEST", response.getBody().code());
+        assertEquals("Request body is malformed or contains invalid values", response.getBody().message());
+        assertEquals("/test-errors/malformed-body", response.getBody().path());
     }
 
     @RestController
