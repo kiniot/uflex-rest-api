@@ -1,8 +1,11 @@
 package com.kiniot.uflex.api.therapy.domain.services;
 
+import com.kiniot.uflex.api.planning.interfaces.acl.dto.DailyRoutineDto;
 import com.kiniot.uflex.api.therapy.domain.model.aggregates.TherapySession;
 import com.kiniot.uflex.api.therapy.domain.model.entities.Serie;
 import com.kiniot.uflex.api.therapy.domain.model.queries.*;
+
+import java.util.Optional;
 
 public interface TherapySessionQueryService {
 
@@ -15,4 +18,6 @@ public interface TherapySessionQueryService {
     TherapySession handle(GetSessionSummaryQuery query);
 
     Serie handle(GetSerieDetailsQuery query);
+
+    Optional<DailyRoutineDto> handle(GetDailyScheduleQuery query);
 }
