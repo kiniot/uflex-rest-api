@@ -29,9 +29,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TherapySessionCommandServiceImpl implements TherapySessionCommandService {
 
-    private static final List<SessionStatus> ACTIVE_STATUSES =
-            List.of(SessionStatus.Pending, SessionStatus.Ready, SessionStatus.InProgress);
-
     private final TherapySessionRepository therapySessionRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final ExternalPlanningService externalPlanningService;
@@ -44,7 +41,7 @@ public class TherapySessionCommandServiceImpl implements TherapySessionCommandSe
         ClinicId clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(() -> new IllegalStateException("Authenticated user has no associated clinic"));
 
-        if (therapySessionRepository.existsActiveByPatientId(command.patientId(), clinicId.id(), ACTIVE_STATUSES)) {
+        if (therapySessionRepository.existsActiveByPatientId(command.patientId(), clinicId.id(), SessionStatus.ACTIVE_STATUSES)) {
             throw PatientAlreadyInActiveSessionException.forPatient(command.patientId().toString());
         }
 
