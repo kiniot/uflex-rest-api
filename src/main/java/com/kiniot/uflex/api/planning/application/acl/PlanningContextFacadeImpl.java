@@ -1,19 +1,28 @@
 package com.kiniot.uflex.api.planning.application.acl;
 
+import com.kiniot.uflex.api.planning.domain.model.aggregates.TreatmentPlan;
+import com.kiniot.uflex.api.planning.domain.model.entities.Routine;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.RoutineId;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanId;
+import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanPeriod;
+import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanStatus;
 import com.kiniot.uflex.api.planning.infrastructure.persistence.jpa.repositories.RoutineRepository;
 import com.kiniot.uflex.api.planning.infrastructure.persistence.jpa.repositories.TreatmentPlanRepository;
 import com.kiniot.uflex.api.planning.interfaces.acl.PlanningContextFacade;
+import com.kiniot.uflex.api.planning.interfaces.acl.dto.DailyRoutineDto;
 import com.kiniot.uflex.api.planning.interfaces.acl.dto.RoutineDetailsDto;
 import com.kiniot.uflex.api.planning.interfaces.acl.dto.SerieDetailsDto;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -71,5 +80,42 @@ public class PlanningContextFacadeImpl implements PlanningContextFacade {
     public void onTherapySessionCompleted(String sessionId, String patientId, String finalizedAt) {
         log.info("Therapy session completed notification received: sessionId={}, patientId={}, finalizedAt={}",
                 sessionId, patientId, finalizedAt);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<DailyRoutineDto> resolveRoutineForDate(String clinicId, String patientId, LocalDate date) {
+        var clinic = new ClinicId(UUID.fromString(clinicId));
+        var patient = new PatientId(UUID.fromString(patientId));
+
+        // Period-overlap prevention guarantees at most one ACTIVE plan covers a date.
+        return treatmentPlanRepository
+                .findAllWithRoutinesAndExerciseSeriesByClinicIdAndPatientIdAndStatusOrderByPeriodStartsAtAsc(
+                        clinic, patient, TreatmentPlanStatus.ACTIVE)
+                .stream()
+                .filter(plan -> covers(plan.getPeriod(), date))
+                .findFirst()
+                .flatMap(plan -> resolveRoutineForDay(plan, date.getDayOfWeek()))
+                .map(this::toDailyRoutineDto);
+    }
+
+    private boolean covers(TreatmentPlanPeriod period, LocalDate date) {
+        return !date.isBefore(period.startsAt()) && !date.isAfter(period.endsAt());
+    }
+
+    private Optional<Routine> resolveRoutineForDay(TreatmentPlan plan, DayOfWeek dayOfWeek) {
+        return plan.getRoutines().stream()
+                .filter(routine -> routine.getSchedule() != null
+                        && routine.getSchedule().dayOfWeek() == dayOfWeek)
+                .min(Comparator.comparing(routine -> routine.getSchedule().scheduledTime()));
+    }
+
+    private DailyRoutineDto toDailyRoutineDto(Routine routine) {
+        int totalSeries = routine.getExerciseSeries().size();
+        long totalSeconds = routine.getExerciseSeries().stream()
+                .mapToLong(series -> (long) series.duration().seconds() + series.restDuration().seconds())
+                .sum();
+        int estimatedDurationMinutes = (int) Math.ceil(totalSeconds / 60.0);
+        return new DailyRoutineDto(routine.getId().id().toString(), totalSeries, estimatedDurationMinutes);
     }
 }
