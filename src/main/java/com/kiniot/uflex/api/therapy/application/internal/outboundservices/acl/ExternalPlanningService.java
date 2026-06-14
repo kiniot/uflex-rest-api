@@ -1,9 +1,13 @@
 package com.kiniot.uflex.api.therapy.application.internal.outboundservices.acl;
 
 import com.kiniot.uflex.api.planning.interfaces.acl.PlanningContextFacade;
+import com.kiniot.uflex.api.planning.interfaces.acl.dto.DailyRoutineDto;
 import com.kiniot.uflex.api.planning.interfaces.acl.dto.RoutineDetailsDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.Optional;
 
 @Slf4j
 @Service("therapyExternalPlanningService")
@@ -32,5 +36,10 @@ public class ExternalPlanningService {
         log.debug("Notifying planning context of completed session: sessionId={}", sessionId);
         planningContextFacade.onTherapySessionCompleted(sessionId, patientId, finalizedAt);
         log.debug("Planning context notified: sessionId={}", sessionId);
+    }
+
+    public Optional<DailyRoutineDto> resolveRoutineForDate(String clinicId, String patientId, LocalDate date) {
+        log.debug("Resolving scheduled routine: clinicId={}, patientId={}, date={}", clinicId, patientId, date);
+        return planningContextFacade.resolveRoutineForDate(clinicId, patientId, date);
     }
 }
