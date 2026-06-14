@@ -1,5 +1,7 @@
 package com.kiniot.uflex.api.organization.domain.model.aggregates;
 
+import com.kiniot.uflex.api.organization.domain.exceptions.CrossClinicAssignmentException;
+import com.kiniot.uflex.api.organization.domain.exceptions.PatientOperationNotAllowedException;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPatientByClinicAdminCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPatientByPhysiotherapistCommand;
 import com.kiniot.uflex.api.organization.domain.model.events.PatientAssignedToPhysiotherapistEvent;
@@ -127,10 +129,10 @@ public class Patient extends AuditableAbstractAggregateRoot<Patient, PatientId> 
 
     public void assignPhysiotherapist(PhysiotherapistId physiotherapistId, ClinicId physiotherapistClinicId) {
         if (!this.clinicId.equals(physiotherapistClinicId)) {
-            throw new IllegalStateException("Cannot assign patient to a physiotherapist from a different clinic");
+            throw new CrossClinicAssignmentException();
         }
         if (this.status == PatientStatus.DISCHARGED) {
-            throw new IllegalStateException("Discharged patients cannot be assigned to a physiotherapist");
+            throw new PatientOperationNotAllowedException("Discharged patients cannot be assigned to a physiotherapist");
         }
         this.assignedPhysiotherapistId = physiotherapistId;
         if (this.status == PatientStatus.UNASSIGNED) {
@@ -189,35 +191,35 @@ public class Patient extends AuditableAbstractAggregateRoot<Patient, PatientId> 
 
     public void updateMedicalCondition(MedicalCondition condition) {
         if (this.status != PatientStatus.IN_TREATMENT) {
-            throw new IllegalStateException("Cannot update medical condition of patient not in treatment");
+            throw new PatientOperationNotAllowedException("Cannot update medical condition of patient not in treatment");
         }
         this.medicalCondition = condition;
     }
 
     public void markInactive() {
         if (this.status != PatientStatus.IN_TREATMENT) {
-            throw new IllegalStateException("Only patients in treatment can be marked inactive");
+            throw new PatientOperationNotAllowedException("Only patients in treatment can be marked inactive");
         }
         this.status = PatientStatus.INACTIVE;
     }
 
     public void reactivate() {
         if (this.status != PatientStatus.INACTIVE) {
-            throw new IllegalStateException("Only inactive patients can be reactivated");
+            throw new PatientOperationNotAllowedException("Only inactive patients can be reactivated");
         }
         this.status = PatientStatus.IN_TREATMENT;
     }
 
     public void complete() {
         if (this.status != PatientStatus.IN_TREATMENT) {
-            throw new IllegalStateException("Only patients in treatment can be completed");
+            throw new PatientOperationNotAllowedException("Only patients in treatment can be completed");
         }
         this.status = PatientStatus.COMPLETED;
     }
 
     public void discharge() {
         if (this.status != PatientStatus.COMPLETED && this.status != PatientStatus.INACTIVE) {
-            throw new IllegalStateException("Only completed or inactive patients can be discharged");
+            throw new PatientOperationNotAllowedException("Only completed or inactive patients can be discharged");
         }
         this.status = PatientStatus.DISCHARGED;
     }

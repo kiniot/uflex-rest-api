@@ -2,6 +2,7 @@ package com.kiniot.uflex.api.organization.application.internal.commandservices;
 
 import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalIamService;
 import com.kiniot.uflex.api.organization.domain.exceptions.ClinicAlreadyRegisteredException;
+import com.kiniot.uflex.api.organization.domain.exceptions.ClinicNotFoundException;
 import com.kiniot.uflex.api.organization.domain.model.aggregates.Clinic;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterClinicCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.UpdateClinicContactInfoCommand;
@@ -38,7 +39,7 @@ public class ClinicCommandServiceImpl implements ClinicCommandService {
     @Transactional
     public void handle(UpdateClinicContactInfoCommand command) {
         var clinic = clinicRepository.findById(command.clinicId())
-                .orElseThrow(() -> new IllegalArgumentException("Clinic not found"));
+                .orElseThrow(() -> new ClinicNotFoundException("Clinic not found"));
         clinic.updateContactInfo(command.emailAddress(), command.phoneNumber());
         clinicRepository.save(clinic);
     }

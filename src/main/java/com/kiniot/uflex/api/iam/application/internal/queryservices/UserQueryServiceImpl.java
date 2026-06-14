@@ -6,6 +6,8 @@ import com.kiniot.uflex.api.iam.domain.model.queries.*;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.TenantId;
 import com.kiniot.uflex.api.iam.domain.services.UserQueryService;
 import com.kiniot.uflex.api.iam.infrastructure.persistence.jpa.repositories.UserRepository;
+import com.kiniot.uflex.api.shared.domain.exceptions.AuthenticatedTenantNotFoundException;
+import com.kiniot.uflex.api.shared.domain.exceptions.AuthenticatedUserIdNotFoundException;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import org.springframework.stereotype.Service;
 
@@ -48,7 +50,7 @@ public class UserQueryServiceImpl implements UserQueryService {
         return Optional.of(identityService.getTenantId()
                 .map(UUID::fromString)
                 .map(TenantId::new)
-                .orElseThrow(() -> new IllegalStateException("Tenant ID is required but not present")));
+                .orElseThrow(AuthenticatedTenantNotFoundException::new));
     }
 
     @Override
@@ -56,7 +58,7 @@ public class UserQueryServiceImpl implements UserQueryService {
         var contextUserId = identityService.getUserId()
                 .map(UUID::fromString)
                 .map(UserId::new)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user ID is required but not present"));
+                .orElseThrow(AuthenticatedUserIdNotFoundException::new);
         return userRepository.findById(contextUserId)
                 .map(User::getId);
     }
@@ -66,7 +68,7 @@ public class UserQueryServiceImpl implements UserQueryService {
         var contextUserId = identityService.getUserId()
                 .map(UUID::fromString)
                 .map(UserId::new)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user ID is required but not present"));
+                .orElseThrow(AuthenticatedUserIdNotFoundException::new);
         return userRepository.findById(contextUserId)
                 .map(User::getTenantId)
                 .filter(TenantId::isAssigned);

@@ -3,6 +3,7 @@ package com.kiniot.uflex.api.subscription.domain.model.aggregates;
 import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.subscription.domain.model.commands.CreateSubscriptionCommand;
+import com.kiniot.uflex.api.subscription.domain.exceptions.SubscriptionOperationNotAllowedException;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.Money;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionId;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionKitSelection;
@@ -71,13 +72,13 @@ public class Subscription extends AuditableAbstractAggregateRoot<Subscription, S
         if (checkoutSessionId == null || checkoutSessionId.isBlank())
             throw new IllegalArgumentException("Checkout session ID cannot be null or empty");
         if (this.status != SubscriptionStatus.PENDING)
-            throw new IllegalStateException("Checkout session can only be attached to a pending subscription");
+            throw new SubscriptionOperationNotAllowedException("Checkout session can only be attached to a pending subscription");
         this.checkoutSessionId = checkoutSessionId;
     }
 
     public void activate() {
         if (this.status != SubscriptionStatus.PENDING && this.status != SubscriptionStatus.PAST_DUE)
-            throw new IllegalStateException("Only pending or past due subscriptions can be activated");
+            throw new SubscriptionOperationNotAllowedException("Only pending or past due subscriptions can be activated");
         this.status = SubscriptionStatus.ACTIVE;
         this.startedAt = LocalDate.now();
         this.renewsAt = calculateRenewsAt(this.startedAt);
@@ -87,24 +88,24 @@ public class Subscription extends AuditableAbstractAggregateRoot<Subscription, S
 
     public void markPastDue() {
         if (this.status != SubscriptionStatus.ACTIVE)
-            throw new IllegalStateException("Only active subscriptions can be marked as past due");
+            throw new SubscriptionOperationNotAllowedException("Only active subscriptions can be marked as past due");
         this.status = SubscriptionStatus.PAST_DUE;
     }
 
     public void expirePendingCheckout() {
         if (this.status != SubscriptionStatus.PENDING)
-            throw new IllegalStateException("Only pending subscriptions can expire checkout");
+            throw new SubscriptionOperationNotAllowedException("Only pending subscriptions can expire checkout");
         this.endsAt = LocalDate.now();
         this.status = SubscriptionStatus.EXPIRED;
     }
 
     public void cancel() {
         if (this.status == SubscriptionStatus.PENDING)
-            throw new IllegalStateException("Pending subscription cannot be canceled before payment confirmation");
+            throw new SubscriptionOperationNotAllowedException("Pending subscription cannot be canceled before payment confirmation");
         if (this.status == SubscriptionStatus.CANCELED)
-            throw new IllegalStateException("Subscription is already canceled");
+            throw new SubscriptionOperationNotAllowedException("Subscription is already canceled");
         if (this.status == SubscriptionStatus.EXPIRED)
-            throw new IllegalStateException("Expired subscription cannot be canceled");
+            throw new SubscriptionOperationNotAllowedException("Expired subscription cannot be canceled");
         this.cancelledAt = LocalDate.now();
         this.endsAt = this.renewsAt;
         this.status = SubscriptionStatus.CANCELED;
@@ -112,9 +113,9 @@ public class Subscription extends AuditableAbstractAggregateRoot<Subscription, S
 
     public void markExpired() {
         if (this.status == SubscriptionStatus.CANCELED)
-            throw new IllegalStateException("Canceled subscription cannot be marked as expired");
+            throw new SubscriptionOperationNotAllowedException("Canceled subscription cannot be marked as expired");
         if (this.status == SubscriptionStatus.EXPIRED)
-            throw new IllegalStateException("Subscription is already expired");
+            throw new SubscriptionOperationNotAllowedException("Subscription is already expired");
         this.endsAt = LocalDate.now();
         this.status = SubscriptionStatus.EXPIRED;
     }

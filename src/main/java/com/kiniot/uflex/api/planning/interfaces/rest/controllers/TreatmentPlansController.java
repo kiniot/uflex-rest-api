@@ -1,6 +1,5 @@
 package com.kiniot.uflex.api.planning.interfaces.rest.controllers;
 
-import com.kiniot.uflex.api.planning.domain.exceptions.TreatmentPlanWithIdNotFoundException;
 import com.kiniot.uflex.api.planning.domain.model.commands.ActivateTreatmentPlanCommand;
 import com.kiniot.uflex.api.planning.domain.model.commands.CancelTreatmentPlanCommand;
 import com.kiniot.uflex.api.planning.domain.model.commands.CompleteTreatmentPlanCommand;
@@ -43,7 +42,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -144,17 +142,11 @@ public class TreatmentPlansController {
     })
     public ResponseEntity<TreatmentPlanResource> updateTreatmentPlan(@PathVariable String id,
                                                                      @RequestBody UpdateTreatmentPlanResource resource) {
-        try {
-            var command = UpdateTreatmentPlanCommandFromResourceAssembler.toCommandFromResource(id, resource);
-            return treatmentPlanCommandService.handle(command)
-                    .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
-                    .map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.badRequest().build());
-        } catch (TreatmentPlanWithIdNotFoundException exception) {
-            return ResponseEntity.notFound().build();
-        } catch (IllegalArgumentException | IllegalStateException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
-        }
+        var command = UpdateTreatmentPlanCommandFromResourceAssembler.toCommandFromResource(id, resource);
+        return treatmentPlanCommandService.handle(command)
+                .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.badRequest().build());
     }
 
     @PostMapping("/{id}/activate")
@@ -166,17 +158,11 @@ public class TreatmentPlansController {
             @ApiResponse(responseCode = "409", description = "Transition is invalid or the plan conflicts with another scheduled or active plan")
     })
     public ResponseEntity<TreatmentPlanResource> activateTreatmentPlan(@PathVariable String id) {
-        try {
-            var command = new ActivateTreatmentPlanCommand(new TreatmentPlanId(UUID.fromString(id)));
-            return treatmentPlanCommandService.handle(command)
-                    .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
-                    .map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.badRequest().build());
-        } catch (TreatmentPlanWithIdNotFoundException exception) {
-            return ResponseEntity.notFound().build();
-        } catch (IllegalArgumentException | IllegalStateException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
-        }
+        var command = new ActivateTreatmentPlanCommand(new TreatmentPlanId(UUID.fromString(id)));
+        return treatmentPlanCommandService.handle(command)
+                .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.badRequest().build());
     }
 
     @PostMapping("/{id}/complete")
@@ -188,17 +174,11 @@ public class TreatmentPlansController {
             @ApiResponse(responseCode = "409", description = "Transition is invalid")
     })
     public ResponseEntity<TreatmentPlanResource> completeTreatmentPlan(@PathVariable String id) {
-        try {
-            var command = new CompleteTreatmentPlanCommand(new TreatmentPlanId(UUID.fromString(id)));
-            return treatmentPlanCommandService.handle(command)
-                    .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
-                    .map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.badRequest().build());
-        } catch (TreatmentPlanWithIdNotFoundException exception) {
-            return ResponseEntity.notFound().build();
-        } catch (IllegalArgumentException | IllegalStateException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
-        }
+        var command = new CompleteTreatmentPlanCommand(new TreatmentPlanId(UUID.fromString(id)));
+        return treatmentPlanCommandService.handle(command)
+                .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.badRequest().build());
     }
 
     @PostMapping("/{id}/cancel")
@@ -210,17 +190,11 @@ public class TreatmentPlansController {
             @ApiResponse(responseCode = "409", description = "Transition is invalid")
     })
     public ResponseEntity<TreatmentPlanResource> cancelTreatmentPlan(@PathVariable String id) {
-        try {
-            var command = new CancelTreatmentPlanCommand(new TreatmentPlanId(UUID.fromString(id)));
-            return treatmentPlanCommandService.handle(command)
-                    .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
-                    .map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.badRequest().build());
-        } catch (TreatmentPlanWithIdNotFoundException exception) {
-            return ResponseEntity.notFound().build();
-        } catch (IllegalArgumentException | IllegalStateException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
-        }
+        var command = new CancelTreatmentPlanCommand(new TreatmentPlanId(UUID.fromString(id)));
+        return treatmentPlanCommandService.handle(command)
+                .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.badRequest().build());
     }
 
     @DeleteMapping("/{id}")
@@ -232,15 +206,9 @@ public class TreatmentPlansController {
             @ApiResponse(responseCode = "404", description = "Treatment plan not found")
     })
     public ResponseEntity<Void> removeTreatmentPlan(@PathVariable String id) {
-        try {
-            var command = new RemoveTreatmentPlanCommand(new TreatmentPlanId(UUID.fromString(id)));
-            treatmentPlanCommandService.handle(command);
-            return ResponseEntity.noContent().build();
-        } catch (TreatmentPlanWithIdNotFoundException exception) {
-            return ResponseEntity.notFound().build();
-        } catch (IllegalArgumentException | IllegalStateException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
-        }
+        var command = new RemoveTreatmentPlanCommand(new TreatmentPlanId(UUID.fromString(id)));
+        treatmentPlanCommandService.handle(command);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{treatmentPlanId}/routines")
@@ -283,17 +251,11 @@ public class TreatmentPlansController {
     })
     public ResponseEntity<TreatmentPlanResource> createRoutine(@PathVariable String treatmentPlanId,
                                                                @RequestBody CreateRoutineResource resource) {
-        try {
-            var command = CreateRoutineCommandFromResourceAssembler.toCommandFromResource(treatmentPlanId, resource);
-            return treatmentPlanCommandService.handle(command)
-                    .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
-                    .map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.badRequest().build());
-        } catch (TreatmentPlanWithIdNotFoundException exception) {
-            return ResponseEntity.notFound().build();
-        } catch (IllegalArgumentException | IllegalStateException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
-        }
+        var command = CreateRoutineCommandFromResourceAssembler.toCommandFromResource(treatmentPlanId, resource);
+        return treatmentPlanCommandService.handle(command)
+                .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.badRequest().build());
     }
 
     @PutMapping("/{treatmentPlanId}/routines/{routineOrder}")
@@ -337,17 +299,11 @@ public class TreatmentPlansController {
     public ResponseEntity<TreatmentPlanResource> updateRoutine(@PathVariable String treatmentPlanId,
                                                                @PathVariable Integer routineOrder,
                                                                @RequestBody UpdateRoutineResource resource) {
-        try {
-            var command = UpdateRoutineCommandFromResourceAssembler.toCommandFromResource(treatmentPlanId, routineOrder, resource);
-            return treatmentPlanCommandService.handle(command)
-                    .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
-                    .map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.badRequest().build());
-        } catch (TreatmentPlanWithIdNotFoundException exception) {
-            return ResponseEntity.notFound().build();
-        } catch (IllegalArgumentException | IllegalStateException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
-        }
+        var command = UpdateRoutineCommandFromResourceAssembler.toCommandFromResource(treatmentPlanId, routineOrder, resource);
+        return treatmentPlanCommandService.handle(command)
+                .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.badRequest().build());
     }
 
     @DeleteMapping("/{treatmentPlanId}/routines/{routineOrder}")
@@ -360,18 +316,12 @@ public class TreatmentPlansController {
     })
     public ResponseEntity<TreatmentPlanResource> removeRoutine(@PathVariable String treatmentPlanId,
                                                                @PathVariable Integer routineOrder) {
-        try {
-            var command = new RemoveRoutineCommand(
-                    new TreatmentPlanId(UUID.fromString(treatmentPlanId)),
-                    new RoutineOrder(routineOrder));
-            return treatmentPlanCommandService.handle(command)
-                    .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
-                    .map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.badRequest().build());
-        } catch (TreatmentPlanWithIdNotFoundException exception) {
-            return ResponseEntity.notFound().build();
-        } catch (IllegalArgumentException | IllegalStateException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
-        }
+        var command = new RemoveRoutineCommand(
+                new TreatmentPlanId(UUID.fromString(treatmentPlanId)),
+                new RoutineOrder(routineOrder));
+        return treatmentPlanCommandService.handle(command)
+                .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.badRequest().build());
     }
 }

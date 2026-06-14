@@ -1,6 +1,5 @@
 package com.kiniot.uflex.api.planning.interfaces.rest.controllers;
 
-import com.kiniot.uflex.api.planning.domain.exceptions.ExerciseWithIdNotFoundException;
 import com.kiniot.uflex.api.planning.domain.model.commands.RemoveExerciseCommand;
 import com.kiniot.uflex.api.planning.domain.model.queries.GetAllExercisesQuery;
 import com.kiniot.uflex.api.planning.domain.model.queries.GetExerciseByIdQuery;
@@ -31,7 +30,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
@@ -104,15 +102,11 @@ public class ExercisesController {
             @ApiResponse(responseCode = "400", description = "Invalid input data")
     })
     public ResponseEntity<ExerciseResource> createExercise(@RequestBody CreateExerciseResource resource) {
-        try {
-            var command = CreateExerciseCommandFromResourceAssembler.toCommandFromResource(resource);
-            return exerciseCommandService.handle(command)
-                    .map(ExerciseResourceFromEntityAssembler::toResourceFromEntity)
-                    .map(exercise -> new ResponseEntity<>(exercise, HttpStatus.CREATED))
-                    .orElseGet(() -> ResponseEntity.badRequest().build());
-        } catch (IllegalArgumentException | IllegalStateException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
-        }
+        var command = CreateExerciseCommandFromResourceAssembler.toCommandFromResource(resource);
+        return exerciseCommandService.handle(command)
+                .map(ExerciseResourceFromEntityAssembler::toResourceFromEntity)
+                .map(exercise -> new ResponseEntity<>(exercise, HttpStatus.CREATED))
+                .orElseGet(() -> ResponseEntity.badRequest().build());
     }
 
     @PutMapping("/{id}")
@@ -144,17 +138,11 @@ public class ExercisesController {
     })
     public ResponseEntity<ExerciseResource> updateExercise(@PathVariable String id,
                                                            @RequestBody UpdateExerciseResource resource) {
-        try {
-            var command = UpdateExerciseCommandFromResourceAssembler.toCommandFromResource(id, resource);
-            return exerciseCommandService.handle(command)
-                    .map(ExerciseResourceFromEntityAssembler::toResourceFromEntity)
-                    .map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.badRequest().build());
-        } catch (ExerciseWithIdNotFoundException exception) {
-            return ResponseEntity.notFound().build();
-        } catch (IllegalArgumentException | IllegalStateException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
-        }
+        var command = UpdateExerciseCommandFromResourceAssembler.toCommandFromResource(id, resource);
+        return exerciseCommandService.handle(command)
+                .map(ExerciseResourceFromEntityAssembler::toResourceFromEntity)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.badRequest().build());
     }
 
     @DeleteMapping("/{id}")
@@ -166,14 +154,8 @@ public class ExercisesController {
             @ApiResponse(responseCode = "404", description = "Exercise not found")
     })
     public ResponseEntity<Void> removeExercise(@PathVariable String id) {
-        try {
-            var command = new RemoveExerciseCommand(new ExerciseId(UUID.fromString(id)));
-            exerciseCommandService.handle(command);
-            return ResponseEntity.noContent().build();
-        } catch (ExerciseWithIdNotFoundException exception) {
-            return ResponseEntity.notFound().build();
-        } catch (IllegalArgumentException | IllegalStateException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
-        }
+        var command = new RemoveExerciseCommand(new ExerciseId(UUID.fromString(id)));
+        exerciseCommandService.handle(command);
+        return ResponseEntity.noContent().build();
     }
 }

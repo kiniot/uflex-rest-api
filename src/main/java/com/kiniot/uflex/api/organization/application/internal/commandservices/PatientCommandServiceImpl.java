@@ -4,9 +4,14 @@ import com.kiniot.uflex.api.organization.application.internal.outboundservices.a
 import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalPlanningService;
 import com.kiniot.uflex.api.organization.domain.exceptions.ClinicNotFoundException;
 import com.kiniot.uflex.api.organization.domain.exceptions.CrossClinicAssignmentException;
+import com.kiniot.uflex.api.organization.domain.exceptions.PatientAccessDeniedException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PatientAlreadyRegisteredException;
+import com.kiniot.uflex.api.organization.domain.exceptions.PatientClinicMismatchException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PatientHasTreatmentPlansException;
+import com.kiniot.uflex.api.organization.domain.exceptions.PatientNotFoundException;
+import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistNotFoundException;
 import com.kiniot.uflex.api.organization.domain.exceptions.SuspendedPhysiotherapistAssignmentException;
+import com.kiniot.uflex.api.organization.domain.exceptions.UserProvisioningException;
 import com.kiniot.uflex.api.organization.domain.model.aggregates.Patient;
 import com.kiniot.uflex.api.organization.domain.model.commands.AssignPatientToPhysiotherapistCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.CompletePatientCommand;
@@ -61,7 +66,7 @@ public class PatientCommandServiceImpl implements PatientCommandService {
         validatePatientRegistration(command.emailAddress(), clinicId, command.assignedPhysiotherapistId());
 
         var userId = externalIamService.registerPatient(command.emailAddress().email())
-                .orElseThrow(() -> new RuntimeException("Failed to register patient in IAM"));
+                .orElseThrow(() -> new UserProvisioningException("Failed to register patient in IAM"));
 
         Patient patient;
         try {
@@ -89,7 +94,7 @@ public class PatientCommandServiceImpl implements PatientCommandService {
         validatePatientRegistration(command.emailAddress(), clinicId, command.assignedPhysiotherapistId());
 
         var userId = externalIamService.registerPatient(command.emailAddress().email())
-                .orElseThrow(() -> new RuntimeException("Failed to register patient in IAM"));
+                .orElseThrow(() -> new UserProvisioningException("Failed to register patient in IAM"));
 
         try {
             var physiotherapist = getAssignablePhysiotherapist(command.assignedPhysiotherapistId());
@@ -110,9 +115,9 @@ public class PatientCommandServiceImpl implements PatientCommandService {
         var clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(() -> new ClinicNotFoundException("Current clinic not found"));
         var patient = patientRepository.findById(command.patientId())
-                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+                .orElseThrow(() -> new PatientNotFoundException("Patient not found"));
         if (!patient.getClinicId().equals(clinicId)) {
-            throw new IllegalStateException("Patient does not belong to the authenticated clinic");
+            throw new PatientClinicMismatchException();
         }
         validateEmailUpdate(patient, command.emailAddress());
         var previousPhysiotherapistId = patient.getAssignedPhysiotherapistId();
@@ -138,7 +143,7 @@ public class PatientCommandServiceImpl implements PatientCommandService {
     @Transactional
     public Optional<Patient> handle(UpdatePatientByPhysiotherapistCommand command) {
         var patient = patientRepository.findById(command.patientId())
-                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+                .orElseThrow(() -> new PatientNotFoundException("Patient not found"));
         validateCurrentPhysiotherapistOwnsPatient(patient);
         validateEmailUpdate(patient, command.emailAddress());
         var previousEmail = patient.getEmailAddress();
@@ -158,7 +163,7 @@ public class PatientCommandServiceImpl implements PatientCommandService {
     @Transactional
     public Optional<Patient> handle(UpdateCurrentPatientProfileCommand command) {
         var patient = patientRepository.findById(command.patientId())
-                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+                .orElseThrow(() -> new PatientNotFoundException("Patient not found"));
         validateCurrentPatientOwnsProfile(patient);
         validateEmailUpdate(patient, command.emailAddress());
         var previousEmail = patient.getEmailAddress();
@@ -182,7 +187,7 @@ public class PatientCommandServiceImpl implements PatientCommandService {
         }
 
         var physiotherapist = physiotherapistRepository.findById(assignedPhysiotherapistId)
-                .orElseThrow(() -> new IllegalArgumentException("Physiotherapist not found"));
+                .orElseThrow(() -> new PhysiotherapistNotFoundException("Physiotherapist not found"));
         if (!clinicId.equals(physiotherapist.getClinicId())) {
             throw new CrossClinicAssignmentException();
         }
@@ -203,7 +208,7 @@ public class PatientCommandServiceImpl implements PatientCommandService {
     @Transactional
     public void handle(AssignPatientToPhysiotherapistCommand command) {
         var patient = patientRepository.findById(command.patientId())
-                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+                .orElseThrow(() -> new PatientNotFoundException("Patient not found"));
         var previousPhysiotherapistId = patient.getAssignedPhysiotherapistId();
         var physiotherapist = getAssignablePhysiotherapist(command.physiotherapistId());
         if (!patient.getClinicId().equals(physiotherapist.getClinicId())) {
@@ -219,7 +224,7 @@ public class PatientCommandServiceImpl implements PatientCommandService {
     @Transactional
     public void handle(CompletePatientCommand command) {
         var patient = patientRepository.findById(command.patientId())
-                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+                .orElseThrow(() -> new PatientNotFoundException("Patient not found"));
         patient.complete();
         patientRepository.save(patient);
         synchronizeAssignedPhysiotherapist(patient.getAssignedPhysiotherapistId());
@@ -229,7 +234,7 @@ public class PatientCommandServiceImpl implements PatientCommandService {
     @Transactional
     public void handle(MarkPatientInactiveCommand command) {
         var patient = patientRepository.findById(command.patientId())
-                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+                .orElseThrow(() -> new PatientNotFoundException("Patient not found"));
         patient.markInactive();
         patientRepository.save(patient);
         synchronizeAssignedPhysiotherapist(patient.getAssignedPhysiotherapistId());
@@ -239,7 +244,7 @@ public class PatientCommandServiceImpl implements PatientCommandService {
     @Transactional
     public void handle(ReactivatePatientCommand command) {
         var patient = patientRepository.findById(command.patientId())
-                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+                .orElseThrow(() -> new PatientNotFoundException("Patient not found"));
         patient.reactivate();
         patientRepository.save(patient);
         synchronizeAssignedPhysiotherapist(patient.getAssignedPhysiotherapistId());
@@ -249,7 +254,7 @@ public class PatientCommandServiceImpl implements PatientCommandService {
     @Transactional
     public void handle(DischargePatientCommand command) {
         var patient = patientRepository.findById(command.patientId())
-                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+                .orElseThrow(() -> new PatientNotFoundException("Patient not found"));
         patient.discharge();
         patientRepository.save(patient);
         synchronizeAssignedPhysiotherapist(patient.getAssignedPhysiotherapistId());
@@ -259,7 +264,7 @@ public class PatientCommandServiceImpl implements PatientCommandService {
     @Transactional
     public void handle(DeletePatientCommand command) {
         var patient = patientRepository.findById(command.patientId())
-                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+                .orElseThrow(() -> new PatientNotFoundException("Patient not found"));
         if (externalPlanningService.existsTreatmentPlanByPatientId(patient.getId())) {
             throw new PatientHasTreatmentPlansException(patient.getId().patientId().toString());
         }
@@ -272,7 +277,7 @@ public class PatientCommandServiceImpl implements PatientCommandService {
 
     private com.kiniot.uflex.api.organization.domain.model.aggregates.Physiotherapist getAssignablePhysiotherapist(PhysiotherapistId physiotherapistId) {
         var physiotherapist = physiotherapistRepository.findById(physiotherapistId)
-                .orElseThrow(() -> new IllegalArgumentException("Physiotherapist not found"));
+                .orElseThrow(() -> new PhysiotherapistNotFoundException("Physiotherapist not found"));
         if (physiotherapist.getStatus() == PhysiotherapistStatus.SUSPENDED) {
             throw new SuspendedPhysiotherapistAssignmentException();
         }
@@ -317,9 +322,9 @@ public class PatientCommandServiceImpl implements PatientCommandService {
         var currentPhysiotherapist = physiotherapistRepository.findByUserId(
                         externalIamService.fetchCurrentUserId()
                                 .orElseThrow(() -> new ClinicNotFoundException("Current user not found")))
-                .orElseThrow(() -> new IllegalArgumentException("Physiotherapist not found"));
+                .orElseThrow(() -> new PhysiotherapistNotFoundException("Physiotherapist not found"));
         if (patient.getAssignedPhysiotherapistId() == null || !patient.getAssignedPhysiotherapistId().equals(currentPhysiotherapist.getId())) {
-            throw new IllegalStateException("You can only manage your own patients");
+            throw new PatientAccessDeniedException("You can only manage your own patients");
         }
     }
 
@@ -327,7 +332,7 @@ public class PatientCommandServiceImpl implements PatientCommandService {
         var currentUserId = externalIamService.fetchCurrentUserId()
                 .orElseThrow(() -> new ClinicNotFoundException("Current user not found"));
         if (!patient.getUserId().equals(currentUserId)) {
-            throw new IllegalStateException("You can only edit your own patient profile");
+            throw new PatientAccessDeniedException("You can only edit your own patient profile");
         }
     }
 

@@ -1,5 +1,6 @@
 package com.kiniot.uflex.api.organization.domain.model.aggregates;
 
+import com.kiniot.uflex.api.organization.domain.exceptions.PatientOperationNotAllowedException;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.BirthDate;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.Dni;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.FirstName;
@@ -57,7 +58,7 @@ class PatientTests {
         patient.complete();
         patient.discharge();
 
-        assertThrows(IllegalStateException.class, () -> patient.assignPhysiotherapist(new PhysiotherapistId(), clinicId));
+        assertThrows(PatientOperationNotAllowedException.class, () -> patient.assignPhysiotherapist(new PhysiotherapistId(), clinicId));
     }
 
     private Patient createPatient(ClinicId clinicId) {

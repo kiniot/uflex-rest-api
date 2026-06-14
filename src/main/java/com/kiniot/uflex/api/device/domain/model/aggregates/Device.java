@@ -1,5 +1,6 @@
 package com.kiniot.uflex.api.device.domain.model.aggregates;
 
+import com.kiniot.uflex.api.device.domain.exceptions.DeviceAssignmentNotAllowedException;
 import com.kiniot.uflex.api.device.domain.model.events.DeviceAssignedToPatientEvent;
 import com.kiniot.uflex.api.device.domain.model.events.DeviceBatteryLowEvent;
 import com.kiniot.uflex.api.device.domain.model.events.DeviceRegisteredEvent;
@@ -78,10 +79,10 @@ public class Device extends AuditableAbstractAggregateRoot<Device, DeviceId> {
 
     public void assignToPatient(PatientId patientId) {
         if (this.status != DeviceStatus.AVAILABLE) {
-            throw new IllegalStateException("Device can only be assigned from AVAILABLE status. Current status: " + this.status);
+            throw new DeviceAssignmentNotAllowedException("Device can only be assigned from AVAILABLE status. Current status: " + this.status);
         }
         if (this.calibrationStatus == CalibrationStatus.NEEDS_CALIBRATION) {
-            throw new IllegalStateException("Device cannot be assigned when calibration is needed");
+            throw new DeviceAssignmentNotAllowedException("Device cannot be assigned when calibration is needed");
         }
         this.currentPatientId = patientId;
         this.status = DeviceStatus.ASSIGNED;
