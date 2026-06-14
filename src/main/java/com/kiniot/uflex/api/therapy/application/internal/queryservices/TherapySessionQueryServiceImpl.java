@@ -1,7 +1,9 @@
 package com.kiniot.uflex.api.therapy.application.internal.queryservices;
 
+import com.kiniot.uflex.api.planning.interfaces.acl.dto.DailyRoutineDto;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.therapy.application.internal.outboundservices.acl.ExternalIamService;
+import com.kiniot.uflex.api.therapy.application.internal.outboundservices.acl.ExternalPlanningService;
 import com.kiniot.uflex.api.therapy.domain.exceptions.SerieNotFoundException;
 import com.kiniot.uflex.api.therapy.domain.exceptions.TherapySessionNotFoundException;
 import com.kiniot.uflex.api.therapy.domain.exceptions.TherapySessionStillInProgressException;
@@ -19,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -27,11 +29,9 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class TherapySessionQueryServiceImpl implements TherapySessionQueryService {
 
-    private static final List<SessionStatus> ACTIVE_STATUSES =
-            List.of(SessionStatus.Pending, SessionStatus.Ready, SessionStatus.InProgress);
-
     private final TherapySessionRepository therapySessionRepository;
     private final ExternalIamService externalIamService;
+    private final ExternalPlanningService externalPlanningService;
 
     @Override
     public TherapySession handle(GetTherapySessionByIdQuery query) {
@@ -45,7 +45,7 @@ public class TherapySessionQueryServiceImpl implements TherapySessionQueryServic
         log.debug("Finding active therapy session: patientId={}", query.patientId());
         ClinicId clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(() -> new IllegalStateException("Authenticated user has no associated clinic"));
-        return therapySessionRepository.findActiveByPatientId(query.patientId(), clinicId.id(), ACTIVE_STATUSES)
+        return therapySessionRepository.findActiveByPatientId(query.patientId(), clinicId.id(), SessionStatus.ACTIVE_STATUSES)
                 .orElseThrow(() -> TherapySessionNotFoundException.withId(
                         "active session for patient " + query.patientId()));
     }
@@ -78,5 +78,14 @@ public class TherapySessionQueryServiceImpl implements TherapySessionQueryServic
         SerieId serieId = SerieId.of(query.serieId());
         return session.findSerie(serieId)
                 .orElseThrow(() -> SerieNotFoundException.withId(query.serieId().toString()));
+    }
+
+    @Override
+    public Optional<DailyRoutineDto> handle(GetDailyScheduleQuery query) {
+        log.debug("Resolving daily schedule: patientId={}, date={}", query.patientId(), query.date());
+        ClinicId clinicId = externalIamService.fetchCurrentClinicId()
+                .orElseThrow(() -> new IllegalStateException("Authenticated user has no associated clinic"));
+        return externalPlanningService.resolveRoutineForDate(
+                clinicId.id().toString(), query.patientId().toString(), query.date());
     }
 }
