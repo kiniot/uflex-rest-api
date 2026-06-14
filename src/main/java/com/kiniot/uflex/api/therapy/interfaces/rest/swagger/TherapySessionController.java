@@ -2,6 +2,7 @@ package com.kiniot.uflex.api.therapy.interfaces.rest.swagger;
 
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.CancelTherapySessionResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.ConfirmHardwareReadinessResource;
+import com.kiniot.uflex.api.therapy.interfaces.rest.resources.DailyScheduleResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.InitiateTherapyPreparationResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.SessionSummaryResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.TherapySessionResource;
@@ -10,9 +11,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -96,4 +99,17 @@ public interface TherapySessionController {
             @ApiResponse(responseCode = "500", description = "Internal server error.")
     })
     ResponseEntity<SessionSummaryResource> getSessionSummary(@PathVariable UUID id);
+
+    @GetMapping("/schedule/{patientId}")
+    @Operation(summary = "Get daily schedule by patient",
+            description = "Resolves the routine the patient is scheduled to perform on the given date "
+                    + "(defaults to today). Returns 200 with a null routineId and zero counters when no "
+                    + "active treatment plan covers the date or no routine is scheduled for that day.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Daily schedule resolved (may be empty)."),
+            @ApiResponse(responseCode = "500", description = "Internal server error.")
+    })
+    ResponseEntity<DailyScheduleResource> getDailySchedule(
+            @PathVariable UUID patientId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date);
 }
