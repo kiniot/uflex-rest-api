@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface DeviceQueryService {
+    Optional<Device> handle(GetDeviceByIdQuery query);
     Optional<Device> handle(GetDeviceBySerialNumberQuery query);
     Optional<Device> handle(GetMyAssignedDeviceQuery query);
     List<Device> handle(GetAllDevicesByClinicIdQuery query);

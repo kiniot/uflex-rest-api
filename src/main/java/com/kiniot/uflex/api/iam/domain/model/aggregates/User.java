@@ -91,6 +91,19 @@ public class User extends AuditableAbstractAggregateRoot<User, UserId> {
     }
 
     /**
+     * Remove a role from the user by role name.
+     * @param roleName the role name to remove
+     * @return the user without the removed role
+     */
+    public User removeRoleByName(String roleName) {
+        if (roleName == null || roleName.isBlank()) {
+            return this;
+        }
+        this.roles.removeIf(role -> role.getName().name().equals(roleName));
+        return this;
+    }
+
+    /**
      * Add a list of roles to the user
      * @param roles the list of roles to add
      * @return the user with the added roles

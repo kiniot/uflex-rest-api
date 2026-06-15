@@ -1,14 +1,14 @@
 package com.kiniot.uflex.api.device.domain.model.commands;
 
-import com.kiniot.uflex.api.device.domain.model.valueobjects.SerialNumber;
+import com.kiniot.uflex.api.device.domain.model.valueobjects.DeviceId;
 
 public record UpdateDeviceTelemetryCommand(
-        SerialNumber serialNumber,
+        DeviceId deviceId,
         Integer batteryLevel
 ) {
     public UpdateDeviceTelemetryCommand {
-        if (serialNumber == null) {
-            throw new IllegalArgumentException("Serial number cannot be null");
+        if (deviceId == null) {
+            throw new IllegalArgumentException("Device ID cannot be null");
         }
         if (batteryLevel == null || batteryLevel < 0 || batteryLevel > 100) {
             throw new IllegalArgumentException("Battery level must be between 0 and 100");

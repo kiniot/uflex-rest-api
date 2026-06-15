@@ -41,3 +41,5 @@ interfaces/     rest/{controllers,resources,transform}, acl/ (facade interfaces 
 - Service interface in `domain/services/`, impl in `application/internal/{commandservices,queryservices}/` with `Impl` suffix.
 - Security is stateless JWT (`iam/.../WebSecurityConfiguration`). Public paths: `/api/v1/authentication/**`, `/v3/api-docs/**`, `/swagger-ui*`, `/scalar/**`, `/actuator/**`. Everything else needs a Bearer token. `@EnableMethodSecurity` is on.
 - Startup seeding goes through the `ApplicationReadyEvent` handler (`iam/.../ApplicationReadyEventHandler` → `SeedRolesCommand`). Reuse this pattern; don't add ad-hoc `CommandLineRunner`s.
+- Prefer **domain exceptions or shared context exceptions** over generic `IllegalStateException`/`RuntimeException` for business and application failures. If a case is expected enough to matter to API consumers, give it a named exception.
+- Any new domain/shared exception that can reach the REST layer must be mapped in `shared/interfaces/rest/GlobalExceptionHandler` so clients receive the correct HTTP status and stable error `code`. See [`docs/reference/error-codes.md`](./docs/reference/error-codes.md).

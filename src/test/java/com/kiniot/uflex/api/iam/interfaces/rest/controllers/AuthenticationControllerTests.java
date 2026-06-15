@@ -7,6 +7,8 @@ import com.kiniot.uflex.api.iam.domain.model.valueobjects.Password;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.RoleName;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.TenantId;
 import com.kiniot.uflex.api.iam.domain.services.UserCommandService;
+import com.kiniot.uflex.api.shared.interfaces.rest.ApiErrorCodeResolver;
+import com.kiniot.uflex.api.shared.interfaces.rest.ErrorResponseFactory;
 import com.kiniot.uflex.api.shared.interfaces.rest.GlobalExceptionHandler;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +38,7 @@ class AuthenticationControllerTests {
         userCommandService = mock(UserCommandService.class);
         mockMvc = MockMvcBuilders
                 .standaloneSetup(new AuthenticationController(userCommandService))
-                .setControllerAdvice(new GlobalExceptionHandler())
+                .setControllerAdvice(new GlobalExceptionHandler(new ErrorResponseFactory(new ApiErrorCodeResolver())))
                 .build();
     }
 

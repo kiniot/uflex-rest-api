@@ -43,6 +43,7 @@ public class DeviceCommandServiceImpl implements DeviceCommandService {
                 command.macAddress(),
                 command.firmwareVersion(),
                 command.model(),
+                command.advertisedName(),
                 clinicId
         );
         return deviceRepository.save(device);
@@ -51,7 +52,7 @@ public class DeviceCommandServiceImpl implements DeviceCommandService {
     @Override
     @Transactional
     public void handle(AssignDeviceToPatientCommand command) {
-        var device = getDeviceOrThrow(command.serialNumber());
+        var device = getDeviceOrThrow(command.deviceId());
         var clinicIdStr = externalIamService.fetchCurrentClinicId()
                 .map(clinicId -> clinicId.id().toString())
                 .orElseThrow(AuthenticatedUserClinicNotFoundException::new);
@@ -66,7 +67,7 @@ public class DeviceCommandServiceImpl implements DeviceCommandService {
     @Override
     @Transactional
     public void handle(ReturnDeviceCommand command) {
-        var device = getDeviceOrThrow(command.serialNumber());
+        var device = getDeviceOrThrow(command.deviceId());
         device.returnFromPatient();
         deviceRepository.save(device);
     }
@@ -74,7 +75,7 @@ public class DeviceCommandServiceImpl implements DeviceCommandService {
     @Override
     @Transactional
     public void handle(UpdateDeviceTelemetryCommand command) {
-        var device = getDeviceOrThrow(command.serialNumber());
+        var device = getDeviceOrThrow(command.deviceId());
         device.recordTelemetry(command.batteryLevel());
         deviceRepository.save(device);
     }
@@ -82,7 +83,7 @@ public class DeviceCommandServiceImpl implements DeviceCommandService {
     @Override
     @Transactional
     public void handle(RegisterSuccessfulCalibrationCommand command) {
-        var device = getDeviceOrThrow(command.serialNumber());
+        var device = getDeviceOrThrow(command.deviceId());
         device.registerSuccessfulCalibration();
         deviceRepository.save(device);
     }
@@ -90,7 +91,7 @@ public class DeviceCommandServiceImpl implements DeviceCommandService {
     @Override
     @Transactional
     public void handle(MarkCalibrationAsInvalidCommand command) {
-        var device = getDeviceOrThrow(command.serialNumber());
+        var device = getDeviceOrThrow(command.deviceId());
         device.markCalibrationAsInvalid();
         deviceRepository.save(device);
     }
@@ -98,7 +99,7 @@ public class DeviceCommandServiceImpl implements DeviceCommandService {
     @Override
     @Transactional
     public void handle(UpdateDeviceStatusCommand command) {
-        var device = getDeviceOrThrow(command.serialNumber());
+        var device = getDeviceOrThrow(command.deviceId());
         device.updateStatus(command.status());
         deviceRepository.save(device);
     }
@@ -106,7 +107,7 @@ public class DeviceCommandServiceImpl implements DeviceCommandService {
     @Override
     @Transactional
     public void handle(DeleteDeviceCommand command) {
-        var device = getDeviceOrThrow(command.serialNumber());
+        var device = getDeviceOrThrow(command.deviceId());
         var clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(AuthenticatedUserClinicNotFoundException::new);
         if (!device.getClinicId().equals(clinicId)) {
@@ -115,8 +116,8 @@ public class DeviceCommandServiceImpl implements DeviceCommandService {
         deviceRepository.delete(device);
     }
 
-    private Device getDeviceOrThrow(SerialNumber serialNumber) {
-        return deviceRepository.findBySerialNumber(serialNumber)
-                .orElseThrow(() -> new DeviceNotFoundException(serialNumber.value()));
+    private Device getDeviceOrThrow(DeviceId deviceId) {
+        return deviceRepository.findById(deviceId)
+                .orElseThrow(() -> new DeviceNotFoundException(deviceId.id().toString()));
     }
 }
