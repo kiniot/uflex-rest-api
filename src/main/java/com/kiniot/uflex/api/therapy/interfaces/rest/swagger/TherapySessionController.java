@@ -31,6 +31,7 @@ public interface TherapySessionController {
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Session created successfully."),
             @ApiResponse(responseCode = "400", description = "Invalid input data."),
+            @ApiResponse(responseCode = "403", description = "Forbidden."),
             @ApiResponse(responseCode = "409", description = "Patient already has an active session."),
             @ApiResponse(responseCode = "500", description = "Internal server error.")
     })
@@ -43,8 +44,9 @@ public interface TherapySessionController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Hardware readiness confirmed."),
             @ApiResponse(responseCode = "400", description = "Invalid input data."),
+            @ApiResponse(responseCode = "403", description = "Forbidden."),
             @ApiResponse(responseCode = "404", description = "Session not found."),
-            @ApiResponse(responseCode = "422", description = "Sensors not placed."),
+            @ApiResponse(responseCode = "409", description = "Sensors not placed or session cannot transition."),
             @ApiResponse(responseCode = "500", description = "Internal server error.")
     })
     ResponseEntity<TherapySessionResource> confirmHardwareReadiness(
@@ -56,6 +58,7 @@ public interface TherapySessionController {
     @Operation(summary = "Start therapy session", description = "Transitions Ready → InProgress and emits RoutineStarted.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Session started."),
+            @ApiResponse(responseCode = "403", description = "Forbidden."),
             @ApiResponse(responseCode = "404", description = "Session not found."),
             @ApiResponse(responseCode = "409", description = "Hardware not confirmed."),
             @ApiResponse(responseCode = "500", description = "Internal server error.")
@@ -67,6 +70,7 @@ public interface TherapySessionController {
     @Operation(summary = "Finalize therapy session", description = "Closes the session. Requires all series Validated. Emits TherapySessionCompleted.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Session finalized."),
+            @ApiResponse(responseCode = "403", description = "Forbidden."),
             @ApiResponse(responseCode = "404", description = "Session not found."),
             @ApiResponse(responseCode = "409", description = "Routine not completed."),
             @ApiResponse(responseCode = "500", description = "Internal server error.")
@@ -79,6 +83,7 @@ public interface TherapySessionController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Session cancelled."),
             @ApiResponse(responseCode = "400", description = "Invalid input data."),
+            @ApiResponse(responseCode = "403", description = "Forbidden."),
             @ApiResponse(responseCode = "404", description = "Session not found."),
             @ApiResponse(responseCode = "409", description = "Session already finalized."),
             @ApiResponse(responseCode = "500", description = "Internal server error.")
@@ -92,6 +97,7 @@ public interface TherapySessionController {
     @Operation(summary = "Get active session by patient", description = "Returns the Pending/Ready/InProgress session for a patient, if any.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Active session found."),
+            @ApiResponse(responseCode = "403", description = "Forbidden."),
             @ApiResponse(responseCode = "404", description = "No active session for this patient."),
             @ApiResponse(responseCode = "500", description = "Internal server error.")
     })
@@ -102,6 +108,7 @@ public interface TherapySessionController {
     @Operation(summary = "Get session summary", description = "Returns the executive summary of a completed session.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Summary retrieved."),
+            @ApiResponse(responseCode = "403", description = "Forbidden."),
             @ApiResponse(responseCode = "404", description = "Session not found."),
             @ApiResponse(responseCode = "409", description = "Session still in progress."),
             @ApiResponse(responseCode = "500", description = "Internal server error.")
@@ -116,6 +123,7 @@ public interface TherapySessionController {
                     + "active treatment plan covers the date or no routine is scheduled for that day.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Daily schedule resolved (may be empty)."),
+            @ApiResponse(responseCode = "403", description = "Forbidden."),
             @ApiResponse(responseCode = "500", description = "Internal server error.")
     })
     ResponseEntity<DailyScheduleResource> getDailySchedule(
