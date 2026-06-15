@@ -150,6 +150,9 @@ public class UserCommandServiceImpl implements UserCommandService {
             return;
         }
         user.addRole(role);
+        if (command.roleName().equals(RoleName.ROLE_CLINIC_ADMIN)) {
+            user.removeRoleByName(RoleName.ROLE_USER.name());
+        }
         userRepository.save(user);
     }
 

@@ -1,5 +1,6 @@
 package com.kiniot.uflex.api.device.domain.model.commands;
 
+import com.kiniot.uflex.api.device.domain.model.valueobjects.AdvertisedName;
 import com.kiniot.uflex.api.device.domain.model.valueobjects.DeviceModel;
 import com.kiniot.uflex.api.device.domain.model.valueobjects.FirmwareVersion;
 import com.kiniot.uflex.api.device.domain.model.valueobjects.MacAddress;
@@ -9,7 +10,8 @@ public record RegisterDeviceCommand(
         SerialNumber serialNumber,
         MacAddress macAddress,
         FirmwareVersion firmwareVersion,
-        DeviceModel model
+        DeviceModel model,
+        AdvertisedName advertisedName
 ) {
     public RegisterDeviceCommand {
         if (serialNumber == null) {

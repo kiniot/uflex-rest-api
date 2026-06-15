@@ -30,6 +30,15 @@ public class DeviceQueryServiceImpl implements DeviceQueryService {
 
     @Override
     @Transactional(readOnly = true)
+    public Optional<Device> handle(GetDeviceByIdQuery query) {
+        var clinicId = externalIamService.fetchCurrentClinicId()
+                .orElseThrow(AuthenticatedUserClinicNotFoundException::new);
+        return deviceRepository.findById(query.deviceId())
+                .filter(device -> device.getClinicId().equals(clinicId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<Device> handle(GetDeviceBySerialNumberQuery query) {
         var clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(AuthenticatedUserClinicNotFoundException::new);

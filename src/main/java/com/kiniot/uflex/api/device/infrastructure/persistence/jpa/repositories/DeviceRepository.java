@@ -3,6 +3,7 @@ package com.kiniot.uflex.api.device.infrastructure.persistence.jpa.repositories;
 import com.kiniot.uflex.api.device.domain.model.aggregates.Device;
 import com.kiniot.uflex.api.device.domain.model.valueobjects.DeviceId;
 import com.kiniot.uflex.api.device.domain.model.valueobjects.DeviceStatus;
+import com.kiniot.uflex.api.device.domain.model.valueobjects.MacAddress;
 import com.kiniot.uflex.api.device.domain.model.valueobjects.SerialNumber;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
@@ -21,7 +22,7 @@ public interface DeviceRepository extends JpaRepository<Device, DeviceId> {
 
     boolean existsBySerialNumber(SerialNumber serialNumber);
 
-    boolean existsByMacAddress(String macAddress);
+    boolean existsByMacAddress(MacAddress macAddress);
 
     List<Device> findAllByClinicId(ClinicId clinicId);
 

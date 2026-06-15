@@ -40,6 +40,10 @@ public class Device extends AuditableAbstractAggregateRoot<Device, DeviceId> {
     @AttributeOverride(name = "modelName", column = @Column(name = "model_name", length = 100))
     private DeviceModel model;
 
+    @Embedded
+    @AttributeOverride(name = "advertisedName", column = @Column(name = "advertised_name", length = 100))
+    private AdvertisedName advertisedName;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private CalibrationStatus calibrationStatus;
@@ -49,7 +53,7 @@ public class Device extends AuditableAbstractAggregateRoot<Device, DeviceId> {
     private DeviceStatus status;
 
     @Column(nullable = true)
-    private LocalDateTime lastSyncAt;
+    private LocalDateTime lastSeenAt;
 
     @Embedded
     @AttributeOverride(name = "id", column = @Column(name = "clinic_id", columnDefinition = "UUID", nullable = false))
@@ -62,16 +66,17 @@ public class Device extends AuditableAbstractAggregateRoot<Device, DeviceId> {
     protected Device() {}
 
     public Device(SerialNumber serialNumber, MacAddress macAddress, FirmwareVersion firmwareVersion,
-                  DeviceModel model, ClinicId clinicId) {
+                  DeviceModel model, AdvertisedName advertisedName, ClinicId clinicId) {
         this.id = new DeviceId();
         this.serialNumber = serialNumber;
         this.macAddress = macAddress;
         this.firmwareVersion = firmwareVersion;
         this.batteryLevel = new BatteryLevel(100);
         this.model = model;
+        this.advertisedName = advertisedName;
         this.calibrationStatus = CalibrationStatus.VALID;
         this.status = DeviceStatus.AVAILABLE;
-        this.lastSyncAt = null;
+        this.lastSeenAt = null;
         this.clinicId = clinicId;
         this.currentPatientId = null;
         this.addDomainEvent(new DeviceRegisteredEvent(this, serialNumber.value(), clinicId));
@@ -96,7 +101,7 @@ public class Device extends AuditableAbstractAggregateRoot<Device, DeviceId> {
 
     public void recordTelemetry(Integer batteryPercentage) {
         this.batteryLevel = new BatteryLevel(batteryPercentage);
-        this.lastSyncAt = LocalDateTime.now();
+        this.lastSeenAt = LocalDateTime.now();
         if (this.batteryLevel.isLow()) {
             this.addDomainEvent(new DeviceBatteryLowEvent(this, this.serialNumber.value(), batteryPercentage));
         }
@@ -118,7 +123,7 @@ public class Device extends AuditableAbstractAggregateRoot<Device, DeviceId> {
     }
 
     public boolean isOffline() {
-        return lastSyncAt == null || lastSyncAt.plusMinutes(15).isBefore(LocalDateTime.now());
+        return lastSeenAt == null || lastSeenAt.plusMinutes(15).isBefore(LocalDateTime.now());
     }
 
     @Override

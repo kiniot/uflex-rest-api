@@ -1,13 +1,13 @@
 package com.kiniot.uflex.api.device.domain.model.commands;
 
-import com.kiniot.uflex.api.device.domain.model.valueobjects.SerialNumber;
+import com.kiniot.uflex.api.device.domain.model.valueobjects.DeviceId;
 
 public record MarkCalibrationAsInvalidCommand(
-        SerialNumber serialNumber
+        DeviceId deviceId
 ) {
     public MarkCalibrationAsInvalidCommand {
-        if (serialNumber == null) {
-            throw new IllegalArgumentException("Serial number cannot be null");
+        if (deviceId == null) {
+            throw new IllegalArgumentException("Device ID cannot be null");
         }
     }
 }

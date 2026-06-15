@@ -5,6 +5,8 @@ import com.kiniot.uflex.api.planning.domain.model.queries.GetActiveTreatmentPlan
 import com.kiniot.uflex.api.planning.domain.model.queries.GetTreatmentPlansByPatientIdQuery;
 import com.kiniot.uflex.api.planning.domain.services.TreatmentPlanCommandService;
 import com.kiniot.uflex.api.planning.domain.services.TreatmentPlanQueryService;
+import com.kiniot.uflex.api.shared.interfaces.rest.ApiErrorCodeResolver;
+import com.kiniot.uflex.api.shared.interfaces.rest.ErrorResponseFactory;
 import com.kiniot.uflex.api.shared.interfaces.rest.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +36,7 @@ class PatientTreatmentPlansControllerTests {
         queryService = mock(TreatmentPlanQueryService.class);
         mockMvc = MockMvcBuilders
                 .standaloneSetup(new PatientTreatmentPlansController(commandService, queryService))
-                .setControllerAdvice(new GlobalExceptionHandler())
+                .setControllerAdvice(new GlobalExceptionHandler(new ErrorResponseFactory(new ApiErrorCodeResolver())))
                 .build();
     }
 

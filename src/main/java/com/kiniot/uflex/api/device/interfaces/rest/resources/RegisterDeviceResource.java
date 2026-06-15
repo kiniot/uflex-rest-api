@@ -10,5 +10,7 @@ public record RegisterDeviceResource(
         @Schema(description = "Device firmware version", example = "1.0.0")
         String firmwareVersion,
         @Schema(description = "Device model name", example = "UFlex Tracker Pro")
-        String model
+        String model,
+        @Schema(description = "Device BLE advertised name", example = "UFLEX-001")
+        String advertisedName
 ) {}

@@ -1,6 +1,7 @@
 package com.kiniot.uflex.api.device.interfaces.rest.transform;
 
 import com.kiniot.uflex.api.device.domain.model.commands.RegisterDeviceCommand;
+import com.kiniot.uflex.api.device.domain.model.valueobjects.AdvertisedName;
 import com.kiniot.uflex.api.device.domain.model.valueobjects.DeviceModel;
 import com.kiniot.uflex.api.device.domain.model.valueobjects.FirmwareVersion;
 import com.kiniot.uflex.api.device.domain.model.valueobjects.MacAddress;
@@ -22,6 +23,9 @@ public class RegisterDeviceCommandFromResourceAssembler {
                         : null,
                 resource.model() != null
                         ? new DeviceModel(resource.model())
+                        : null,
+                resource.advertisedName() != null
+                        ? new AdvertisedName(resource.advertisedName())
                         : null
         );
     }
