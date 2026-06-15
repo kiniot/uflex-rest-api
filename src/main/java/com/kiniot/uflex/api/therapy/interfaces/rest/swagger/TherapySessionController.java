@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -25,6 +26,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 public interface TherapySessionController {
 
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
     @Operation(summary = "Initiate therapy preparation", description = "Creates a new TherapySession in Pending state and emits TherapyPreparationInitiated.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Session created successfully."),
@@ -36,6 +38,7 @@ public interface TherapySessionController {
             @Valid @RequestBody InitiateTherapyPreparationResource resource);
 
     @PatchMapping("/{id}/hardware")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
     @Operation(summary = "Confirm hardware readiness", description = "Registers the IoT sensor snapshot. Transitions Pending → Ready.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Hardware readiness confirmed."),
@@ -49,6 +52,7 @@ public interface TherapySessionController {
             @Valid @RequestBody ConfirmHardwareReadinessResource resource);
 
     @PatchMapping("/{id}/start")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
     @Operation(summary = "Start therapy session", description = "Transitions Ready → InProgress and emits RoutineStarted.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Session started."),
@@ -59,6 +63,7 @@ public interface TherapySessionController {
     ResponseEntity<TherapySessionResource> startTherapySession(@PathVariable UUID id);
 
     @PatchMapping("/{id}/finalize")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
     @Operation(summary = "Finalize therapy session", description = "Closes the session. Requires all series Validated. Emits TherapySessionCompleted.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Session finalized."),
@@ -69,6 +74,7 @@ public interface TherapySessionController {
     ResponseEntity<TherapySessionResource> finalizeTherapySession(@PathVariable UUID id);
 
     @PatchMapping("/{id}/cancel")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
     @Operation(summary = "Cancel therapy session", description = "Cancels the session at any non-terminal state. Emits TherapySessionCancelled.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Session cancelled."),
@@ -82,6 +88,7 @@ public interface TherapySessionController {
             @Valid @RequestBody CancelTherapySessionResource resource);
 
     @GetMapping("/active/{patientId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     @Operation(summary = "Get active session by patient", description = "Returns the Pending/Ready/InProgress session for a patient, if any.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Active session found."),
@@ -91,6 +98,7 @@ public interface TherapySessionController {
     ResponseEntity<TherapySessionResource> getActiveTherapySession(@PathVariable UUID patientId);
 
     @GetMapping("/{id}/summary")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     @Operation(summary = "Get session summary", description = "Returns the executive summary of a completed session.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Summary retrieved."),
@@ -101,6 +109,7 @@ public interface TherapySessionController {
     ResponseEntity<SessionSummaryResource> getSessionSummary(@PathVariable UUID id);
 
     @GetMapping("/schedule/{patientId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     @Operation(summary = "Get daily schedule by patient",
             description = "Resolves the routine the patient is scheduled to perform on the given date "
                     + "(defaults to today). Returns 200 with a null routineId and zero counters when no "

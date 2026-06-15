@@ -22,6 +22,7 @@ import com.kiniot.uflex.api.therapy.domain.model.commands.StartTherapySessionCom
 import com.kiniot.uflex.api.therapy.interfaces.rest.swagger.TherapySessionController;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -37,6 +38,7 @@ public class TherapySessionControllerImpl implements TherapySessionController {
     private final TherapySessionQueryService therapySessionQueryService;
 
     @Override
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
     public ResponseEntity<TherapySessionResource> initiateTherapyPreparation(InitiateTherapyPreparationResource resource) {
         var command = InitiateTherapyPreparationCommandFromResourceAssembler.toCommandFromResource(resource);
         var session = therapySessionCommandService.handle(command);
@@ -50,6 +52,7 @@ public class TherapySessionControllerImpl implements TherapySessionController {
     }
 
     @Override
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
     public ResponseEntity<TherapySessionResource> confirmHardwareReadiness(UUID id, ConfirmHardwareReadinessResource resource) {
         var command = ConfirmHardwareReadinessCommandFromResourceAssembler.toCommandFromResource(id, resource);
         var session = therapySessionCommandService.handle(command);
@@ -57,18 +60,21 @@ public class TherapySessionControllerImpl implements TherapySessionController {
     }
 
     @Override
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
     public ResponseEntity<TherapySessionResource> startTherapySession(UUID id) {
         var session = therapySessionCommandService.handle(new StartTherapySessionCommand(id));
         return ResponseEntity.ok(TherapySessionResourceFromEntityAssembler.toResponseFromEntity(session));
     }
 
     @Override
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
     public ResponseEntity<TherapySessionResource> finalizeTherapySession(UUID id) {
         var session = therapySessionCommandService.handle(new FinalizeTherapySessionCommand(id));
         return ResponseEntity.ok(TherapySessionResourceFromEntityAssembler.toResponseFromEntity(session));
     }
 
     @Override
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
     public ResponseEntity<TherapySessionResource> cancelTherapySession(UUID id, CancelTherapySessionResource resource) {
         var command = CancelTherapySessionCommandFromResourceAssembler.toCommandFromResource(id, resource);
         var session = therapySessionCommandService.handle(command);
@@ -76,18 +82,21 @@ public class TherapySessionControllerImpl implements TherapySessionController {
     }
 
     @Override
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     public ResponseEntity<TherapySessionResource> getActiveTherapySession(UUID patientId) {
         var session = therapySessionQueryService.handle(new GetActiveTherapySessionByPatientIdQuery(patientId));
         return ResponseEntity.ok(TherapySessionResourceFromEntityAssembler.toResponseFromEntity(session));
     }
 
     @Override
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     public ResponseEntity<SessionSummaryResource> getSessionSummary(UUID id) {
         var session = therapySessionQueryService.handle(new GetSessionSummaryQuery(id));
         return ResponseEntity.ok(SessionSummaryResourceFromEntityAssembler.toResponseFromEntity(session));
     }
 
     @Override
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     public ResponseEntity<DailyScheduleResource> getDailySchedule(UUID patientId, LocalDate date) {
         LocalDate target = date != null ? date : LocalDate.now();
         var routine = therapySessionQueryService.handle(new GetDailyScheduleQuery(patientId, target));
