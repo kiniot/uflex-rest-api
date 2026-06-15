@@ -1,4 +1,4 @@
-# uFlex REST API
+<h1 align="center">uFlex REST API</h1>
 
 <div align="center">
   <img src="https://img.shields.io/badge/Java-25-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white" alt="Java 25" />
@@ -56,17 +56,17 @@ The API starts on `http://localhost:8080`.
 
 ### Environment variables
 
-| Variable                  | Required | Notes                                                       |
-| ------------------------- | -------- | ----------------------------------------------------------- |
-| `SPRING_PROFILES_ACTIVE`  | yes      | `dev` or `prod` — no default, app fails to start without it |
-| `JWT_SECRET`              | yes      | Signing secret for bearer tokens                            |
-| `JWT_EXPIRATION_DAYS`     | yes      | Token lifetime in days                                      |
-| `UFLEX_DB_HOST`           | prod     | Defaults to `localhost` in dev                              |
-| `UFLEX_DB_PORT`           | prod     | Defaults to `5432` in dev                                   |
-| `UFLEX_DB_NAME`           | prod     | Defaults to `uflex_db_dev` in dev                           |
-| `UFLEX_DB_USERNAME`       | prod     | Defaults to `admin` in dev                                  |
-| `UFLEX_DB_PASSWORD`       | prod     | Defaults to `password` in dev                               |
-| `EMAIL_USER` / `EMAIL_PASS` / `EMAIL_FROM_ADDRESS` / `EMAIL_FROM_NAME` | for email | Gmail SMTP credentials |
+| Variable                                                               | Required  | Notes                                                       |
+|------------------------------------------------------------------------|-----------|-------------------------------------------------------------|
+| `SPRING_PROFILES_ACTIVE`                                               | yes       | `dev` or `prod` — no default, app fails to start without it |
+| `JWT_SECRET`                                                           | yes       | Signing secret for bearer tokens                            |
+| `JWT_EXPIRATION_DAYS`                                                  | yes       | Token lifetime in days                                      |
+| `UFLEX_DB_HOST`                                                        | prod      | Defaults to `localhost` in dev                              |
+| `UFLEX_DB_PORT`                                                        | prod      | Defaults to `5432` in dev                                   |
+| `UFLEX_DB_NAME`                                                        | prod      | Defaults to `uflex_db_dev` in dev                           |
+| `UFLEX_DB_USERNAME`                                                    | prod      | Defaults to `admin` in dev                                  |
+| `UFLEX_DB_PASSWORD`                                                    | prod      | Defaults to `password` in dev                               |
+| `EMAIL_USER` / `EMAIL_PASS` / `EMAIL_FROM_ADDRESS` / `EMAIL_FROM_NAME` | for email | Gmail SMTP credentials                                      |
 
 The `dev` profile uses Hibernate `ddl-auto: update`; `prod` uses `validate`. There is no schema-migration tool configured.
 
