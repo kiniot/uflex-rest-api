@@ -28,7 +28,9 @@ public interface TherapyExecutionController {
     @Operation(summary = "Start a serie", description = "Transitions the serie to Started and emits SerieStarted.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Serie started."),
+            @ApiResponse(responseCode = "403", description = "Forbidden."),
             @ApiResponse(responseCode = "404", description = "Session or serie not found."),
+            @ApiResponse(responseCode = "409", description = "Session not in progress."),
             @ApiResponse(responseCode = "500", description = "Internal server error.")
     })
     ResponseEntity<SerieDetailsResource> startSerie(@PathVariable UUID id, @PathVariable UUID serieId);
@@ -38,6 +40,7 @@ public interface TherapyExecutionController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Repetition recorded; returns the updated serie progress."),
             @ApiResponse(responseCode = "400", description = "Invalid input data."),
+            @ApiResponse(responseCode = "403", description = "Forbidden."),
             @ApiResponse(responseCode = "404", description = "Session or serie not found."),
             @ApiResponse(responseCode = "409", description = "Session not in progress or serie not started."),
             @ApiResponse(responseCode = "500", description = "Internal server error.")
@@ -53,7 +56,9 @@ public interface TherapyExecutionController {
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Anomaly recorded."),
             @ApiResponse(responseCode = "400", description = "Invalid input data."),
+            @ApiResponse(responseCode = "403", description = "Forbidden."),
             @ApiResponse(responseCode = "404", description = "Session not found."),
+            @ApiResponse(responseCode = "409", description = "Session not in progress."),
             @ApiResponse(responseCode = "500", description = "Internal server error.")
     })
     ResponseEntity<Void> recordAnomalousMovement(
@@ -67,8 +72,8 @@ public interface TherapyExecutionController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Pain level registered."),
             @ApiResponse(responseCode = "400", description = "Invalid input data."),
+            @ApiResponse(responseCode = "403", description = "Forbidden."),
             @ApiResponse(responseCode = "404", description = "Session not found."),
-            @ApiResponse(responseCode = "422", description = "Pain level out of range."),
             @ApiResponse(responseCode = "500", description = "Internal server error.")
     })
     ResponseEntity<Void> reportPainLevel(
@@ -80,6 +85,7 @@ public interface TherapyExecutionController {
     @Operation(summary = "Get session progress", description = "Returns the live execution state: active serie, repetition counts, and overall status.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Progress retrieved."),
+            @ApiResponse(responseCode = "403", description = "Forbidden."),
             @ApiResponse(responseCode = "404", description = "Session not found."),
             @ApiResponse(responseCode = "500", description = "Internal server error.")
     })
@@ -90,6 +96,7 @@ public interface TherapyExecutionController {
     @Operation(summary = "Get serie details", description = "Returns the clinical parameters of a serie: angle range, target reps, durations.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Serie details retrieved."),
+            @ApiResponse(responseCode = "403", description = "Forbidden."),
             @ApiResponse(responseCode = "404", description = "Session or serie not found."),
             @ApiResponse(responseCode = "500", description = "Internal server error.")
     })
