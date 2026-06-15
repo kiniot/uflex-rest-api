@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -23,6 +24,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 public interface TherapyExecutionController {
 
     @PatchMapping("/{id}/series/{serieId}/start")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
     @Operation(summary = "Start a serie", description = "Transitions the serie to Started and emits SerieStarted.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Serie started."),
@@ -60,6 +62,7 @@ public interface TherapyExecutionController {
             @Valid @RequestBody RecordAnomalousMovementResource resource);
 
     @PatchMapping("/{id}/pain")
+    @PreAuthorize("hasAuthority('ROLE_PATIENT')")
     @Operation(summary = "Report pain level", description = "Registers the patient's self-reported pain level (0–10). Emits PainLevelReported.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Pain level registered."),
@@ -73,6 +76,7 @@ public interface TherapyExecutionController {
             @Valid @RequestBody ReportPainLevelResource resource);
 
     @GetMapping("/{id}/progress")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     @Operation(summary = "Get session progress", description = "Returns the live execution state: active serie, repetition counts, and overall status.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Progress retrieved."),
@@ -82,6 +86,7 @@ public interface TherapyExecutionController {
     ResponseEntity<SessionProgressResource> getSessionProgress(@PathVariable UUID id);
 
     @GetMapping("/{id}/series/{serieId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     @Operation(summary = "Get serie details", description = "Returns the clinical parameters of a serie: angle range, target reps, durations.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Serie details retrieved."),

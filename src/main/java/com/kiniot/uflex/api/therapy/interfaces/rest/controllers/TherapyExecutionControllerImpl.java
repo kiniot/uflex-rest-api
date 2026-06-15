@@ -22,6 +22,7 @@ import com.kiniot.uflex.api.therapy.interfaces.rest.transform.ReportPainLevelCom
 import com.kiniot.uflex.api.therapy.interfaces.rest.swagger.TherapyExecutionController;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -36,6 +37,7 @@ public class TherapyExecutionControllerImpl implements TherapyExecutionControlle
     private final TherapySessionQueryService therapySessionQueryService;
 
     @Override
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
     public ResponseEntity<SerieDetailsResource> startSerie(UUID id, UUID serieId) {
         var session = therapySessionCommandService.handle(new StartSerieCommand(id, serieId));
         Serie serie = session.findSerie(SerieId.of(serieId))
@@ -75,6 +77,7 @@ public class TherapyExecutionControllerImpl implements TherapyExecutionControlle
     }
 
     @Override
+    @PreAuthorize("hasAuthority('ROLE_PATIENT')")
     public ResponseEntity<Void> reportPainLevel(UUID id, ReportPainLevelResource resource) {
         var command = ReportPainLevelCommandFromResourceAssembler.toCommandFromResource(id, resource);
         therapySessionCommandService.handle(command);
@@ -82,12 +85,14 @@ public class TherapyExecutionControllerImpl implements TherapyExecutionControlle
     }
 
     @Override
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     public ResponseEntity<SessionProgressResource> getSessionProgress(UUID id) {
         var session = therapySessionQueryService.handle(new GetSessionProgressQuery(id));
         return ResponseEntity.ok(SessionProgressResourceFromEntityAssembler.toResponseFromEntity(session));
     }
 
     @Override
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     public ResponseEntity<SerieDetailsResource> getSerieDetails(UUID id, UUID serieId) {
         var serie = therapySessionQueryService.handle(new GetSerieDetailsQuery(id, serieId));
         return ResponseEntity.ok(SerieDetailsResourceFromEntityAssembler.toResponseFromEntity(serie));
