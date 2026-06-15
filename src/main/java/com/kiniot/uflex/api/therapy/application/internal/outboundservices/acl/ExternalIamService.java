@@ -2,6 +2,7 @@ package com.kiniot.uflex.api.therapy.application.internal.outboundservices.acl;
 
 import com.kiniot.uflex.api.iam.interfaces.acl.IamContextFacade;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -19,5 +20,10 @@ public class ExternalIamService {
     public Optional<ClinicId> fetchCurrentClinicId() {
         var clinicId = iamContextFacade.fetchCurrentTenantId();
         return clinicId.isEmpty() ? Optional.empty() : Optional.of(new ClinicId(UUID.fromString(clinicId)));
+    }
+
+    public Optional<UserId> fetchCurrentUserId() {
+        var userId = iamContextFacade.fetchContextUserId();
+        return (userId == null || userId.isBlank()) ? Optional.empty() : Optional.of(new UserId(UUID.fromString(userId)));
     }
 }
