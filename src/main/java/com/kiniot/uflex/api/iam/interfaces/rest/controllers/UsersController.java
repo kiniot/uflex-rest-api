@@ -1,6 +1,7 @@
 package com.kiniot.uflex.api.iam.interfaces.rest.controllers;
 
 import com.kiniot.uflex.api.iam.domain.model.commands.ChangePasswordCommand;
+import com.kiniot.uflex.api.iam.domain.exceptions.InvalidCredentialsException;
 import com.kiniot.uflex.api.iam.domain.model.queries.GetContextUserIdQuery;
 import com.kiniot.uflex.api.iam.domain.model.queries.GetUserByEmailQuery;
 import com.kiniot.uflex.api.iam.domain.model.queries.GetUserByIdQuery;
@@ -68,14 +69,10 @@ public class UsersController {
         var authenticatedUserId = userQueryService.handle(new GetContextUserIdQuery());
         if (authenticatedUserId.isEmpty())
             return ResponseEntity.status(401).build();
-        try {
-            userCommandService.handle(new ChangePasswordCommand(
-                    authenticatedUserId.get(),
-                    new Password(resource.currentPassword()),
-                    new Password(resource.newPassword())));
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().build();
-        }
+        userCommandService.handle(new ChangePasswordCommand(
+                authenticatedUserId.get(),
+                new Password(resource.currentPassword()),
+                new Password(resource.newPassword())));
         return ResponseEntity.noContent().build();
     }
 

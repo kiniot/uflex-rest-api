@@ -1,6 +1,6 @@
 package com.kiniot.uflex.api.iam.infrastructure.authorization.sfs.pipeline;
 
-import com.kiniot.uflex.api.shared.interfaces.rest.resources.ErrorResource;
+import com.kiniot.uflex.api.shared.interfaces.rest.ErrorResponseFactory;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,22 +12,25 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.time.OffsetDateTime;
 
 @Component
 public class UnauthorizedRequestHandlerEntryPoint implements AuthenticationEntryPoint {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UnauthorizedRequestHandlerEntryPoint.class);
+    private final ErrorResponseFactory errorResponseFactory;
+
+    public UnauthorizedRequestHandlerEntryPoint(ErrorResponseFactory errorResponseFactory) {
+        this.errorResponseFactory = errorResponseFactory;
+    }
 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authenticationException) throws IOException, ServletException {
         LOGGER.error("Unauthorized request: {}", authenticationException.getMessage());
-        var errorResource = new ErrorResource(
+        var errorResource = errorResponseFactory.build(
+                HttpStatus.UNAUTHORIZED,
                 "Authentication is required to access this resource",
-                HttpStatus.UNAUTHORIZED.value(),
-                HttpStatus.UNAUTHORIZED.getReasonPhrase(),
-                OffsetDateTime.now().toString(),
-                request.getRequestURI()
+                request,
+                authenticationException
         );
         ProblemDetailResponseWriter.write(response, errorResource);
     }

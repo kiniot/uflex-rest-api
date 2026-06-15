@@ -3,9 +3,12 @@ package com.kiniot.uflex.api.organization.application.internal.commandservices;
 import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalIamService;
 import com.kiniot.uflex.api.organization.domain.exceptions.ClinicNotFoundException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistAlreadyRegisteredException;
+import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistClinicMismatchException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistHasAssignedPatientsException;
 import com.kiniot.uflex.api.organization.domain.model.aggregates.Patient;
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistLicenseInvalidException;
+import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistNotFoundException;
+import com.kiniot.uflex.api.organization.domain.exceptions.UserProvisioningException;
 import com.kiniot.uflex.api.organization.domain.model.aggregates.Physiotherapist;
 import com.kiniot.uflex.api.organization.domain.model.commands.DeletePhysiotherapistCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.ReactivatePhysiotherapistCommand;
@@ -45,7 +48,7 @@ public class PhysiotherapistCommandServiceImpl implements PhysiotherapistCommand
     @Transactional
     public Optional<Physiotherapist> handle(RegisterPhysiotherapistCommand command) {
         var userId = externalIamService.registerPhysiotherapist(command.emailAddress().email())
-                .orElseThrow(() -> new RuntimeException("Failed to register physiotherapist in IAM"));
+                .orElseThrow(() -> new UserProvisioningException("Failed to register physiotherapist in IAM"));
         var clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(() -> new ClinicNotFoundException("Current clinic not found"));
 
@@ -121,14 +124,14 @@ public class PhysiotherapistCommandServiceImpl implements PhysiotherapistCommand
         var clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(() -> new ClinicNotFoundException("Current clinic not found"));
         var physiotherapist = physiotherapistRepository.findById(physiotherapistId)
-                .orElseThrow(() -> new IllegalArgumentException("Physiotherapist not found"));
+                .orElseThrow(() -> new PhysiotherapistNotFoundException("Physiotherapist not found"));
         validatePhysiotherapistBelongsToClinic(physiotherapist, clinicId);
         return physiotherapist;
     }
 
     private void validatePhysiotherapistBelongsToClinic(Physiotherapist physiotherapist, ClinicId clinicId) {
         if (!physiotherapist.getClinicId().equals(clinicId)) {
-            throw new IllegalArgumentException("Physiotherapist does not belong to the authenticated clinic");
+            throw new PhysiotherapistClinicMismatchException();
         }
     }
 

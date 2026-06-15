@@ -4,6 +4,9 @@ import com.kiniot.uflex.api.shared.domain.exceptions.AuthenticatedUserClinicNotF
 import com.kiniot.uflex.api.subscription.application.internal.outboundservices.acl.ExternalIamService;
 import com.kiniot.uflex.api.subscription.domain.model.commands.CreateCheckoutSessionCommand;
 import com.kiniot.uflex.api.subscription.application.internal.outboundservices.payment.PaymentGatewayPort;
+import com.kiniot.uflex.api.subscription.domain.exceptions.CurrentSubscriptionAlreadyExistsException;
+import com.kiniot.uflex.api.subscription.domain.exceptions.SubscriptionPriceMismatchException;
+import com.kiniot.uflex.api.subscription.domain.exceptions.TierNotFoundException;
 import com.kiniot.uflex.api.subscription.domain.model.aggregates.Subscription;
 import com.kiniot.uflex.api.subscription.domain.model.commands.CreateSubscriptionCommand;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionKitSelection;
@@ -44,12 +47,12 @@ public class SubscriptionCommandServiceImpl implements SubscriptionCommandServic
                 .orElseThrow(AuthenticatedUserClinicNotFoundException::new);
         var hasCurrentSubscription = subscriptionRepository.findAllByClinicId(clinicId).stream()
                 .anyMatch(subscription -> subscription.blocksNewSubscriptionAt(LocalDate.now()));
-        if (hasCurrentSubscription) throw new IllegalStateException("Current clinic already has a current subscription");
+        if (hasCurrentSubscription) throw new CurrentSubscriptionAlreadyExistsException();
         var tier = tierRepository.findWithPricesById(command.selection().tierId())
-                .orElseThrow(() -> new IllegalArgumentException("Tier not found"));
+                .orElseThrow(() -> new TierNotFoundException(command.selection().tierId().id().toString()));
         var catalogPrice = tier.getPrice(command.selection().billingPeriod(), command.contractedPrice().currency());
         if (!tier.isAllowsPriceOverride() && !catalogPrice.equals(command.contractedPrice()))
-            throw new IllegalArgumentException("Contracted price must match the tier catalog price");
+            throw new SubscriptionPriceMismatchException();
         var kitPricing = tier.getTierKitPricing();
         var requestedTotalKits = command.requestedTotalKits();
         var additionalKits = kitPricing.calculateAdditionalKits(requestedTotalKits);

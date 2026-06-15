@@ -29,7 +29,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
@@ -201,14 +200,10 @@ public class PatientTreatmentPlansController {
             @PathVariable String patientId,
             @RequestBody CreateTreatmentPlanResource resource
     ) {
-        try {
-            var command = CreateTreatmentPlanCommandFromResourceAssembler.toCommandFromResource(patientId, resource);
-            return treatmentPlanCommandService.handle(command)
-                    .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
-                    .map(treatmentPlan -> new ResponseEntity<>(treatmentPlan, HttpStatus.CREATED))
-                    .orElseGet(() -> ResponseEntity.badRequest().build());
-        } catch (IllegalArgumentException | IllegalStateException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
-        }
+        var command = CreateTreatmentPlanCommandFromResourceAssembler.toCommandFromResource(patientId, resource);
+        return treatmentPlanCommandService.handle(command)
+                .map(TreatmentPlanResourceFromEntityAssembler::toResourceFromEntity)
+                .map(treatmentPlan -> new ResponseEntity<>(treatmentPlan, HttpStatus.CREATED))
+                .orElseGet(() -> ResponseEntity.badRequest().build());
     }
 }

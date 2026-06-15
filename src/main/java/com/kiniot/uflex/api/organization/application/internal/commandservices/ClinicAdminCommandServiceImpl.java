@@ -35,7 +35,7 @@ public class ClinicAdminCommandServiceImpl implements ClinicAdminCommandService 
         var clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(() -> new ClinicNotFoundException("Current clinic not found"));
         var userEmail = externalIamService.fetchUserEmailAddressByUserId(userId.id().toString())
-                .orElseThrow(() -> new IllegalArgumentException("User email not found"));
+                .orElseThrow(() -> new UserNotFoundException("User email not found"));
 
         var clinicAdmin = new ClinicAdmin(command, userId, clinicId, new Email(userEmail));
         var saved = clinicAdminRepository.save(clinicAdmin);

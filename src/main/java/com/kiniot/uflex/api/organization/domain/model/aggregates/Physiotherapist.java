@@ -2,6 +2,7 @@ package com.kiniot.uflex.api.organization.domain.model.aggregates;
 
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistAlreadySuspendedException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistNotSuspendedException;
+import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistOperationNotAllowedException;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPhysiotherapistCommand;
 import com.kiniot.uflex.api.organization.domain.model.events.PhysiotherapistProfileActivatedEvent;
 import com.kiniot.uflex.api.organization.domain.model.events.PhysiotherapistProfileRegisteredEvent;
@@ -101,7 +102,7 @@ public class Physiotherapist extends AuditableAbstractAggregateRoot<Physiotherap
 
     public void activate() {
         if (this.status != PhysiotherapistStatus.INACTIVE) {
-            throw new IllegalStateException("Profile can only be activated from INACTIVE status");
+            throw new PhysiotherapistOperationNotAllowedException("Profile can only be activated from INACTIVE status");
         }
         this.status = PhysiotherapistStatus.ACTIVE;
         this.addDomainEvent(new PhysiotherapistProfileActivatedEvent(

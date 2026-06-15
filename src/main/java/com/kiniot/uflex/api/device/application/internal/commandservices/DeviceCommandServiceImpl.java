@@ -1,12 +1,16 @@
 package com.kiniot.uflex.api.device.application.internal.commandservices;
 
 import com.kiniot.uflex.api.device.application.internal.outboundservices.acl.ExternalOrganizationService;
+import com.kiniot.uflex.api.device.domain.exceptions.DeviceAlreadyRegisteredException;
+import com.kiniot.uflex.api.device.domain.exceptions.DeviceClinicMismatchException;
+import com.kiniot.uflex.api.device.domain.exceptions.DeviceNotFoundException;
 import com.kiniot.uflex.api.device.domain.model.aggregates.Device;
 import com.kiniot.uflex.api.device.domain.model.commands.*;
 import com.kiniot.uflex.api.device.domain.model.valueobjects.*;
 import com.kiniot.uflex.api.device.domain.services.DeviceCommandService;
 import com.kiniot.uflex.api.device.infrastructure.persistence.jpa.repositories.DeviceRepository;
 import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalIamService;
+import com.kiniot.uflex.api.shared.domain.exceptions.AuthenticatedUserClinicNotFoundException;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +36,7 @@ public class DeviceCommandServiceImpl implements DeviceCommandService {
     @Transactional
     public Device handle(RegisterDeviceCommand command, ClinicId clinicId) {
         if (deviceRepository.existsBySerialNumber(command.serialNumber())) {
-            throw new IllegalArgumentException("Device with serial number already exists");
+            throw new DeviceAlreadyRegisteredException(command.serialNumber().value());
         }
         var device = new Device(
                 command.serialNumber(),
@@ -50,7 +54,7 @@ public class DeviceCommandServiceImpl implements DeviceCommandService {
         var device = getDeviceOrThrow(command.serialNumber());
         var clinicIdStr = externalIamService.fetchCurrentClinicId()
                 .map(clinicId -> clinicId.id().toString())
-                .orElseThrow(() -> new IllegalStateException("Clinic not found"));
+                .orElseThrow(AuthenticatedUserClinicNotFoundException::new);
         externalOrganizationService.patientBelongsToClinic(
                 command.patientId().patientId().toString(),
                 clinicIdStr
@@ -104,15 +108,15 @@ public class DeviceCommandServiceImpl implements DeviceCommandService {
     public void handle(DeleteDeviceCommand command) {
         var device = getDeviceOrThrow(command.serialNumber());
         var clinicId = externalIamService.fetchCurrentClinicId()
-                .orElseThrow(() -> new IllegalStateException("Clinic not found"));
+                .orElseThrow(AuthenticatedUserClinicNotFoundException::new);
         if (!device.getClinicId().equals(clinicId)) {
-            throw new IllegalStateException("Device does not belong to your clinic");
+            throw new DeviceClinicMismatchException();
         }
         deviceRepository.delete(device);
     }
 
     private Device getDeviceOrThrow(SerialNumber serialNumber) {
         return deviceRepository.findBySerialNumber(serialNumber)
-                .orElseThrow(() -> new IllegalStateException("Device not found with serial number: " + serialNumber.value()));
+                .orElseThrow(() -> new DeviceNotFoundException(serialNumber.value()));
     }
 }

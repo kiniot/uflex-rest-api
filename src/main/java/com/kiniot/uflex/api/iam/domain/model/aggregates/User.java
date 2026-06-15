@@ -1,5 +1,7 @@
 package com.kiniot.uflex.api.iam.domain.model.aggregates;
 
+import com.kiniot.uflex.api.iam.domain.exceptions.UserTenantAlreadyAssignedException;
+import com.kiniot.uflex.api.iam.domain.exceptions.UserTenantNotAssignedException;
 import com.kiniot.uflex.api.iam.domain.model.entities.Role;
 import com.kiniot.uflex.api.iam.domain.model.events.UserCreatedEvent;
 import com.kiniot.uflex.api.iam.domain.model.events.UserSignedUpAndActivatedEvent;
@@ -140,7 +142,7 @@ public class User extends AuditableAbstractAggregateRoot<User, UserId> {
      */
     public void associateTenant(TenantId tenantId) {
         if (this.tenantId != null && this.tenantId.isAssigned())
-            throw new IllegalStateException("User is already associated with a tenant");
+            throw new UserTenantAlreadyAssignedException();
         this.tenantId = tenantId;
     }
 
@@ -155,7 +157,7 @@ public class User extends AuditableAbstractAggregateRoot<User, UserId> {
      */
     public void disassociateTenant(TenantId tenantId) {
         if (this.tenantId == null || !this.tenantId.equals(tenantId)) {
-            throw new IllegalStateException("User is not associated with the provided tenant");
+            throw new UserTenantNotAssignedException();
         }
         this.tenantId = new TenantId();
     }

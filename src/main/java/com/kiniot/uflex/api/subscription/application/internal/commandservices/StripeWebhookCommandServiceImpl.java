@@ -1,5 +1,6 @@
 package com.kiniot.uflex.api.subscription.application.internal.commandservices;
 
+import com.kiniot.uflex.api.subscription.domain.exceptions.SubscriptionNotFoundException;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionStatus;
 import com.kiniot.uflex.api.subscription.domain.services.StripeWebhookCommandService;
 import com.kiniot.uflex.api.subscription.infrastructure.persistence.jpa.repositories.SubscriptionRepository;
@@ -19,7 +20,7 @@ public class StripeWebhookCommandServiceImpl implements StripeWebhookCommandServ
     @Transactional
     public void handleCheckoutCompleted(String checkoutSessionId) {
         var subscription = subscriptionRepository.findByCheckoutSessionId(checkoutSessionId)
-                .orElseThrow(() -> new IllegalArgumentException("Subscription not found for checkout session"));
+                .orElseThrow(() -> new SubscriptionNotFoundException("Subscription not found for checkout session"));
         if (subscription.getStatus() == SubscriptionStatus.ACTIVE) return;
         subscription.activate();
         subscriptionRepository.save(subscription);
@@ -29,7 +30,7 @@ public class StripeWebhookCommandServiceImpl implements StripeWebhookCommandServ
     @Transactional
     public void handleCheckoutExpired(String checkoutSessionId) {
         var subscription = subscriptionRepository.findByCheckoutSessionId(checkoutSessionId)
-                .orElseThrow(() -> new IllegalArgumentException("Subscription not found for checkout session"));
+                .orElseThrow(() -> new SubscriptionNotFoundException("Subscription not found for checkout session"));
         subscription.expirePendingCheckout();
         subscriptionRepository.save(subscription);
     }
