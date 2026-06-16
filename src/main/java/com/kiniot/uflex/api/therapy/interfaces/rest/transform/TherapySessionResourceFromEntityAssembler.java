@@ -15,6 +15,8 @@ public final class TherapySessionResourceFromEntityAssembler {
                 .treatmentPlanId(session.getTreatmentPlanId() != null ? session.getTreatmentPlanId().id() : null)
                 .iotDeviceId(session.getIotDeviceId())
                 .status(SessionStatus.toStringOrNull(session.getStatus()))
+                .painLevel(session.getPainLevel() != null ? session.getPainLevel().value() : null)
+                .requiresClinicalReview(session.isRequiresClinicalReview())
                 .startedAt(session.getStartedAt())
                 .finalizedAt(session.getFinalizedAt())
                 .build();
