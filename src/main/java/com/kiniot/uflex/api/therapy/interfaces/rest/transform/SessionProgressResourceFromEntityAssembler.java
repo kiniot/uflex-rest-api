@@ -37,6 +37,8 @@ public final class SessionProgressResourceFromEntityAssembler {
                 .sessionId(session.getId() != null ? session.getId().id() : null)
                 .status(SessionStatus.toStringOrNull(session.getStatus()))
                 .currentSerieId(currentSerieId)
+                .painLevel(session.getPainLevel() != null ? session.getPainLevel().value() : null)
+                .requiresClinicalReview(session.isRequiresClinicalReview())
                 .seriesProgress(seriesProgress)
                 .build();
     }
