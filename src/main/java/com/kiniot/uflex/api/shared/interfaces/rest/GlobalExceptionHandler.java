@@ -118,7 +118,7 @@ public class GlobalExceptionHandler {
             PatientAlreadyHasActiveTreatmentPlanException.class,
             OverlappingTreatmentPlanPeriodException.class,
             CurrentSubscriptionAlreadyExistsException.class,
-            SubscriptionOperationNotAllowedException.class
+            SubscriptionOperationNotAllowedException.class,
             OverlappingTreatmentPlanPeriodException.class,
             PatientAlreadyInActiveSessionException.class,
             TherapySessionAlreadyFinalizedException.class,
