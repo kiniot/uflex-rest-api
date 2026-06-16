@@ -15,6 +15,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -62,6 +63,18 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
     @AttributeOverride(name = "value", column = @Column(name = "pain_level"))
     private PainLevel painLevel;
 
+    @Column(nullable = false)
+    private int painReportsCount;
+
+    @Column(nullable = false)
+    private int highPainReportsCount;
+
+    @Column(nullable = false)
+    private int maxReportedPainLevel;
+
+    @Column(nullable = false)
+    private boolean requiresClinicalReview;
+
     @Column
     private Instant startedAt;
 
@@ -79,6 +92,10 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
         super();
         this.status = SessionStatus.Pending;
         this.anomalies = new ArrayList<>();
+        this.painReportsCount = 0;
+        this.highPainReportsCount = 0;
+        this.maxReportedPainLevel = 0;
+        this.requiresClinicalReview = false;
     }
 
     public TherapySession(InitiateTherapyPreparationCommand command, RoutineExecution routine, ClinicId clinicId) {
@@ -142,7 +159,7 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
      * repetition is a duplicate (same edgeSequenceId) and was ignored, so callers
      * can skip event publication.
      */
-    public boolean recordRepetition(SerieId serieId, Double achievedAngle, Instant recordedAt, UUID edgeSequenceId) {
+    public boolean recordRepetition(SerieId serieId, Double achievedAngle, LocalDateTime recordedAt, UUID edgeSequenceId) {
         ensureInProgress();
         Serie serie = routine.findSerie(serieId)
                 .orElseThrow(() -> SerieNotFoundException.withId(SerieId.toStringOrNull(serieId)));
@@ -166,7 +183,18 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
     }
 
     public void reportPainLevel(PainLevel level) {
+        ensureInProgress();
         this.painLevel = level;
+        this.painReportsCount++;
+        this.maxReportedPainLevel = Math.max(this.maxReportedPainLevel, level.value());
+
+        if (level.value() >= 7) {
+            this.highPainReportsCount++;
+        }
+
+        if (this.highPainReportsCount >= 3 || level.value() == 10) {
+            this.requiresClinicalReview = true;
+        }
     }
 
     public Optional<Serie> findSerie(SerieId serieId) {
@@ -234,7 +262,7 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
                 .build();
     }
 
-    public RepetitionRecorded publishRepetitionRecorded(SerieId serieId, Double achievedAngle, Instant recordedAt) {
+    public RepetitionRecorded publishRepetitionRecorded(SerieId serieId, Double achievedAngle, LocalDateTime recordedAt) {
         return RepetitionRecorded.builder()
                 .source(this)
                 .sessionId(TherapySessionId.toStringOrNull(this.id))
