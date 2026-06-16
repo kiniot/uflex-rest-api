@@ -12,6 +12,10 @@ public record SessionSummaryResource(
         Integer totalSeries,
         Integer completedSeries,
         Integer painLevel,
+        Integer painReportsCount,
+        Integer highPainReportsCount,
+        Integer maxReportedPainLevel,
+        Boolean requiresClinicalReview,
         Integer anomaliesDetected,
         Instant startedAt,
         Instant finalizedAt

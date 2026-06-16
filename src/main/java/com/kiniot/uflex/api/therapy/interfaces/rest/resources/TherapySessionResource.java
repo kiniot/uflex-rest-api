@@ -12,6 +12,8 @@ public record TherapySessionResource(
         UUID treatmentPlanId,
         String iotDeviceId,
         String status,
+        Integer painLevel,
+        Boolean requiresClinicalReview,
         Instant startedAt,
         Instant finalizedAt
 ) {}

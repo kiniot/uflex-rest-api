@@ -10,5 +10,7 @@ public record SessionProgressResource(
         UUID sessionId,
         String status,
         UUID currentSerieId,
+        Integer painLevel,
+        Boolean requiresClinicalReview,
         List<SerieProgressResource> seriesProgress
 ) {}
