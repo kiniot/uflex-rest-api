@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -24,7 +25,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 public interface TherapyExecutionController {
 
     @PatchMapping("/{id}/series/{serieId}/start")
-    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     @Operation(summary = "Start a serie", description = "Transitions the serie to Started and emits SerieStarted.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Serie started."),
@@ -80,6 +81,7 @@ public interface TherapyExecutionController {
             @PathVariable UUID id,
             @Valid @RequestBody ReportPainLevelResource resource);
 
+    @Transactional(readOnly = true)
     @GetMapping("/{id}/progress")
     @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     @Operation(summary = "Get session progress", description = "Returns the live execution state: active serie, repetition counts, and overall status.")
