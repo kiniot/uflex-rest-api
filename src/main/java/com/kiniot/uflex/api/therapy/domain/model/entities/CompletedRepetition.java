@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -23,12 +24,12 @@ public class CompletedRepetition extends AuditableModel<CompletedRepetitionId> {
     private Double achievedAngle;
 
     @Column(nullable = false)
-    private Instant recordedAt;
+    private LocalDateTime recordedAt;
 
     @Column(columnDefinition = "UUID")
     private UUID edgeSequenceId;
 
-    public CompletedRepetition(Double achievedAngle, Instant recordedAt, UUID edgeSequenceId) {
+    public CompletedRepetition(Double achievedAngle, LocalDateTime recordedAt, UUID edgeSequenceId) {
         this.id = new CompletedRepetitionId();
         this.achievedAngle = achievedAngle;
         this.recordedAt = recordedAt;
