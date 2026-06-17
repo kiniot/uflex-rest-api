@@ -11,6 +11,8 @@ public record TherapySessionResource(
         UUID patientId,
         UUID treatmentPlanId,
         String iotDeviceId,
+        String snapshotDeviceId,
+        Boolean snapshotSensorsPlaced,
         String status,
         Integer painLevel,
         Boolean requiresClinicalReview,

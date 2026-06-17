@@ -4,13 +4,14 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * Daily schedule projection for a patient. When no active treatment plan covers
- * the date or no routine is scheduled for that day, {@code routineId} is null and
- * the counters are zero.
+ * Daily schedule projection for a patient. {@code resolutionStatus} explains
+ * whether a routine was found for the requested date. When no routine is
+ * available, {@code routineId} is null and the counters are zero.
  */
 public record DailyScheduleResource(
         UUID patientId,
         LocalDate date,
+        String resolutionStatus,
         UUID routineId,
         Integer totalSeries,
         Integer estimatedDurationMinutes
