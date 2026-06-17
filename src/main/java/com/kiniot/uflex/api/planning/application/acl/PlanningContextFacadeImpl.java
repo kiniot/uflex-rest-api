@@ -84,19 +84,25 @@ public class PlanningContextFacadeImpl implements PlanningContextFacade {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<DailyRoutineDto> resolveRoutineForDate(String clinicId, String patientId, LocalDate date) {
+    public DailyRoutineDto resolveRoutineForDate(String clinicId, String patientId, LocalDate date) {
         var clinic = new ClinicId(UUID.fromString(clinicId));
         var patient = new PatientId(UUID.fromString(patientId));
 
-        // Period-overlap prevention guarantees at most one ACTIVE plan covers a date.
-        return treatmentPlanRepository
+        List<TreatmentPlan> activePlans = treatmentPlanRepository
                 .findAllWithRoutinesAndExerciseSeriesByClinicIdAndPatientIdAndStatusOrderByPeriodStartsAtAsc(
-                        clinic, patient, TreatmentPlanStatus.ACTIVE)
-                .stream()
+                        clinic, patient, TreatmentPlanStatus.ACTIVE);
+
+        Optional<TreatmentPlan> coveringPlan = activePlans.stream()
                 .filter(plan -> covers(plan.getPeriod(), date))
-                .findFirst()
-                .flatMap(plan -> resolveRoutineForDay(plan, date.getDayOfWeek()))
-                .map(this::toDailyRoutineDto);
+                .findFirst();
+
+        if (coveringPlan.isEmpty()) {
+            return new DailyRoutineDto("NO_ACTIVE_PLAN_FOR_DATE", null, 0, 0);
+        }
+
+        return resolveRoutineForDay(coveringPlan.get(), date.getDayOfWeek())
+                .map(this::toDailyRoutineDto)
+                .orElseGet(() -> new DailyRoutineDto("NO_ROUTINE_FOR_DAY", null, 0, 0));
     }
 
     private boolean covers(TreatmentPlanPeriod period, LocalDate date) {
@@ -116,6 +122,6 @@ public class PlanningContextFacadeImpl implements PlanningContextFacade {
                 .mapToLong(series -> (long) series.duration().seconds() + series.restDuration().seconds())
                 .sum();
         int estimatedDurationMinutes = (int) Math.ceil(totalSeconds / 60.0);
-        return new DailyRoutineDto(routine.getId().id().toString(), totalSeries, estimatedDurationMinutes);
+        return new DailyRoutineDto("FOUND", routine.getId().id().toString(), totalSeries, estimatedDurationMinutes);
     }
 }

@@ -5,6 +5,7 @@ package com.kiniot.uflex.api.planning.interfaces.acl.dto;
  * on a given date. Consumed by the therapy context to build its daily schedule.
  */
 public record DailyRoutineDto(
+        String resolutionStatus,
         String routineId,
         int totalSeries,
         int estimatedDurationMinutes
