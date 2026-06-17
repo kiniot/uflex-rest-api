@@ -25,7 +25,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 public interface TherapyExecutionController {
 
     @PatchMapping("/{id}/series/{serieId}/start")
-    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
+    @PreAuthorize("hasAnyAuthority('ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     @Operation(summary = "Start a serie", description = "Transitions the serie to Started and emits SerieStarted.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Serie started."),

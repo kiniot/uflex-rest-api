@@ -37,7 +37,7 @@ public class TherapyExecutionControllerImpl implements TherapyExecutionControlle
     private final TherapySessionQueryService therapySessionQueryService;
 
     @Override
-    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
+    @PreAuthorize("hasAnyAuthority('ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     public ResponseEntity<SerieDetailsResource> startSerie(UUID id, UUID serieId) {
         var session = therapySessionCommandService.handle(new StartSerieCommand(id, serieId));
         Serie serie = session.findSerie(SerieId.of(serieId))
