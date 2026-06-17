@@ -13,6 +13,7 @@ import com.kiniot.uflex.api.therapy.domain.model.valueobjects.*;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -63,17 +64,13 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
     @AttributeOverride(name = "value", column = @Column(name = "pain_level"))
     private PainLevel painLevel;
 
-    @Column(nullable = false)
-    private int painReportsCount;
+    private Integer painReportsCount;
 
-    @Column(nullable = false)
-    private int highPainReportsCount;
+    private Integer highPainReportsCount;
 
-    @Column(nullable = false)
-    private int maxReportedPainLevel;
+    private Integer maxReportedPainLevel;
 
-    @Column(nullable = false)
-    private boolean requiresClinicalReview;
+    private Boolean requiresClinicalReview;
 
     @Column
     private Instant startedAt;

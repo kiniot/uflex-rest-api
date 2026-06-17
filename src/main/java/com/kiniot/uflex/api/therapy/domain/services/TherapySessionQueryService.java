@@ -5,8 +5,6 @@ import com.kiniot.uflex.api.therapy.domain.model.aggregates.TherapySession;
 import com.kiniot.uflex.api.therapy.domain.model.entities.Serie;
 import com.kiniot.uflex.api.therapy.domain.model.queries.*;
 
-import java.util.Optional;
-
 public interface TherapySessionQueryService {
 
     TherapySession handle(GetTherapySessionByIdQuery query);
@@ -19,5 +17,5 @@ public interface TherapySessionQueryService {
 
     Serie handle(GetSerieDetailsQuery query);
 
-    Optional<DailyRoutineDto> handle(GetDailyScheduleQuery query);
+    DailyRoutineDto handle(GetDailyScheduleQuery query);
 }
