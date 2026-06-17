@@ -25,14 +25,14 @@ public class ExerciseQueryServiceImpl implements ExerciseQueryService {
 
     @Override
     public Optional<Exercise> handle(GetExerciseByIdQuery query) {
-        var clinicId = externalIamService.fetchCurrentAcademyId()
+        var clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(AuthenticatedUserClinicNotFoundException::new);
         return exerciseRepository.findByIdAndClinicId(query.exerciseId(), clinicId);
     }
 
     @Override
     public List<Exercise> handle(GetAllExercisesQuery query) {
-        var clinicId = externalIamService.fetchCurrentAcademyId()
+        var clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(AuthenticatedUserClinicNotFoundException::new);
         return exerciseRepository.findAllByClinicId(clinicId);
     }

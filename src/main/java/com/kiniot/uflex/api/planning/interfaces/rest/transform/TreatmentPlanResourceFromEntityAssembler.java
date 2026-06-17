@@ -9,12 +9,11 @@ import java.util.List;
 public class TreatmentPlanResourceFromEntityAssembler {
     public static TreatmentPlanResource toResourceFromEntity(TreatmentPlan entity) {
         var treatmentPlanId = entity.getId() != null ? entity.getId().id().toString() : null;
+        var patientId = entity.getPatientId() != null ? entity.getPatientId().patientId().toString() : null;
         var planName = entity.getPlanName() != null ? entity.getPlanName().name() : null;
-        var clinicId = entity.getClinicId() != null && entity.getClinicId().id() != null
-                ? entity.getClinicId().id().toString()
-                : null;
-        var frequency = entity.getFrequency() != null
-                ? PlanFrequencyResourceFromValueObjectAssembler.toResourceFromValueObject(entity.getFrequency())
+        var status = entity.getStatus() != null ? entity.getStatus().name() : null;
+        var period = entity.getPeriod() != null
+                ? TreatmentPlanPeriodResourceFromValueObjectAssembler.toResourceFromValueObject(entity.getPeriod())
                 : null;
         List<RoutineResource> routines = entity.getRoutines() != null
                 ? entity.getRoutines().stream().map(RoutineResourceFromEntityAssembler::toResourceFromEntity).toList()
@@ -22,9 +21,10 @@ public class TreatmentPlanResourceFromEntityAssembler {
 
         return new TreatmentPlanResource(
                 treatmentPlanId,
+                patientId,
                 planName,
-                frequency,
-                clinicId,
+                status,
+                period,
                 routines);
     }
 }

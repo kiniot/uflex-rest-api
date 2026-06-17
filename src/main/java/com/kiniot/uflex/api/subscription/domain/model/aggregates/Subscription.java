@@ -2,28 +2,17 @@ package com.kiniot.uflex.api.subscription.domain.model.aggregates;
 
 import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
-import com.kiniot.uflex.api.subscription.domain.model.entities.Invoice;
-import com.kiniot.uflex.api.subscription.domain.model.entities.SubscriptionPlan;
-import com.kiniot.uflex.api.subscription.domain.model.valueobjects.BillingCycle;
-import com.kiniot.uflex.api.subscription.domain.model.valueobjects.PaymentReference;
+import com.kiniot.uflex.api.subscription.domain.model.commands.CreateSubscriptionCommand;
+import com.kiniot.uflex.api.subscription.domain.exceptions.SubscriptionOperationNotAllowedException;
+import com.kiniot.uflex.api.subscription.domain.model.valueobjects.Money;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionId;
+import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionKitSelection;
+import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionSelection;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionStatus;
-import jakarta.persistence.Embedded;
-import jakarta.persistence.EmbeddedId;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
+import jakarta.persistence.*;
 import lombok.Getter;
 
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDate;
 
 @Getter
 @Entity
@@ -37,103 +26,120 @@ public class Subscription extends AuditableAbstractAggregateRoot<Subscription, S
     private SubscriptionId id;
 
     @Embedded
-    @jakarta.persistence.AttributeOverride(name = "id", column = @jakarta.persistence.Column(name = "clinic_id", columnDefinition = "UUID", nullable = false))
+    @AttributeOverride(name = "id", column = @Column(name = "clinic_id", columnDefinition = "UUID"))
     private ClinicId clinicId;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "plan_id", nullable = false)
-    private SubscriptionPlan plan;
+    @Embedded
+    @AttributeOverride(name = "tierId.id", column = @Column(name = "tier_id", columnDefinition = "UUID", nullable = false, unique = false))
+    private SubscriptionSelection selection;
+
+    @Embedded
+    private Money contractedPrice;
+
+    @Embedded
+    private SubscriptionKitSelection kitSelection;
 
     @Enumerated(EnumType.STRING)
     private SubscriptionStatus status;
 
-    @Enumerated(EnumType.STRING)
-    private BillingCycle billingCycle;
+    private String checkoutSessionId;
 
-    private OffsetDateTime currentPeriodStart;
+    private LocalDate startedAt;
 
-    private OffsetDateTime currentPeriodEnd;
+    private LocalDate renewsAt;
 
-    private OffsetDateTime nextBillingDate;
+    private LocalDate endsAt;
 
-    private OffsetDateTime trialUntil;
+    private LocalDate cancelledAt;
 
-    @Embedded
-    private PaymentReference paymentReference;
+    protected Subscription() {}
 
-    @Transient
-    private List<Invoice> invoices;
-
-    protected Subscription() {
-        this.invoices = new ArrayList<>();
-    }
-
-    public Subscription(ClinicId clinicId, SubscriptionPlan plan, BillingCycle billingCycle, PaymentReference paymentReference) {
+    public Subscription(CreateSubscriptionCommand command, ClinicId clinicId, SubscriptionKitSelection kitSelection) {
         this.id = new SubscriptionId();
+        this.selection = command.selection();
+        this.contractedPrice = command.contractedPrice();
+        this.kitSelection = kitSelection;
+        this.status = SubscriptionStatus.PENDING;
+        this.checkoutSessionId = null;
+        this.startedAt = null;
+        this.renewsAt = null;
+        this.endsAt = null;
+        this.cancelledAt = null;
         this.clinicId = clinicId;
-        this.plan = plan;
-        this.billingCycle = billingCycle;
-        this.paymentReference = paymentReference;
-        this.invoices = new ArrayList<>();
-        this.status = SubscriptionStatus.PENDING_PAYMENT;
     }
 
-    public void activate(OffsetDateTime activatedAt) {
-        activate(activatedAt, billingCycle == BillingCycle.YEARLY ? activatedAt.plusYears(1) : activatedAt.plusMonths(1));
+    public void attachCheckoutSession(String checkoutSessionId) {
+        if (checkoutSessionId == null || checkoutSessionId.isBlank())
+            throw new IllegalArgumentException("Checkout session ID cannot be null or empty");
+        if (this.status != SubscriptionStatus.PENDING)
+            throw new SubscriptionOperationNotAllowedException("Checkout session can only be attached to a pending subscription");
+        this.checkoutSessionId = checkoutSessionId;
     }
 
-    public void activate(OffsetDateTime periodStart, OffsetDateTime periodEnd) {
-        if (paymentReference == null || paymentReference.providerTransactionId() == null) {
-            throw new IllegalStateException("Subscription cannot be activated without confirmed payment");
-        }
+    public void activate() {
+        if (this.status != SubscriptionStatus.PENDING && this.status != SubscriptionStatus.PAST_DUE)
+            throw new SubscriptionOperationNotAllowedException("Only pending or past due subscriptions can be activated");
         this.status = SubscriptionStatus.ACTIVE;
-        this.currentPeriodStart = periodStart;
-        this.currentPeriodEnd = periodEnd;
-        this.nextBillingDate = this.currentPeriodEnd;
-    }
-
-    public void refreshStripePayment(PaymentReference paymentReference, OffsetDateTime periodStart, OffsetDateTime periodEnd) {
-        updatePaymentReference(paymentReference);
-        activate(periodStart, periodEnd);
-    }
-
-    public void changePlan(SubscriptionPlan newPlan, BillingCycle newBillingCycle, PaymentReference paymentReference, OffsetDateTime changedAt) {
-        if (this.status != SubscriptionStatus.ACTIVE) {
-            throw new IllegalStateException("Only active subscriptions can change plans");
-        }
-        if (paymentReference == null || paymentReference.providerTransactionId() == null) {
-            throw new IllegalStateException("Plan change requires confirmed payment");
-        }
-        this.plan = newPlan;
-        this.billingCycle = newBillingCycle;
-        this.paymentReference = paymentReference;
-        this.currentPeriodStart = changedAt;
-        this.currentPeriodEnd = newBillingCycle == BillingCycle.YEARLY ? changedAt.plusYears(1) : changedAt.plusMonths(1);
-        this.nextBillingDate = this.currentPeriodEnd;
-    }
-
-    public void cancel() {
-        this.status = SubscriptionStatus.CANCELLED;
+        this.startedAt = LocalDate.now();
+        this.renewsAt = calculateRenewsAt(this.startedAt);
+        this.endsAt = null;
+        this.cancelledAt = null;
     }
 
     public void markPastDue() {
+        if (this.status != SubscriptionStatus.ACTIVE)
+            throw new SubscriptionOperationNotAllowedException("Only active subscriptions can be marked as past due");
         this.status = SubscriptionStatus.PAST_DUE;
     }
 
-    public void expire() {
+    public void expirePendingCheckout() {
+        if (this.status != SubscriptionStatus.PENDING)
+            throw new SubscriptionOperationNotAllowedException("Only pending subscriptions can expire checkout");
+        this.endsAt = LocalDate.now();
         this.status = SubscriptionStatus.EXPIRED;
     }
 
-    public void updatePaymentReference(PaymentReference paymentReference) {
-        this.paymentReference = paymentReference;
+    public void cancel() {
+        if (this.status == SubscriptionStatus.PENDING)
+            throw new SubscriptionOperationNotAllowedException("Pending subscription cannot be canceled before payment confirmation");
+        if (this.status == SubscriptionStatus.CANCELED)
+            throw new SubscriptionOperationNotAllowedException("Subscription is already canceled");
+        if (this.status == SubscriptionStatus.EXPIRED)
+            throw new SubscriptionOperationNotAllowedException("Expired subscription cannot be canceled");
+        this.cancelledAt = LocalDate.now();
+        this.endsAt = this.renewsAt;
+        this.status = SubscriptionStatus.CANCELED;
     }
 
-    public void addInvoice(Invoice invoice) {
-        this.invoices.add(invoice);
+    public void markExpired() {
+        if (this.status == SubscriptionStatus.CANCELED)
+            throw new SubscriptionOperationNotAllowedException("Canceled subscription cannot be marked as expired");
+        if (this.status == SubscriptionStatus.EXPIRED)
+            throw new SubscriptionOperationNotAllowedException("Subscription is already expired");
+        this.endsAt = LocalDate.now();
+        this.status = SubscriptionStatus.EXPIRED;
     }
 
-    @Override
-    public SubscriptionId getId() {
-        return id;
+    public boolean isCurrentAt(LocalDate date) {
+        if (date == null)
+            throw new IllegalArgumentException("Date cannot be null");
+        if (this.status == SubscriptionStatus.ACTIVE || this.status == SubscriptionStatus.PAST_DUE)
+            return true;
+        return this.status == SubscriptionStatus.CANCELED
+                && this.endsAt != null
+                && !this.endsAt.isBefore(date);
+    }
+
+    public boolean blocksNewSubscriptionAt(LocalDate date) {
+        if (date == null)
+            throw new IllegalArgumentException("Date cannot be null");
+        return this.status == SubscriptionStatus.PENDING || this.isCurrentAt(date);
+    }
+
+    private LocalDate calculateRenewsAt(LocalDate startedAt) {
+        return switch (this.selection.billingPeriod()) {
+            case MONTHLY -> startedAt.plusMonths(1);
+            case YEARLY -> startedAt.plusYears(1);
+        };
     }
 }

@@ -1,6 +1,9 @@
 package com.kiniot.uflex.api.organization.application.internal.queryservices;
 
+import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalIamService;
+import com.kiniot.uflex.api.organization.domain.exceptions.UserNotFoundException;
 import com.kiniot.uflex.api.organization.domain.model.aggregates.Physiotherapist;
+import com.kiniot.uflex.api.organization.domain.model.queries.GetCurrentPhysiotherapistQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPhysiotherapistByIdQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPhysiotherapistByUserIdQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPhysiotherapistsByClinicIdQuery;
@@ -15,9 +18,21 @@ import java.util.Optional;
 public class PhysiotherapistQueryServiceImpl implements PhysiotherapistQueryService {
 
     private final PhysiotherapistRepository physiotherapistRepository;
+    private final ExternalIamService externalIamService;
 
-    public PhysiotherapistQueryServiceImpl(PhysiotherapistRepository physiotherapistRepository) {
+    public PhysiotherapistQueryServiceImpl(
+            PhysiotherapistRepository physiotherapistRepository,
+            ExternalIamService externalIamService
+    ) {
         this.physiotherapistRepository = physiotherapistRepository;
+        this.externalIamService = externalIamService;
+    }
+
+    @Override
+    public Optional<Physiotherapist> handle(GetCurrentPhysiotherapistQuery query) {
+        var userId = externalIamService.fetchCurrentUserId()
+                .orElseThrow(() -> new UserNotFoundException("Current user not found"));
+        return physiotherapistRepository.findByUserId(userId);
     }
 
     @Override

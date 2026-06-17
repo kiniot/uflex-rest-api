@@ -20,7 +20,7 @@ public class ExternalIamService {
     }
 
     public Optional<ClinicId> fetchCurrentClinicId() {
-        var clinicIdStr = iamContextFacade.fetchAuthenticatedUserTenantId();
+        var clinicIdStr = iamContextFacade.fetchContextTenantId();
         if (clinicIdStr == null || clinicIdStr.isBlank()) {
             return Optional.empty();
         }
@@ -28,7 +28,7 @@ public class ExternalIamService {
     }
 
     public Optional<UserId> fetchCurrentUserId() {
-        var userIdStr = iamContextFacade.fetchAuthenticatedUserId();
+        var userIdStr = iamContextFacade.fetchContextUserId();
         if (userIdStr == null || userIdStr.isBlank()) {
             return Optional.empty();
         }
@@ -52,5 +52,9 @@ public class ExternalIamService {
 
     public void deleteUserById(UserId userId) {
         iamContextFacade.deleteUserById(userId.id().toString());
+    }
+
+    public void updateUserEmail(UserId userId, String email) {
+        iamContextFacade.updateUserEmail(userId.id().toString(), email);
     }
 }

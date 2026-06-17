@@ -4,12 +4,15 @@ import com.kiniot.uflex.api.planning.domain.model.valueobjects.BodyPart;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseDescription;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseId;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseName;
+import com.kiniot.uflex.api.planning.domain.model.valueobjects.MovementType;
 
 public record UpdateExerciseCommand(
         ExerciseId exerciseId,
         ExerciseName name,
         ExerciseDescription description,
-        BodyPart bodyPart
+        BodyPart bodyPart,
+        MovementType movementType,
+        String videoUrl
 ) {
     public UpdateExerciseCommand {
         if (exerciseId == null) {
@@ -23,6 +26,9 @@ public record UpdateExerciseCommand(
         }
         if (bodyPart == null) {
             throw new IllegalArgumentException("Body part cannot be null");
+        }
+        if (movementType == null) {
+            throw new IllegalArgumentException("Movement type cannot be null");
         }
     }
 }

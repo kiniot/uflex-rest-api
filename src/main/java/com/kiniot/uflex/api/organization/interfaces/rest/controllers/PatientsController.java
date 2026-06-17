@@ -3,12 +3,16 @@ package com.kiniot.uflex.api.organization.interfaces.rest.controllers;
 import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalIamService;
 import com.kiniot.uflex.api.organization.domain.exceptions.UserNotFoundException;
 import com.kiniot.uflex.api.organization.domain.model.commands.AssignPatientToPhysiotherapistCommand;
+import com.kiniot.uflex.api.organization.domain.model.commands.CompletePatientCommand;
+import com.kiniot.uflex.api.organization.domain.model.commands.DeletePatientCommand;
 import com.kiniot.uflex.api.organization.domain.model.commands.DischargePatientCommand;
+import com.kiniot.uflex.api.organization.domain.model.commands.MarkPatientInactiveCommand;
+import com.kiniot.uflex.api.organization.domain.model.commands.ReactivatePatientCommand;
+import com.kiniot.uflex.api.organization.domain.model.queries.GetCurrentPatientQuery;
+import com.kiniot.uflex.api.organization.domain.model.queries.GetCurrentPhysiotherapistQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPatientByIdQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPatientsByClinicIdQuery;
 import com.kiniot.uflex.api.organization.domain.model.queries.GetPatientsByPhysiotherapistIdQuery;
-import com.kiniot.uflex.api.organization.domain.model.queries.GetPhysiotherapistByUserIdQuery;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
 import com.kiniot.uflex.api.organization.domain.services.PatientCommandService;
 import com.kiniot.uflex.api.organization.domain.services.PatientQueryService;
 import com.kiniot.uflex.api.organization.domain.services.PhysiotherapistQueryService;
@@ -16,9 +20,15 @@ import com.kiniot.uflex.api.organization.interfaces.rest.resources.AssignPhysiot
 import com.kiniot.uflex.api.organization.interfaces.rest.resources.PatientResource;
 import com.kiniot.uflex.api.organization.interfaces.rest.resources.RegisterPatientByClinicAdminResource;
 import com.kiniot.uflex.api.organization.interfaces.rest.resources.RegisterPatientByPhysiotherapistResource;
+import com.kiniot.uflex.api.organization.interfaces.rest.resources.UpdateCurrentPatientProfileResource;
+import com.kiniot.uflex.api.organization.interfaces.rest.resources.UpdatePatientByClinicAdminResource;
+import com.kiniot.uflex.api.organization.interfaces.rest.resources.UpdatePatientByPhysiotherapistResource;
 import com.kiniot.uflex.api.organization.interfaces.rest.transform.PatientResourceFromEntityAssembler;
 import com.kiniot.uflex.api.organization.interfaces.rest.transform.RegisterPatientCommandFromResourceAssembler;
+import com.kiniot.uflex.api.organization.interfaces.rest.transform.UpdatePatientCommandFromResourceAssembler;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.PhysiotherapistId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -30,6 +40,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -57,14 +68,16 @@ public class PatientsController {
         this.externalIamService = externalIamService;
     }
 
-    @PostMapping
+    @PostMapping(value = "/by-clinic-admin")
     @Operation(
-            summary = "Register a new patient as clinic admin",
-            description = "Creates a patient profile under the authenticated clinic administrator's clinic. "
-                    + "This endpoint may optionally assign the patient to a physiotherapist from the same clinic."
+            summary = "Register a patient as a clinic administrator",
+            description = "Creates a patient profile in the authenticated clinic administrator's clinic. "
+                    + "The patient may also be assigned to a physiotherapist from the same clinic."
     )
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Patient profile data to register from a clinic administrator context.",
+            description = "Patient profile data to register from a clinic administrator context. "
+                    + "`gender` must be `MALE`, `FEMALE`, or `OTHER`. "
+                    + "If `assignedPhysiotherapistId` is provided, it must belong to the same clinic.",
             required = true,
             content = @Content(
                     schema = @Schema(implementation = RegisterPatientByClinicAdminResource.class),
@@ -106,12 +119,14 @@ public class PatientsController {
 
     @PostMapping(value = "/by-physiotherapist")
     @Operation(
-            summary = "Register a new patient as physiotherapist",
-            description = "Creates a patient profile under the authenticated physiotherapist's clinic and automatically assigns "
-                    + "the patient to that same physiotherapist as part of the registration flow."
+            summary = "Register a patient as a physiotherapist",
+            description = "Creates a patient profile in the authenticated physiotherapist's clinic and automatically assigns "
+                    + "the patient to that physiotherapist."
     )
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Patient profile data to register from a physiotherapist context. The physiotherapist assignment is inferred from the authenticated user.",
+            description = "Patient profile data to register from a physiotherapist context. "
+                    + "`gender` must be `MALE`, `FEMALE`, or `OTHER`. "
+                    + "The physiotherapist assignment is inferred from the authenticated user.",
             required = true,
             content = @Content(
                     schema = @Schema(implementation = RegisterPatientByPhysiotherapistResource.class),
@@ -141,9 +156,7 @@ public class PatientsController {
     })
     @PreAuthorize("hasAuthority('ROLE_PHYSIOTHERAPIST')")
     public ResponseEntity<PatientResource> registerPatientByPhysiotherapist(@RequestBody RegisterPatientByPhysiotherapistResource resource) {
-        var userId = externalIamService.fetchCurrentUserId()
-                .orElseThrow(() -> new UserNotFoundException("Current user not found"));
-        var physiotherapist = physiotherapistQueryService.handle(new GetPhysiotherapistByUserIdQuery(userId))
+        var physiotherapist = physiotherapistQueryService.handle(new GetCurrentPhysiotherapistQuery())
                 .orElseThrow(() -> new UserNotFoundException("Physiotherapist profile not found"));
 
         var command = RegisterPatientCommandFromResourceAssembler.toRegisterPatientByPhysiotherapistCommand(resource, physiotherapist.getId());
@@ -156,7 +169,10 @@ public class PatientsController {
     }
 
     @GetMapping(value = "/{id}")
-    @Operation(summary = "Get patient by ID", description = "CLINIC ADMIN or PHYSIOTHERAPIST: Retrieves a patient by their ID")
+    @Operation(
+            summary = "Get a patient by ID",
+            description = "Retrieves a patient by ID. This endpoint is intended for clinic administrators and physiotherapists."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Patient found"),
             @ApiResponse(responseCode = "404", description = "Patient not found"),
@@ -170,25 +186,95 @@ public class PatientsController {
         return ResponseEntity.ok(PatientResourceFromEntityAssembler.toResourceFromEntity(patient.get()));
     }
 
-    @GetMapping(value = "/my")
-    @Operation(summary = "Get my patients", description = "PHYSIOTHERAPIST: Retrieves all patients assigned to the authenticated physiotherapist")
+    @GetMapping("/me")
+    @PreAuthorize("hasAuthority('ROLE_PATIENT')")
+    @Operation(
+            summary = "Get current patient profile",
+            description = "Returns the patient profile associated with the authenticated user."
+    )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Patients retrieved successfully"),
+            @ApiResponse(responseCode = "200", description = "Current patient retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - missing or invalid token"),
+            @ApiResponse(responseCode = "404", description = "Authenticated patient profile not found"),
     })
-    public ResponseEntity<List<PatientResource>> getMyPatients() {
-        var userId = externalIamService.fetchCurrentUserId()
-                .orElseThrow(() -> new UserNotFoundException("Current user not found"));
-        var physiotherapist = physiotherapistQueryService.handle(new GetPhysiotherapistByUserIdQuery(userId))
-                .orElseThrow(() -> new UserNotFoundException("Physiotherapist profile not found"));
-        var patients = patientQueryService.handle(new GetPatientsByPhysiotherapistIdQuery(physiotherapist.getId()));
-        var resources = patients.stream()
+    public ResponseEntity<PatientResource> getCurrentPatient() {
+        return patientQueryService.handle(new GetCurrentPatientQuery())
                 .map(PatientResourceFromEntityAssembler::toResourceFromEntity)
-                .toList();
-        return ResponseEntity.ok(resources);
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/me")
+    @PreAuthorize("hasAuthority('ROLE_PATIENT')")
+    @Operation(
+            summary = "Update current patient profile",
+            description = "Allows the authenticated patient to update only email and phone information."
+    )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Editable contact information for the authenticated patient.",
+            required = true,
+            content = @Content(
+                    schema = @Schema(implementation = UpdateCurrentPatientProfileResource.class),
+                    examples = @ExampleObject(
+                            name = "Update current patient profile",
+                            value = """
+                                    {
+                                      "email": "lucia.updated@example.com",
+                                      "countryCode": "+51",
+                                      "phoneNumber": "998887766"
+                                    }
+                                    """
+                    )
+            )
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Patient profile updated successfully",
+                    content = @Content(
+                            schema = @Schema(implementation = PatientResource.class),
+                            examples = @ExampleObject(
+                                    name = "Updated current patient",
+                                    value = """
+                                            {
+                                              "id": "019e1e7d-80c3-71c5-ae4b-2358fa9ae43c",
+                                              "firstName": "Lucia",
+                                              "lastName": "Ramos",
+                                              "dni": "74839210",
+                                              "birthDate": "1992-08-14",
+                                              "gender": "FEMALE",
+                                              "email": "lucia.updated@example.com",
+                                              "countryCode": "+51",
+                                              "phoneNumber": "998887766",
+                                              "medicalCondition": "Post-operative knee rehabilitation",
+                                              "assignedPhysiotherapistId": "019e1e7d-80c3-71c5-ae4b-2358fa9ae43c",
+                                              "status": "IN_TREATMENT",
+                                              "clinicId": "019e1e7d-80c3-71c5-ae4b-2358fa9ae430"
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "404", description = "Authenticated patient profile not found")
+    })
+    public ResponseEntity<PatientResource> updateCurrentPatient(@RequestBody UpdateCurrentPatientProfileResource resource) {
+        var patientId = patientQueryService.handle(new GetCurrentPatientQuery())
+                .orElseThrow(() -> new UserNotFoundException("Patient profile not found"))
+                .getId()
+                .patientId()
+                .toString();
+        return patientCommandService.handle(UpdatePatientCommandFromResourceAssembler.toCurrentPatientCommand(patientId, resource))
+                .map(PatientResourceFromEntityAssembler::toResourceFromEntity)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.badRequest().build());
     }
 
     @GetMapping
-    @Operation(summary = "Get all patients for clinic", description = "CLINIC ADMIN: Retrieves all patients belonging to the admin's clinic")
+    @Operation(
+            summary = "List patients in the authenticated clinic",
+            description = "Returns all patients who belong to the authenticated clinic administrator's clinic."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Patients retrieved successfully"),
     })
@@ -203,7 +289,10 @@ public class PatientsController {
     }
 
     @GetMapping(value = "/by-clinic/{clinicId}")
-    @Operation(summary = "Get all patients by clinic ID", description = "CLINIC ADMIN: Retrieves all patients belonging to a specific clinic")
+    @Operation(
+            summary = "List patients by clinic ID",
+            description = "Returns all patients who belong to the specified clinic. This endpoint is intended for clinic administrators."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Patients retrieved successfully"),
     })
@@ -217,7 +306,10 @@ public class PatientsController {
     }
 
     @GetMapping(value = "/by-physiotherapist/{physiotherapistId}")
-    @Operation(summary = "Get all patients by physiotherapist ID", description = "CLINIC ADMIN or PHYSIOTHERAPIST: Retrieves all patients assigned to a specific physiotherapist")
+    @Operation(
+            summary = "List patients by physiotherapist ID",
+            description = "Returns all patients assigned to the specified physiotherapist. This endpoint is intended for clinic administrators and physiotherapists."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Patients retrieved successfully"),
     })
@@ -230,12 +322,171 @@ public class PatientsController {
         return ResponseEntity.ok(resources);
     }
 
+    @PutMapping(value = "/by-clinic-admin/{id}")
+    @PreAuthorize("hasAuthority('ROLE_CLINIC_ADMIN')")
+    @Operation(
+            summary = "Update a patient as clinic admin",
+            description = "Updates any patient belonging to the authenticated clinic and may assign, reassign, or unassign the physiotherapist."
+    )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Full patient profile update from the clinic administrator context. `gender` must be `MALE`, `FEMALE`, or `OTHER`. Send `assignedPhysiotherapistId` as null or empty to unassign the physiotherapist.",
+            required = true,
+            content = @Content(
+                    schema = @Schema(implementation = UpdatePatientByClinicAdminResource.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "Update and reassign patient",
+                                    value = """
+                                            {
+                                              "firstName": "Lucia",
+                                              "lastName": "Ramos",
+                                              "dni": "74839210",
+                                              "birthDate": "1992-08-14",
+                                              "gender": "FEMALE",
+                                              "email": "lucia.ramos@example.com",
+                                              "countryCode": "+51",
+                                              "phoneNumber": "987654321",
+                                              "medicalCondition": "Post-operative knee rehabilitation - updated",
+                                              "assignedPhysiotherapistId": "019e1e7d-80c3-71c5-ae4b-2358fa9ae43c"
+                                            }
+                                            """
+                            ),
+                            @ExampleObject(
+                                    name = "Update and unassign physiotherapist",
+                                    value = """
+                                            {
+                                              "firstName": "Lucia",
+                                              "lastName": "Ramos",
+                                              "dni": "74839210",
+                                              "birthDate": "1992-08-14",
+                                              "gender": "FEMALE",
+                                              "email": "lucia.ramos@example.com",
+                                              "countryCode": "+51",
+                                              "phoneNumber": "987654321",
+                                              "medicalCondition": "Post-operative knee rehabilitation - updated",
+                                              "assignedPhysiotherapistId": ""
+                                            }
+                                            """
+                            )
+                    }
+            )
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Patient updated successfully",
+                    content = @Content(
+                            schema = @Schema(implementation = PatientResource.class),
+                            examples = @ExampleObject(
+                                    name = "Updated patient by admin",
+                                    value = """
+                                            {
+                                              "id": "019e1e7d-80c3-71c5-ae4b-2358fa9ae43c",
+                                              "firstName": "Lucia",
+                                              "lastName": "Ramos",
+                                              "dni": "74839210",
+                                              "birthDate": "1992-08-14",
+                                              "gender": "FEMALE",
+                                              "email": "lucia.ramos@example.com",
+                                              "countryCode": "+51",
+                                              "phoneNumber": "987654321",
+                                              "medicalCondition": "Post-operative knee rehabilitation - updated",
+                                              "assignedPhysiotherapistId": "019e1e7d-80c3-71c5-ae4b-2358fa9ae43c",
+                                              "status": "IN_TREATMENT",
+                                              "clinicId": "019e1e7d-80c3-71c5-ae4b-2358fa9ae430"
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "404", description = "Patient not found"),
+            @ApiResponse(responseCode = "409", description = "Patient update conflicts with current clinic, assignment, or existing email")
+    })
+    public ResponseEntity<PatientResource> updatePatientByClinicAdmin(@PathVariable String id,
+                                                                      @RequestBody UpdatePatientByClinicAdminResource resource) {
+        return patientCommandService.handle(UpdatePatientCommandFromResourceAssembler.toClinicAdminCommand(id, resource))
+                .map(PatientResourceFromEntityAssembler::toResourceFromEntity)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.badRequest().build());
+    }
+
+    @PutMapping(value = "/by-physiotherapist/{id}")
+    @PreAuthorize("hasAuthority('ROLE_PHYSIOTHERAPIST')")
+    @Operation(
+            summary = "Update a patient as physiotherapist",
+            description = "Updates a patient assigned to the authenticated physiotherapist."
+    )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Editable patient data from the physiotherapist context. This flow does not allow changing DNI, birth date, gender, or assignment.",
+            required = true,
+            content = @Content(
+                    schema = @Schema(implementation = UpdatePatientByPhysiotherapistResource.class),
+                    examples = @ExampleObject(
+                            name = "Update patient by physiotherapist",
+                            value = """
+                                    {
+                                      "firstName": "Mateo",
+                                      "lastName": "Salazar",
+                                      "email": "mateo.salazar@example.com",
+                                      "countryCode": "+51",
+                                      "phoneNumber": "912345678",
+                                      "medicalCondition": "Shoulder mobility recovery - progression phase"
+                                    }
+                                    """
+                    )
+            )
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Patient updated successfully",
+                    content = @Content(
+                            schema = @Schema(implementation = PatientResource.class),
+                            examples = @ExampleObject(
+                                    name = "Updated patient by physiotherapist",
+                                    value = """
+                                            {
+                                              "id": "019e1e7d-80c3-71c5-ae4b-2358fa9ae43d",
+                                              "firstName": "Mateo",
+                                              "lastName": "Salazar",
+                                              "dni": "73124568",
+                                              "birthDate": "1987-03-22",
+                                              "gender": "MALE",
+                                              "email": "mateo.salazar@example.com",
+                                              "countryCode": "+51",
+                                              "phoneNumber": "912345678",
+                                              "medicalCondition": "Shoulder mobility recovery - progression phase",
+                                              "assignedPhysiotherapistId": "019e1e7d-80c3-71c5-ae4b-2358fa9ae43c",
+                                              "status": "IN_TREATMENT",
+                                              "clinicId": "019e1e7d-80c3-71c5-ae4b-2358fa9ae430"
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "404", description = "Patient not found"),
+            @ApiResponse(responseCode = "409", description = "Patient does not belong to the authenticated physiotherapist or email is already in use")
+    })
+    public ResponseEntity<PatientResource> updatePatientByPhysiotherapist(@PathVariable String id,
+                                                                          @RequestBody UpdatePatientByPhysiotherapistResource resource) {
+        return patientCommandService.handle(UpdatePatientCommandFromResourceAssembler.toPhysiotherapistCommand(id, resource))
+                .map(PatientResourceFromEntityAssembler::toResourceFromEntity)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.badRequest().build());
+    }
+
     @PutMapping(value = "/{id}/assign")
-    @Operation(summary = "Assign patient to physiotherapist", description = "CLINIC ADMIN: Assigns a patient to a physiotherapist within the same clinic")
+    @Operation(
+            summary = "Assign or reassign a patient to a physiotherapist",
+            description = "Assigns or reassigns a patient to a physiotherapist within the same clinic. Suspended physiotherapists cannot receive new assignments. This endpoint is intended for clinic administrators."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Patient assigned successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input or patient not found"),
     })
+    @PreAuthorize("hasAuthority('ROLE_CLINIC_ADMIN')")
     public ResponseEntity<Void> assignPatientToPhysiotherapist(
             @PathVariable String id,
             @RequestBody AssignPhysiotherapistResource resource
@@ -248,27 +499,115 @@ public class PatientsController {
     }
 
     @PutMapping(value = "/{id}/discharge")
-    @Operation(summary = "Discharge patient", description = "PHYSIOTHERAPIST: Changes patient status to DISCHARGED (only own patients)")
+    @Operation(
+            summary = "Discharge a patient",
+            description = "Marks a patient as discharged. The authenticated physiotherapist may discharge only patients assigned to them."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Patient discharged successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input or patient not found"),
     })
+    @PreAuthorize("hasAuthority('ROLE_PHYSIOTHERAPIST')")
     public ResponseEntity<Void> dischargePatient(@PathVariable String id) {
-        var userId = externalIamService.fetchCurrentUserId()
-                .orElseThrow(() -> new UserNotFoundException("Current user not found"));
-        var physiotherapist = physiotherapistQueryService.handle(new GetPhysiotherapistByUserIdQuery(userId))
-                .orElseThrow(() -> new UserNotFoundException("Physiotherapist profile not found"));
-
-        var patient = patientQueryService.handle(new GetPatientByIdQuery(new PatientId(UUID.fromString(id))))
-                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
-
-        if (patient.getAssignedPhysiotherapistId() == null ||
-            !patient.getAssignedPhysiotherapistId().equals(physiotherapist.getId())) {
-            throw new IllegalStateException("You can only discharge your own patients");
-        }
-
+        ensurePatientBelongsToCurrentPhysiotherapist(id);
         var command = new DischargePatientCommand(new PatientId(UUID.fromString(id)));
         patientCommandService.handle(command);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(value = "/{id}/complete")
+    @PreAuthorize("hasAuthority('ROLE_PHYSIOTHERAPIST')")
+    @Operation(
+            summary = "Complete a patient treatment",
+            description = "Marks a patient as completed. The authenticated physiotherapist may complete only patients assigned to them."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Patient marked as completed successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input or patient not found"),
+    })
+    public ResponseEntity<Void> completePatient(@PathVariable String id) {
+        ensurePatientBelongsToCurrentPhysiotherapist(id);
+        patientCommandService.handle(new CompletePatientCommand(new PatientId(UUID.fromString(id))));
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(value = "/{id}/inactive")
+    @PreAuthorize("hasAuthority('ROLE_PHYSIOTHERAPIST')")
+    @Operation(
+            summary = "Mark a patient inactive",
+            description = "Marks a patient as inactive. The authenticated physiotherapist may change only patients assigned to them."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Patient marked inactive successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input or patient not found"),
+    })
+    public ResponseEntity<Void> markPatientInactive(@PathVariable String id) {
+        ensurePatientBelongsToCurrentPhysiotherapist(id);
+        patientCommandService.handle(new MarkPatientInactiveCommand(new PatientId(UUID.fromString(id))));
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(value = "/{id}/reactivate")
+    @PreAuthorize("hasAuthority('ROLE_PHYSIOTHERAPIST')")
+    @Operation(
+            summary = "Reactivate a patient",
+            description = "Reactivates a patient back to in-treatment status. The authenticated physiotherapist may reactivate only patients assigned to them."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Patient reactivated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input or patient not found"),
+    })
+    public ResponseEntity<Void> reactivatePatient(@PathVariable String id) {
+        ensurePatientBelongsToCurrentPhysiotherapist(id);
+        patientCommandService.handle(new ReactivatePatientCommand(new PatientId(UUID.fromString(id))));
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN','ROLE_PHYSIOTHERAPIST')")
+    @Operation(
+            summary = "Delete a patient",
+            description = "Deletes a patient if the authenticated clinic admin owns the clinic or the authenticated physiotherapist is assigned to the patient. The operation is blocked while treatment plans still exist for that patient."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Patient deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "Patient not found"),
+            @ApiResponse(responseCode = "409", description = "Patient cannot be deleted because of ownership or existing treatment plans")
+    })
+    public ResponseEntity<Void> deletePatient(@PathVariable String id) {
+        var patientId = new PatientId(UUID.fromString(id));
+        var patient = patientQueryService.handle(new GetPatientByIdQuery(patientId))
+                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+
+        if (currentHasAuthority("ROLE_CLINIC_ADMIN")) {
+            var clinicId = externalIamService.fetchCurrentClinicId()
+                    .orElseThrow(() -> new UserNotFoundException("Current clinic not found"));
+            if (!patient.getClinicId().equals(clinicId)) {
+                throw new IllegalStateException("You can only delete patients from your own clinic");
+            }
+        } else {
+            ensurePatientBelongsToCurrentPhysiotherapist(id);
+        }
+
+        patientCommandService.handle(new DeletePatientCommand(patientId));
+        return ResponseEntity.noContent().build();
+    }
+
+    private void ensurePatientBelongsToCurrentPhysiotherapist(String patientId) {
+        var physiotherapist = physiotherapistQueryService.handle(new GetCurrentPhysiotherapistQuery())
+                .orElseThrow(() -> new UserNotFoundException("Physiotherapist profile not found"));
+
+        var patient = patientQueryService.handle(new GetPatientByIdQuery(new PatientId(UUID.fromString(patientId))))
+                .orElseThrow(() -> new IllegalArgumentException("Patient not found"));
+
+        if (patient.getAssignedPhysiotherapistId() == null ||
+                !patient.getAssignedPhysiotherapistId().equals(physiotherapist.getId())) {
+            throw new IllegalStateException("You can only manage your own patients");
+        }
+    }
+
+    private boolean currentHasAuthority(String authority) {
+        return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals(authority));
     }
 }

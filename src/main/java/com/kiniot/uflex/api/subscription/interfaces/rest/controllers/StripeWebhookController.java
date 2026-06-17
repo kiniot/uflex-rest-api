@@ -1,48 +1,75 @@
 package com.kiniot.uflex.api.subscription.interfaces.rest.controllers;
 
-import com.kiniot.uflex.api.subscription.application.internal.outboundservices.payment.PaymentGatewayPort;
-import com.kiniot.uflex.api.subscription.domain.model.commands.CompleteCheckoutSessionPaymentCommand;
-import com.kiniot.uflex.api.subscription.domain.services.SubscriptionCommandService;
+import com.kiniot.uflex.api.subscription.domain.services.StripeWebhookCommandService;
+import com.kiniot.uflex.api.subscription.infrastructure.payment.stripe.configuration.StripePaymentProperties;
+import com.stripe.exception.SignatureVerificationException;
+import com.stripe.model.Event;
+import com.stripe.model.StripeObject;
+import com.stripe.model.checkout.Session;
+import com.stripe.net.Webhook;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping(value = "/api/v1/webhooks/stripe", produces = MediaType.APPLICATION_JSON_VALUE)
-@Tag(name = "Stripe Webhooks", description = "Stripe Checkout sandbox webhook endpoints")
+@RequestMapping("/api/v1/webhooks/stripe")
+@Tag(name = "Stripe Webhooks", description = "Endpoints used by Stripe to notify subscription checkout events")
 public class StripeWebhookController {
-    private final PaymentGatewayPort paymentGatewayPort;
-    private final SubscriptionCommandService subscriptionCommandService;
 
-    public StripeWebhookController(PaymentGatewayPort paymentGatewayPort,
-                                   SubscriptionCommandService subscriptionCommandService) {
-        this.paymentGatewayPort = paymentGatewayPort;
-        this.subscriptionCommandService = subscriptionCommandService;
+    private final StripePaymentProperties stripePaymentProperties;
+    private final StripeWebhookCommandService stripeWebhookCommandService;
+
+    public StripeWebhookController(
+            StripePaymentProperties stripePaymentProperties,
+            StripeWebhookCommandService stripeWebhookCommandService
+    ) {
+        this.stripePaymentProperties = stripePaymentProperties;
+        this.stripeWebhookCommandService = stripeWebhookCommandService;
     }
 
     @PostMapping
-    public ResponseEntity<Void> receiveWebhook(@RequestBody String payload, @RequestHeader HttpHeaders headers) {
-        var signature = headers.getFirst("Stripe-Signature");
-        if (!paymentGatewayPort.verifyWebhookSignature(payload, signature)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Stripe webhook signature");
+    @Operation(summary = "Handle Stripe webhook",
+            description = "Receives Stripe checkout webhook events and updates subscription state accordingly.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Webhook received and processed successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid Stripe signature"),
+            @ApiResponse(responseCode = "500", description = "Stripe webhook secret is not configured on the server")
+    })
+    public ResponseEntity<Void> handleStripeWebhook(
+            @RequestBody String payload,
+            @Parameter(description = "Stripe signature header used to verify webhook authenticity", required = true)
+            @RequestHeader("Stripe-Signature") String stripeSignature
+    ) {
+        if (stripePaymentProperties.getWebhookSecret() == null || stripePaymentProperties.getWebhookSecret().isBlank())
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        final Event event;
+        try {
+            event = Webhook.constructEvent(payload, stripeSignature, stripePaymentProperties.getWebhookSecret());
+        } catch (SignatureVerificationException exception) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
-        paymentGatewayPort.handleCheckoutSessionCompleted(payload, signature)
-                .ifPresent(payment -> subscriptionCommandService.handle(new CompleteCheckoutSessionPaymentCommand(
-                        payment.clinicId(),
-                        payment.planId(),
-                        payment.billingCycle(),
-                        payment.paymentReference(),
-                        payment.currentPeriodStart(),
-                        payment.currentPeriodEnd()
-                )));
-        return ResponseEntity.noContent().build();
+        StripeObject stripeObject = event.getDataObjectDeserializer()
+                .getObject()
+                .orElse(null);
+        if (!(stripeObject instanceof Session session))
+            return ResponseEntity.ok().build();
+        switch (event.getType()) {
+            case "checkout.session.completed" -> stripeWebhookCommandService.handleCheckoutCompleted(session.getId());
+            case "checkout.session.expired" -> stripeWebhookCommandService.handleCheckoutExpired(session.getId());
+            default -> {
+            }
+        }
+        return ResponseEntity.ok().build();
     }
 }

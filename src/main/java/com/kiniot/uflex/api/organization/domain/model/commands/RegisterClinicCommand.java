@@ -4,6 +4,7 @@ import com.kiniot.uflex.api.organization.domain.model.valueobjects.CommercialNam
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.LegalName;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhoneNumber;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.Ruc;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.Address;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 
@@ -13,6 +14,7 @@ public record RegisterClinicCommand(
         Ruc ruc,
         Email emailAddress,
         PhoneNumber phoneNumber,
+        Address address,
         UserId createdBy
 ) {
     public RegisterClinicCommand {
@@ -30,6 +32,9 @@ public record RegisterClinicCommand(
         }
         if (phoneNumber == null) {
             throw new IllegalArgumentException("Phone number cannot be null");
+        }
+        if (address == null) {
+            throw new IllegalArgumentException("Address cannot be null");
         }
         if (createdBy == null) {
             throw new IllegalArgumentException("Created by cannot be null");

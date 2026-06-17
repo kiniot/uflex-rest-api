@@ -12,6 +12,6 @@ public class UpdateTreatmentPlanCommandFromResourceAssembler {
         return new UpdateTreatmentPlanCommand(
                 new TreatmentPlanId(UUID.fromString(treatmentPlanId)),
                 new PlanName(resource.name()),
-                PlanFrequencyFromResourceAssembler.toValueObjectFromResource(resource.frequency()));
+                TreatmentPlanPeriodFromResourceAssembler.toValueObjectFromResource(resource.period()));
     }
 }

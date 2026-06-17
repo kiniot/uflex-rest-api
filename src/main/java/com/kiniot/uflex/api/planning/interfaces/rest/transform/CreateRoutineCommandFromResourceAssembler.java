@@ -9,9 +9,9 @@ import com.kiniot.uflex.api.planning.interfaces.rest.resources.CreateRoutineReso
 import java.util.UUID;
 
 public class CreateRoutineCommandFromResourceAssembler {
-    public static CreateRoutineCommand toCommandFromResource(CreateRoutineResource resource) {
+    public static CreateRoutineCommand toCommandFromResource(String treatmentPlanId, CreateRoutineResource resource) {
         return new CreateRoutineCommand(
-                new TreatmentPlanId(UUID.fromString(resource.treatmentPlanId())),
+                new TreatmentPlanId(UUID.fromString(treatmentPlanId)),
                 new RoutineName(resource.name()),
                 new RoutineOrder(resource.order()),
                 RoutineScheduleFromResourceAssembler.toValueObjectFromResource(resource.schedule()),

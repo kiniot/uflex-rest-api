@@ -3,11 +3,14 @@ package com.kiniot.uflex.api.planning.domain.model.commands;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.BodyPart;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseDescription;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseName;
+import com.kiniot.uflex.api.planning.domain.model.valueobjects.MovementType;
 
 public record CreateExerciseCommand(
         ExerciseName name,
         ExerciseDescription description,
-        BodyPart bodyPart
+        BodyPart bodyPart,
+        MovementType movementType,
+        String videoUrl
 ) {
     public CreateExerciseCommand {
         if (name == null) {
@@ -18,6 +21,9 @@ public record CreateExerciseCommand(
         }
         if (bodyPart == null) {
             throw new IllegalArgumentException("Body part cannot be null");
+        }
+        if (movementType == null) {
+            throw new IllegalArgumentException("Movement type cannot be null");
         }
     }
 }

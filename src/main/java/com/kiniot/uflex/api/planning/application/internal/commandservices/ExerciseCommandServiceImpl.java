@@ -28,7 +28,7 @@ public class ExerciseCommandServiceImpl implements ExerciseCommandService {
     @Override
     @Transactional
     public Optional<Exercise> handle(CreateExerciseCommand command) {
-        var clinicId = externalIamService.fetchCurrentAcademyId()
+        var clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(AuthenticatedUserClinicNotFoundException::new);
         var exercise = new Exercise(command, clinicId);
         return Optional.of(exerciseRepository.save(exercise));
@@ -37,7 +37,7 @@ public class ExerciseCommandServiceImpl implements ExerciseCommandService {
     @Override
     @Transactional
     public Optional<Exercise> handle(UpdateExerciseCommand command) {
-        var clinicId = externalIamService.fetchCurrentAcademyId()
+        var clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(AuthenticatedUserClinicNotFoundException::new);
         var exercise = exerciseRepository.findByIdAndClinicId(command.exerciseId(), clinicId)
                 .orElseThrow(() -> new ExerciseWithIdNotFoundException(command.exerciseId().id().toString()));
@@ -48,7 +48,7 @@ public class ExerciseCommandServiceImpl implements ExerciseCommandService {
     @Override
     @Transactional
     public void handle(RemoveExerciseCommand command) {
-        var clinicId = externalIamService.fetchCurrentAcademyId()
+        var clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(AuthenticatedUserClinicNotFoundException::new);
         var exercise = exerciseRepository.findByIdAndClinicId(command.exerciseId(), clinicId)
                 .orElseThrow(() -> new ExerciseWithIdNotFoundException(command.exerciseId().id().toString()));

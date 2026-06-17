@@ -1,5 +1,7 @@
 package com.kiniot.uflex.api.iam.domain.model.aggregates;
 
+import com.kiniot.uflex.api.iam.domain.exceptions.UserTenantAlreadyAssignedException;
+import com.kiniot.uflex.api.iam.domain.exceptions.UserTenantNotAssignedException;
 import com.kiniot.uflex.api.iam.domain.model.entities.Role;
 import com.kiniot.uflex.api.iam.domain.model.events.UserCreatedEvent;
 import com.kiniot.uflex.api.iam.domain.model.events.UserSignedUpAndActivatedEvent;
@@ -89,6 +91,19 @@ public class User extends AuditableAbstractAggregateRoot<User, UserId> {
     }
 
     /**
+     * Remove a role from the user by role name.
+     * @param roleName the role name to remove
+     * @return the user without the removed role
+     */
+    public User removeRoleByName(String roleName) {
+        if (roleName == null || roleName.isBlank()) {
+            return this;
+        }
+        this.roles.removeIf(role -> role.getName().name().equals(roleName));
+        return this;
+    }
+
+    /**
      * Add a list of roles to the user
      * @param roles the list of roles to add
      * @return the user with the added roles
@@ -105,6 +120,10 @@ public class User extends AuditableAbstractAggregateRoot<User, UserId> {
      */
     public void changePassword(Password newHashedPassword) {
         this.password = newHashedPassword;
+    }
+
+    public void changeEmail(Email email) {
+        this.email = email;
     }
 
     /**
@@ -136,7 +155,7 @@ public class User extends AuditableAbstractAggregateRoot<User, UserId> {
      */
     public void associateTenant(TenantId tenantId) {
         if (this.tenantId != null && this.tenantId.isAssigned())
-            throw new IllegalStateException("User is already associated with a tenant");
+            throw new UserTenantAlreadyAssignedException();
         this.tenantId = tenantId;
     }
 
@@ -151,7 +170,7 @@ public class User extends AuditableAbstractAggregateRoot<User, UserId> {
      */
     public void disassociateTenant(TenantId tenantId) {
         if (this.tenantId == null || !this.tenantId.equals(tenantId)) {
-            throw new IllegalStateException("User is not associated with the provided tenant");
+            throw new UserTenantNotAssignedException();
         }
         this.tenantId = new TenantId();
     }

@@ -2,15 +2,14 @@ package com.kiniot.uflex.api.iam.application.acl;
 
 import com.kiniot.uflex.api.iam.application.internal.outboundservices.verification.VerificationService;
 import com.kiniot.uflex.api.iam.domain.model.entities.Role;
-import com.kiniot.uflex.api.iam.domain.model.queries.GetAuthenticatedUserIdQuery;
-import com.kiniot.uflex.api.iam.domain.model.queries.GetAuthenticatedUserTenantIdQuery;
-import com.kiniot.uflex.api.iam.domain.model.queries.GetUserByIdQuery;
+import com.kiniot.uflex.api.iam.domain.model.queries.*;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.Email;
 import com.kiniot.uflex.api.iam.domain.model.commands.DeleteUserCommand;
 import com.kiniot.uflex.api.iam.domain.services.UserCommandService;
 import com.kiniot.uflex.api.iam.domain.services.UserQueryService;
 import com.kiniot.uflex.api.iam.interfaces.acl.IamContextFacade;
 import com.kiniot.uflex.api.iam.domain.model.commands.SignUpVerifiedUserCommand;
+import com.kiniot.uflex.api.iam.domain.model.commands.UpdateUserEmailCommand;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import org.springframework.stereotype.Service;
 
@@ -57,22 +56,42 @@ public class IamContextFacadeImpl implements IamContextFacade {
     }
 
     @Override
+    public void updateUserEmail(String userId, String email) {
+        userCommandService.handle(new UpdateUserEmailCommand(
+                new UserId(UUID.fromString(userId)),
+                new Email(email)
+        ));
+    }
+
+    @Override
     public void deleteUserById(String userId) {
         userCommandService.handle(new DeleteUserCommand(new UserId(UUID.fromString(userId))));
     }
 
     @Override
-    public String fetchAuthenticatedUserId() {
-        var getAuthenticatedUserIdQuery = new GetAuthenticatedUserIdQuery();
+    public String fetchContextUserId() {
+        var getAuthenticatedUserIdQuery = new GetContextUserIdQuery();
         return userQueryService.handle(getAuthenticatedUserIdQuery)
                 .map(userId -> userId.id().toString())
                 .orElseThrow(() -> new IllegalStateException("User fetch authenticated failed"));
     }
 
     @Override
-    public String fetchAuthenticatedUserTenantId() {
-        var getAuthenticatedUserTenantIdQuery = new GetAuthenticatedUserTenantIdQuery();
+    public String fetchContextTenantId() {
+        var getAuthenticatedUserTenantIdQuery = new GetContextTenantIdQuery();
         var tenantId = userQueryService.handle(getAuthenticatedUserTenantIdQuery);
+        return tenantId.isEmpty() ? "" : tenantId.get().tenantId().toString();
+    }
+
+    @Override
+    public String fetchCurrentUserId() {
+        var userId = userQueryService.handle(new GetCurrentUserIdQuery());
+        return userId.isEmpty() ? "" : userId.get().id().toString();
+    }
+
+    @Override
+    public String fetchCurrentTenantId() {
+        var tenantId = userQueryService.handle(new GetCurrentTenantIdQuery());
         return tenantId.isEmpty() ? "" : tenantId.get().tenantId().toString();
     }
 }

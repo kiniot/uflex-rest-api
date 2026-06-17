@@ -3,6 +3,9 @@ package com.kiniot.uflex.api.iam.application.internal.commandservices;
 import com.kiniot.uflex.api.iam.application.internal.outboundservices.hashing.HashingService;
 import com.kiniot.uflex.api.iam.application.internal.outboundservices.identity.IdentityService;
 import com.kiniot.uflex.api.iam.application.internal.outboundservices.tokens.TokenService;
+import com.kiniot.uflex.api.iam.domain.exceptions.EmailAlreadyInUseException;
+import com.kiniot.uflex.api.iam.domain.exceptions.InvalidCredentialsException;
+import com.kiniot.uflex.api.iam.domain.exceptions.RoleNotFoundException;
 import com.kiniot.uflex.api.iam.domain.exceptions.UserWithEmailNotFound;
 import com.kiniot.uflex.api.iam.domain.exceptions.UserWithIdNotFoundException;
 import com.kiniot.uflex.api.iam.domain.model.aggregates.User;
@@ -14,6 +17,7 @@ import com.kiniot.uflex.api.iam.domain.model.valueobjects.TenantId;
 import com.kiniot.uflex.api.iam.domain.services.UserCommandService;
 import com.kiniot.uflex.api.iam.infrastructure.persistence.jpa.repositories.RoleRepository;
 import com.kiniot.uflex.api.iam.infrastructure.persistence.jpa.repositories.UserRepository;
+import com.kiniot.uflex.api.shared.domain.exceptions.AuthenticatedTenantNotFoundException;
 import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.stereotype.Service;
@@ -50,13 +54,13 @@ public class UserCommandServiceImpl implements UserCommandService {
     @Transactional
     public Optional<User> handle(SignUpCommand command) {
         if (userRepository.existsByEmail(command.email()))
-            throw new IllegalArgumentException("Email already in use");
+            throw new EmailAlreadyInUseException(command.email().email());
         var roleNames = (command.roles() == null || command.roles().isEmpty())
                 ? List.of(RoleName.ROLE_USER)
                 : command.roles().stream().map(Role::getName).toList();
         var roles = roleRepository.findAllByNameIn(roleNames);
         if (roles.size() != roleNames.size())
-            throw new RuntimeException("One or more roles not found in database");
+            throw new RoleNotFoundException("One or more requested roles");
         var user = new User(command.email(), new Password(hashingService.encode(command.password().password())), roles);
         user.registerUserCreatedEvent();
         userRepository.save(user);
@@ -69,7 +73,7 @@ public class UserCommandServiceImpl implements UserCommandService {
         var user = userRepository.findByEmailWithRoles(command.email())
                 .orElseThrow(() -> new UserWithEmailNotFound(command.email().email()));
         if (!hashingService.matches(command.password().password(), user.getPassword().password()))
-            throw new IllegalArgumentException("Invalid password");
+            throw new InvalidCredentialsException("Invalid password");
         var roles = user.getRoles().stream().map(role -> role.getName().name()).toList();
         var tenantId = user.getTenantId() != null && user.getTenantId().tenantId() != null
                 ? user.getTenantId().tenantId().toString()
@@ -82,14 +86,14 @@ public class UserCommandServiceImpl implements UserCommandService {
     @Transactional
     public Optional<User> handle(SignUpVerifiedUserCommand command) {
         if (userRepository.existsByEmail(command.emailAddress()))
-            throw new RuntimeException("Username already exists");
+            throw new EmailAlreadyInUseException(command.emailAddress().email());
         var roles = (command.roles() == null || command.roles().isEmpty())
-                ? List.of(roleRepository.findByName(RoleName.ROLE_USER).orElseThrow(() -> new RuntimeException("Default role not found")))
+                ? List.of(roleRepository.findByName(RoleName.ROLE_USER).orElseThrow(() -> new RoleNotFoundException(RoleName.ROLE_USER.name())))
                 : command.roles().stream()
-                  .map(role -> roleRepository.findByName(role.getName()).orElseThrow(() -> new RuntimeException("Role name not found")))
+                  .map(role -> roleRepository.findByName(role.getName()).orElseThrow(() -> new RoleNotFoundException(role.getName().name())))
                   .toList();
         var tenantId = new TenantId(UUID.fromString(identityService.getTenantId()
-                .orElseThrow(() -> new RuntimeException("Tenant ID not found in identity service"))));
+                .orElseThrow(AuthenticatedTenantNotFoundException::new)));
         var user = new User(
                 command.emailAddress(),
                 new Password(hashingService.encode(command.password())),
@@ -107,8 +111,20 @@ public class UserCommandServiceImpl implements UserCommandService {
         var user = userRepository.findById(command.userId())
                 .orElseThrow(() -> new UserWithIdNotFoundException(command.userId().toString()));
         if (!hashingService.matches(command.currentPassword().password(), user.getPassword().password()))
-            throw new IllegalArgumentException("Current password is incorrect");
+            throw new InvalidCredentialsException("Current password is incorrect");
         user.changePassword(new Password(hashingService.encode(command.newPassword().password())));
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void handle(UpdateUserEmailCommand command) {
+        var user = userRepository.findById(command.userId())
+                .orElseThrow(() -> new UserWithIdNotFoundException(command.userId().toString()));
+        if (!user.getEmail().equals(command.email()) && userRepository.existsByEmail(command.email())) {
+            throw new EmailAlreadyInUseException(command.email().email());
+        }
+        user.changeEmail(command.email());
         userRepository.save(user);
     }
 
@@ -117,12 +133,8 @@ public class UserCommandServiceImpl implements UserCommandService {
     public void handle(AssignUserTenantId command) {
         var user = userRepository.findById(command.userId())
                 .orElseThrow(() -> new UserWithIdNotFoundException(command.userId().toString()));
-        try {
-            user.associateTenant(command.tenantId());
-            userRepository.save(user);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to assign tenant to user: %s".formatted(e.getMessage()));
-        }
+        user.associateTenant(command.tenantId());
+        userRepository.save(user);
     }
 
     @Override
@@ -131,13 +143,16 @@ public class UserCommandServiceImpl implements UserCommandService {
         var user = userRepository.findByIdWithRoles(command.userId())
                 .orElseThrow(() -> new UserWithIdNotFoundException(command.userId().toString()));
         var role = roleRepository.findByName(command.roleName())
-                .orElseThrow(() -> new IllegalArgumentException("Role not found: %s".formatted(command.roleName().name())));
+                .orElseThrow(() -> new RoleNotFoundException(command.roleName().name()));
         var alreadyAssigned = user.getRoles().stream()
                 .anyMatch(userRole -> userRole.getName().equals(command.roleName()));
         if (alreadyAssigned) {
             return;
         }
         user.addRole(role);
+        if (command.roleName().equals(RoleName.ROLE_CLINIC_ADMIN)) {
+            user.removeRoleByName(RoleName.ROLE_USER.name());
+        }
         userRepository.save(user);
     }
 

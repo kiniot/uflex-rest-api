@@ -12,17 +12,4 @@ spring:
 
 logging:
   level:
-    org.hibernate.SQL: debug
-
-authorization:
-  jwt:
-    secret: ${JWT_SECRET:uflex-dev-secret-key-change-me-local-only}
-    expiration:
-      days: ${JWT_EXPIRATION_DAYS:7}
-
-stripe:
-  enabled: ${STRIPE_ENABLED:true}
-  secret-key: ${STRIPE_SECRET_KEY:}
-  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
-  success-url: ${STRIPE_SUCCESS_URL:http://localhost:4200/subscription?payment=success}
-  cancel-url: ${STRIPE_CANCEL_URL:http://localhost:4200/subscription?payment=cancel}
+    org.hibernate.SQL: info

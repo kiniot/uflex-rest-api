@@ -3,7 +3,7 @@ package com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.reposit
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import com.kiniot.uflex.api.organization.domain.model.aggregates.Physiotherapist;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.LicenseNumber;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhysiotherapistId;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.PhysiotherapistId;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import org.springframework.data.jpa.repository.JpaRepository;
