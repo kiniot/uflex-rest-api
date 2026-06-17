@@ -23,6 +23,10 @@ public final class SessionProgressResourceFromEntityAssembler {
                 .findFirst()
                 .orElse(null);
 
+        int completedSeries = (int) series.stream()
+                .filter(s -> s.getStatus() == SerieStatus.Validated)
+                .count();
+
         List<SerieProgressResource> seriesProgress = series.stream()
                 .map(s -> SerieProgressResource.builder()
                         .serieId(s.getId().id())
@@ -37,8 +41,10 @@ public final class SessionProgressResourceFromEntityAssembler {
                 .sessionId(session.getId() != null ? session.getId().id() : null)
                 .status(SessionStatus.toStringOrNull(session.getStatus()))
                 .currentSerieId(currentSerieId)
+                .completedSeries(completedSeries)
+                .totalSeries(series.size())
                 .painLevel(session.getPainLevel() != null ? session.getPainLevel().value() : null)
-                .requiresClinicalReview(session.isRequiresClinicalReview())
+                .requiresClinicalReview(session.getRequiresClinicalReview())
                 .seriesProgress(seriesProgress)
                 .build();
     }

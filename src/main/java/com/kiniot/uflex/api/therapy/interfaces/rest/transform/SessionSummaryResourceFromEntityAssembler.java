@@ -27,7 +27,7 @@ public final class SessionSummaryResourceFromEntityAssembler {
                 .painReportsCount(session.getPainReportsCount())
                 .highPainReportsCount(session.getHighPainReportsCount())
                 .maxReportedPainLevel(session.getMaxReportedPainLevel())
-                .requiresClinicalReview(session.isRequiresClinicalReview())
+                .requiresClinicalReview(session.getRequiresClinicalReview())
                 .anomaliesDetected(session.getAnomaliesCount())
                 .startedAt(session.getStartedAt())
                 .finalizedAt(session.getFinalizedAt())

@@ -14,9 +14,11 @@ public final class TherapySessionResourceFromEntityAssembler {
                 .patientId(session.getPatientId() != null ? session.getPatientId().id() : null)
                 .treatmentPlanId(session.getTreatmentPlanId() != null ? session.getTreatmentPlanId().id() : null)
                 .iotDeviceId(session.getIotDeviceId())
+                .snapshotDeviceId(session.getSensorSnapshot() != null ? session.getSensorSnapshot().deviceId() : null)
+                .snapshotSensorsPlaced(session.getSensorSnapshot() != null ? session.getSensorSnapshot().sensorsPlaced() : null)
                 .status(SessionStatus.toStringOrNull(session.getStatus()))
                 .painLevel(session.getPainLevel() != null ? session.getPainLevel().value() : null)
-                .requiresClinicalReview(session.isRequiresClinicalReview())
+                .requiresClinicalReview(session.getRequiresClinicalReview())
                 .startedAt(session.getStartedAt())
                 .finalizedAt(session.getFinalizedAt())
                 .build();
