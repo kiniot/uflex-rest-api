@@ -24,8 +24,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -92,7 +90,7 @@ public class TherapySessionQueryServiceImpl implements TherapySessionQueryServic
     }
 
     @Override
-    public Optional<DailyRoutineDto> handle(GetDailyScheduleQuery query) {
+    public DailyRoutineDto handle(GetDailyScheduleQuery query) {
         log.debug("Resolving daily schedule: patientId={}, date={}", query.patientId(), query.date());
         ensurePatientAccess(query.patientId());
         ClinicId clinicId = externalIamService.fetchCurrentClinicId()
