@@ -43,6 +43,16 @@ import com.kiniot.uflex.api.planning.domain.exceptions.PatientWithIdNotFoundExce
 import com.kiniot.uflex.api.planning.domain.exceptions.RoutineWithOrderNotFoundException;
 import com.kiniot.uflex.api.planning.domain.exceptions.TreatmentPlanWithIdNotFoundException;
 import com.kiniot.uflex.api.shared.domain.exceptions.AuthenticatedUserClinicNotFoundException;
+import com.kiniot.uflex.api.therapy.domain.exceptions.HardwareNotReadyException;
+import com.kiniot.uflex.api.therapy.domain.exceptions.IoTSensorsNotPlacedException;
+import com.kiniot.uflex.api.therapy.domain.exceptions.PatientAlreadyInActiveSessionException;
+import com.kiniot.uflex.api.therapy.domain.exceptions.RoutineNotCompletedException;
+import com.kiniot.uflex.api.therapy.domain.exceptions.SerieNotFoundException;
+import com.kiniot.uflex.api.therapy.domain.exceptions.SerieNotStartedException;
+import com.kiniot.uflex.api.therapy.domain.exceptions.TherapySessionAlreadyFinalizedException;
+import com.kiniot.uflex.api.therapy.domain.exceptions.TherapySessionNotFoundException;
+import com.kiniot.uflex.api.therapy.domain.exceptions.TherapySessionNotInProgressException;
+import com.kiniot.uflex.api.therapy.domain.exceptions.TherapySessionStillInProgressException;
 import com.kiniot.uflex.api.shared.domain.exceptions.AuthenticatedTenantNotFoundException;
 import com.kiniot.uflex.api.shared.domain.exceptions.AuthenticatedUserIdNotFoundException;
 import com.kiniot.uflex.api.shared.interfaces.rest.resources.ErrorResource;
@@ -108,7 +118,16 @@ public class GlobalExceptionHandler {
             PatientAlreadyHasActiveTreatmentPlanException.class,
             OverlappingTreatmentPlanPeriodException.class,
             CurrentSubscriptionAlreadyExistsException.class,
-            SubscriptionOperationNotAllowedException.class
+            SubscriptionOperationNotAllowedException.class,
+            OverlappingTreatmentPlanPeriodException.class,
+            PatientAlreadyInActiveSessionException.class,
+            TherapySessionAlreadyFinalizedException.class,
+            TherapySessionNotInProgressException.class,
+            TherapySessionStillInProgressException.class,
+            HardwareNotReadyException.class,
+            IoTSensorsNotPlacedException.class,
+            RoutineNotCompletedException.class,
+            SerieNotStartedException.class
     })
     public ResponseEntity<ErrorResource> handleConflictExceptions(RuntimeException exception, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.CONFLICT, exception.getMessage(), request, exception);
@@ -128,6 +147,9 @@ public class GlobalExceptionHandler {
             PatientNotFoundException.class,
             PhysiotherapistNotFoundException.class,
             CurrentUserPatientProfileNotFoundException.class,
+            AuthenticatedUserClinicNotFoundException.class,
+            TherapySessionNotFoundException.class,
+            SerieNotFoundException.class,
             AuthenticatedUserClinicNotFoundException.class,
             AuthenticatedUserIdNotFoundException.class,
             AuthenticatedTenantNotFoundException.class,

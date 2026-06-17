@@ -2,6 +2,7 @@ package com.kiniot.uflex.api.planning.infrastructure.persistence.jpa.repositorie
 
 import com.kiniot.uflex.api.planning.domain.model.aggregates.TreatmentPlan;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.PlanName;
+import com.kiniot.uflex.api.planning.domain.model.valueobjects.RoutineId;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanId;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanStatus;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
@@ -62,4 +63,6 @@ public interface TreatmentPlanRepository extends JpaRepository<TreatmentPlan, Tr
     );
 
     boolean existsByClinicIdAndPlanName(ClinicId clinicId, PlanName planName);
+
+    boolean existsByIdAndPatientIdAndRoutinesId(TreatmentPlanId id, PatientId patientId, RoutineId routineId);
 }
