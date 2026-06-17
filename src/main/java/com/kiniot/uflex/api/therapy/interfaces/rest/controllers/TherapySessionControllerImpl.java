@@ -52,7 +52,7 @@ public class TherapySessionControllerImpl implements TherapySessionController {
     }
 
     @Override
-    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
+    @PreAuthorize("hasAnyAuthority('ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     public ResponseEntity<TherapySessionResource> confirmHardwareReadiness(UUID id, ConfirmHardwareReadinessResource resource) {
         var command = ConfirmHardwareReadinessCommandFromResourceAssembler.toCommandFromResource(id, resource);
         var session = therapySessionCommandService.handle(command);
@@ -60,21 +60,21 @@ public class TherapySessionControllerImpl implements TherapySessionController {
     }
 
     @Override
-    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
+    @PreAuthorize("hasAnyAuthority('ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     public ResponseEntity<TherapySessionResource> startTherapySession(UUID id) {
         var session = therapySessionCommandService.handle(new StartTherapySessionCommand(id));
         return ResponseEntity.ok(TherapySessionResourceFromEntityAssembler.toResponseFromEntity(session));
     }
 
     @Override
-    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
+    @PreAuthorize("hasAnyAuthority('ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     public ResponseEntity<TherapySessionResource> finalizeTherapySession(UUID id) {
         var session = therapySessionCommandService.handle(new FinalizeTherapySessionCommand(id));
         return ResponseEntity.ok(TherapySessionResourceFromEntityAssembler.toResponseFromEntity(session));
     }
 
     @Override
-    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
+    @PreAuthorize("hasAnyAuthority('ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     public ResponseEntity<TherapySessionResource> cancelTherapySession(UUID id, CancelTherapySessionResource resource) {
         var command = CancelTherapySessionCommandFromResourceAssembler.toCommandFromResource(id, resource);
         var session = therapySessionCommandService.handle(command);

@@ -39,7 +39,7 @@ public interface TherapySessionController {
             @Valid @RequestBody InitiateTherapyPreparationResource resource);
 
     @PatchMapping("/{id}/hardware")
-    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
+    @PreAuthorize("hasAnyAuthority('ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     @Operation(summary = "Confirm hardware readiness", description = "Registers the IoT sensor snapshot. Transitions Pending → Ready.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Hardware readiness confirmed."),
@@ -54,7 +54,7 @@ public interface TherapySessionController {
             @Valid @RequestBody ConfirmHardwareReadinessResource resource);
 
     @PatchMapping("/{id}/start")
-    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
+    @PreAuthorize("hasAnyAuthority('ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     @Operation(summary = "Start therapy session", description = "Transitions Ready → InProgress and emits RoutineStarted.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Session started."),
@@ -66,7 +66,7 @@ public interface TherapySessionController {
     ResponseEntity<TherapySessionResource> startTherapySession(@PathVariable UUID id);
 
     @PatchMapping("/{id}/finalize")
-    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
+    @PreAuthorize("hasAnyAuthority('ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     @Operation(summary = "Finalize therapy session", description = "Closes the session. Requires all series Validated. Emits TherapySessionCompleted.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Session finalized."),
@@ -78,7 +78,7 @@ public interface TherapySessionController {
     ResponseEntity<TherapySessionResource> finalizeTherapySession(@PathVariable UUID id);
 
     @PatchMapping("/{id}/cancel")
-    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
+    @PreAuthorize("hasAnyAuthority('ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     @Operation(summary = "Cancel therapy session", description = "Cancels the session at any non-terminal state. Emits TherapySessionCancelled.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Session cancelled."),
@@ -119,8 +119,9 @@ public interface TherapySessionController {
     @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     @Operation(summary = "Get daily schedule by patient",
             description = "Resolves the routine the patient is scheduled to perform on the given date "
-                    + "(defaults to today). Returns 200 with a null routineId and zero counters when no "
-                    + "active treatment plan covers the date or no routine is scheduled for that day.")
+                    + "(defaults to today). Returns a resolutionStatus of FOUND, NO_ACTIVE_PLAN_FOR_DATE, "
+                    + "or NO_ROUTINE_FOR_DAY. When no routine is available, routineId is null and the "
+                    + "counters are zero.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Daily schedule resolved (may be empty)."),
             @ApiResponse(responseCode = "403", description = "Forbidden."),
