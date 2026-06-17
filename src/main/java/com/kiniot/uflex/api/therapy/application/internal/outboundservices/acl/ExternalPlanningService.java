@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.Optional;
 
 @Slf4j
 @Service("therapyExternalPlanningService")
@@ -38,7 +37,7 @@ public class ExternalPlanningService {
         log.debug("Planning context notified: sessionId={}", sessionId);
     }
 
-    public Optional<DailyRoutineDto> resolveRoutineForDate(String clinicId, String patientId, LocalDate date) {
+    public DailyRoutineDto resolveRoutineForDate(String clinicId, String patientId, LocalDate date) {
         log.debug("Resolving scheduled routine: clinicId={}, patientId={}, date={}", clinicId, patientId, date);
         return planningContextFacade.resolveRoutineForDate(clinicId, patientId, date);
     }
