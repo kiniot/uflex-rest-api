@@ -1,7 +1,7 @@
 package com.kiniot.uflex.api.iam.infrastructure.email.javamailsender.services;
 
 import com.kiniot.uflex.api.iam.infrastructure.email.javamailsender.UserNotificationEmailService;
-import com.kiniot.uflex.api.shared.infrastructure.email.javamailsender.TemplatedEmailService;
+import com.kiniot.uflex.api.shared.infrastructure.email.brevo.BrevoTemplatedEmailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -11,10 +11,10 @@ import java.util.Map;
 @Service
 public class NotificationEmailServiceImpl implements UserNotificationEmailService {
 
-    private final TemplatedEmailService templatedEmailService;
+    private final BrevoTemplatedEmailService templatedEmailService;
     private static final Logger log = LoggerFactory.getLogger(NotificationEmailServiceImpl.class);
 
-    public NotificationEmailServiceImpl(TemplatedEmailService templatedEmailService) {
+    public NotificationEmailServiceImpl(BrevoTemplatedEmailService templatedEmailService) {
         this.templatedEmailService = templatedEmailService;
     }
 

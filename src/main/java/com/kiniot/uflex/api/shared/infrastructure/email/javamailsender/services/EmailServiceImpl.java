@@ -1,6 +1,6 @@
 package com.kiniot.uflex.api.shared.infrastructure.email.javamailsender.services;
 
-import com.kiniot.uflex.api.shared.infrastructure.email.javamailsender.TemplatedEmailService;
+import com.kiniot.uflex.api.shared.infrastructure.email.javamailsender.JavaTemplatedEmailService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,7 +14,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Map;
 
 @Service
-public class EmailServiceImpl implements TemplatedEmailService {
+public class EmailServiceImpl implements JavaTemplatedEmailService {
 
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
