@@ -58,3 +58,9 @@ otp:
     expiration-minutes: 15
     code-length: 6
     password-length: 12
+
+brevo:
+  api-key: ${BREVO_API_KEY:}
+  from:
+    address: ${BREVO_FROM_ADDRESS:}
+    name: ${BREVO_FROM_NAME:}
