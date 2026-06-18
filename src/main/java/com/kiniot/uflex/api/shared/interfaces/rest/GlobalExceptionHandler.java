@@ -4,6 +4,11 @@ import com.kiniot.uflex.api.device.domain.exceptions.DeviceAlreadyRegisteredExce
 import com.kiniot.uflex.api.device.domain.exceptions.DeviceAssignmentNotAllowedException;
 import com.kiniot.uflex.api.device.domain.exceptions.DeviceClinicMismatchException;
 import com.kiniot.uflex.api.device.domain.exceptions.DeviceNotFoundException;
+import com.kiniot.uflex.api.media.domain.exceptions.MediaAssetNotFoundException;
+import com.kiniot.uflex.api.media.domain.exceptions.MediaFileTooLargeException;
+import com.kiniot.uflex.api.media.domain.exceptions.MediaStorageException;
+import com.kiniot.uflex.api.media.domain.exceptions.MediaUploadNotConfirmableException;
+import com.kiniot.uflex.api.media.domain.exceptions.UnsupportedMediaContentTypeException;
 import com.kiniot.uflex.api.iam.domain.exceptions.EmailAlreadyInUseException;
 import com.kiniot.uflex.api.iam.domain.exceptions.InvalidCredentialsException;
 import com.kiniot.uflex.api.iam.domain.exceptions.RoleNotFoundException;
@@ -119,7 +124,6 @@ public class GlobalExceptionHandler {
             OverlappingTreatmentPlanPeriodException.class,
             CurrentSubscriptionAlreadyExistsException.class,
             SubscriptionOperationNotAllowedException.class,
-            OverlappingTreatmentPlanPeriodException.class,
             PatientAlreadyInActiveSessionException.class,
             TherapySessionAlreadyFinalizedException.class,
             TherapySessionNotInProgressException.class,
@@ -127,7 +131,8 @@ public class GlobalExceptionHandler {
             HardwareNotReadyException.class,
             IoTSensorsNotPlacedException.class,
             RoutineNotCompletedException.class,
-            SerieNotStartedException.class
+            SerieNotStartedException.class,
+            MediaUploadNotConfirmableException.class
     })
     public ResponseEntity<ErrorResource> handleConflictExceptions(RuntimeException exception, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.CONFLICT, exception.getMessage(), request, exception);
@@ -154,6 +159,7 @@ public class GlobalExceptionHandler {
             AuthenticatedUserIdNotFoundException.class,
             AuthenticatedTenantNotFoundException.class,
             DeviceNotFoundException.class,
+            MediaAssetNotFoundException.class,
             TierNotFoundException.class,
             SubscriptionNotFoundException.class
     })
@@ -177,10 +183,27 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.BAD_GATEWAY, exception.getMessage(), request, exception);
     }
 
+    @ExceptionHandler(MediaFileTooLargeException.class)
+    public ResponseEntity<ErrorResource> handleMediaFileTooLargeException(
+            MediaFileTooLargeException exception,
+            HttpServletRequest request
+    ) {
+        return buildErrorResponse(HttpStatus.PAYLOAD_TOO_LARGE, exception.getMessage(), request, exception);
+    }
+
+    @ExceptionHandler(MediaStorageException.class)
+    public ResponseEntity<ErrorResource> handleMediaStorageException(
+            MediaStorageException exception,
+            HttpServletRequest request
+    ) {
+        return buildErrorResponse(HttpStatus.BAD_GATEWAY, exception.getMessage(), request, exception);
+    }
+
     @ExceptionHandler({
             IllegalArgumentException.class,
             InvalidCredentialsException.class,
-            SubscriptionPriceMismatchException.class
+            SubscriptionPriceMismatchException.class,
+            UnsupportedMediaContentTypeException.class
     })
     public ResponseEntity<ErrorResource> handleBadRequestExceptions(RuntimeException exception, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request, exception);
