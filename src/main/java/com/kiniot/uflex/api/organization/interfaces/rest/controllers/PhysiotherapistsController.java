@@ -1,6 +1,7 @@
 package com.kiniot.uflex.api.organization.interfaces.rest.controllers;
 
 import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalIamService;
+import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalMediaService;
 import com.kiniot.uflex.api.organization.domain.exceptions.ClinicNotFoundException;
 import com.kiniot.uflex.api.organization.domain.exceptions.UserNotFoundException;
 import com.kiniot.uflex.api.organization.domain.model.commands.DeletePhysiotherapistCommand;
@@ -55,17 +56,20 @@ public class PhysiotherapistsController {
     private final PhysiotherapistQueryService physiotherapistQueryService;
     private final PatientQueryService patientQueryService;
     private final ExternalIamService externalIamService;
+    private final ExternalMediaService externalMediaService;
 
     public PhysiotherapistsController(
             PhysiotherapistCommandService physiotherapistCommandService,
             PhysiotherapistQueryService physiotherapistQueryService,
             PatientQueryService patientQueryService,
-            ExternalIamService externalIamService
+            ExternalIamService externalIamService,
+            ExternalMediaService externalMediaService
     ) {
         this.physiotherapistCommandService = physiotherapistCommandService;
         this.physiotherapistQueryService = physiotherapistQueryService;
         this.patientQueryService = patientQueryService;
         this.externalIamService = externalIamService;
+        this.externalMediaService = externalMediaService;
     }
 
     @PostMapping
@@ -91,7 +95,7 @@ public class PhysiotherapistsController {
                                       "phoneNumber": "987654321",
                                       "licenseNumber": "CPT12345",
                                       "professionalSummary": "Fisioterapeuta especializado en rehabilitacion neurologica con mas de 10 anos de experiencia",
-                                      "photoUrl": "https://example.com/photos/pepe.jpg",
+                                      "photoAssetId": "019e1e7d-80c3-71c5-ae4b-2358fa9ae43d",
                                       "yearsOfExperience": 10
                                     }
                                     """
@@ -108,7 +112,7 @@ public class PhysiotherapistsController {
         if (physiotherapist.isEmpty()) {
             return ResponseEntity.badRequest().build();
         }
-        var physioResource = PhysiotherapistResourceFromEntityAssembler.toResourceFromEntity(physiotherapist.get());
+        var physioResource = toResource(physiotherapist.get());
         return new ResponseEntity<>(physioResource, HttpStatus.CREATED);
     }
 
@@ -127,7 +131,7 @@ public class PhysiotherapistsController {
         if (physiotherapist.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(PhysiotherapistResourceFromEntityAssembler.toResourceFromEntity(physiotherapist.get()));
+        return ResponseEntity.ok(toResource(physiotherapist.get()));
     }
 
     @PutMapping("/{id}")
@@ -152,7 +156,7 @@ public class PhysiotherapistsController {
                                       "phoneNumber": "987654321",
                                       "licenseNumber": "CPT12345",
                                       "professionalSummary": "Fisioterapeuta especializado en rehabilitacion neurologica con mas de 12 anos de experiencia",
-                                      "photoUrl": "https://example.com/photos/pepe.jpg",
+                                      "photoAssetId": "019e1e7d-80c3-71c5-ae4b-2358fa9ae43d",
                                       "yearsOfExperience": 12
                                     }
                                     """
@@ -179,6 +183,7 @@ public class PhysiotherapistsController {
                                               "phoneNumber": "987654321",
                                               "licenseNumber": "CPT12345",
                                               "professionalSummary": "Fisioterapeuta especializado en rehabilitacion neurologica con mas de 12 anos de experiencia",
+                                              "photoAssetId": "019e1e7d-80c3-71c5-ae4b-2358fa9ae43d",
                                               "photoUrl": "https://example.com/photos/pepe.jpg",
                                               "yearsOfExperience": 12,
                                               "hireDate": "2026-06-02",
@@ -196,7 +201,7 @@ public class PhysiotherapistsController {
                                                                          @RequestBody UpdatePhysiotherapistResource resource) {
         UpdatePhysiotherapistCommand command = UpdatePhysiotherapistCommandFromResourceAssembler.toCommandFromResource(id, resource);
         return physiotherapistCommandService.handle(command)
-                .map(PhysiotherapistResourceFromEntityAssembler::toResourceFromEntity)
+                .map(this::toResource)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.badRequest().build());
     }
@@ -214,7 +219,7 @@ public class PhysiotherapistsController {
     })
     public ResponseEntity<PhysiotherapistResource> getCurrentPhysiotherapist() {
         return physiotherapistQueryService.handle(new GetCurrentPhysiotherapistQuery())
-                .map(PhysiotherapistResourceFromEntityAssembler::toResourceFromEntity)
+                .map(this::toResource)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -233,7 +238,7 @@ public class PhysiotherapistsController {
         var query = new GetPhysiotherapistsByClinicIdQuery(clinicId);
         var physiotherapists = physiotherapistQueryService.handle(query);
         var resources = physiotherapists.stream()
-                .map(PhysiotherapistResourceFromEntityAssembler::toResourceFromEntity)
+                .map(this::toResource)
                 .toList();
         return ResponseEntity.ok(resources);
     }
@@ -255,6 +260,11 @@ public class PhysiotherapistsController {
                 .map(PatientResourceFromEntityAssembler::toResourceFromEntity)
                 .toList();
         return ResponseEntity.ok(resources);
+    }
+
+    private PhysiotherapistResource toResource(com.kiniot.uflex.api.organization.domain.model.aggregates.Physiotherapist physiotherapist) {
+        var photoUrl = externalMediaService.createSignedDownloadUrl(physiotherapist.getPhotoAssetId());
+        return PhysiotherapistResourceFromEntityAssembler.toResourceFromEntity(physiotherapist, photoUrl);
     }
 
     @PostMapping("/{id}/suspend")

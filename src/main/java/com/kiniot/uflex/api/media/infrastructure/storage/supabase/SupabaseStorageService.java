@@ -14,6 +14,8 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
@@ -30,6 +32,7 @@ import java.util.Map;
 public class SupabaseStorageService implements MediaStorageService {
 
     private static final Logger log = LoggerFactory.getLogger(SupabaseStorageService.class);
+    private static final long RESUMABLE_CHUNK_SIZE_BYTES = 6L * 1024 * 1024;
 
     private final SupabaseStorageProperties properties;
     private final RestClient restClient;
@@ -58,8 +61,30 @@ public class SupabaseStorageService implements MediaStorageService {
             }
             // response.url() looks like: /object/upload/sign/<bucket>/<path>?token=<jwt>
             var absoluteUploadUrl = baseUrl() + "/storage/v1" + response.url();
-            var token = extractToken(response.url());
-            return new SignedUpload(absoluteUploadUrl, token, properties.getUploadUrlExpirySeconds());
+            var token = response.token() != null && !response.token().isBlank()
+                    ? response.token()
+                    : extractToken(response.url());
+            var resumableEndpoint = directStorageUrl() + "/storage/v1/upload/resumable";
+            var preferredStrategy = contentType != null && contentType.toLowerCase().startsWith("video/")
+                    ? "TUS_RESUMABLE"
+                    : "SIMPLE_PUT";
+            return new SignedUpload(
+                    absoluteUploadUrl,
+                    token,
+                    properties.getUploadUrlExpirySeconds(),
+                    preferredStrategy,
+                    resumableEndpoint,
+                    Map.of(
+                            "Authorization", "Bearer " + (token != null ? token : ""),
+                            "x-upsert", "false"
+                    ),
+                    Map.of(
+                            "bucketName", bucket,
+                            "objectName", objectPath,
+                            "contentType", contentType != null ? contentType : "application/octet-stream"
+                    ),
+                    RESUMABLE_CHUNK_SIZE_BYTES
+            );
         } catch (RestClientResponseException ex) {
             log.error("Supabase sign-upload failed ({}): {}", ex.getStatusCode(), ex.getResponseBodyAsString());
             throw new MediaStorageException("Could not create signed upload URL for " + objectPath, ex);
@@ -116,6 +141,14 @@ public class SupabaseStorageService implements MediaStorageService {
         return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
     }
 
+    private String directStorageUrl() {
+        var base = baseUrl();
+        if (base.matches("^https://[^.]+\\.supabase\\.co$")) {
+            return base.replace(".supabase.co", ".storage.supabase.co");
+        }
+        return base;
+    }
+
     private static String extractToken(String urlWithQuery) {
         int idx = urlWithQuery.indexOf("token=");
         if (idx < 0) {
@@ -123,11 +156,12 @@ public class SupabaseStorageService implements MediaStorageService {
         }
         var token = urlWithQuery.substring(idx + "token=".length());
         int amp = token.indexOf('&');
-        return amp >= 0 ? token.substring(0, amp) : token;
+        var rawToken = amp >= 0 ? token.substring(0, amp) : token;
+        return URLDecoder.decode(rawToken, StandardCharsets.UTF_8);
     }
 
     /** Response of POST /object/upload/sign/{bucket}/{path}. */
-    private record SignUploadResponse(String url) {}
+    private record SignUploadResponse(String url, String token) {}
 
     /** Response of POST /object/sign/{bucket}/{path}. */
     private record SignDownloadResponse(@JsonProperty("signedURL") String signedUrl) {}

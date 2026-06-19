@@ -18,29 +18,30 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 class ExerciseTests {
 
     @Test
-    void createExerciseStoresEnumsAndVideoUrl() {
+    void createExerciseStoresEnumsAndVideoAssetId() {
+        var videoAssetId = UUID.randomUUID();
         var command = new CreateExerciseCommand(
                 new ExerciseName("Wrist supination"),
                 new ExerciseDescription("Controlled wrist supination exercise."),
                 BodyPart.WRIST,
                 MovementType.SUPINATION,
-                "https://cdn.uflex.app/exercises/wrist-supination.mp4");
+                videoAssetId);
 
         var exercise = new Exercise(command, new ClinicId(UUID.randomUUID()));
 
         assertEquals(BodyPart.WRIST, exercise.getBodyPart());
         assertEquals(MovementType.SUPINATION, exercise.getMovementType());
-        assertEquals("https://cdn.uflex.app/exercises/wrist-supination.mp4", exercise.getVideoUrl());
+        assertEquals(videoAssetId, exercise.getVideoAssetId());
     }
 
     @Test
-    void updateExerciseNormalizesBlankVideoUrlToNull() {
+    void updateExerciseAllowsClearingVideoAssetId() {
         var createCommand = new CreateExerciseCommand(
                 new ExerciseName("Elbow flexion"),
                 new ExerciseDescription("Initial elbow flexion exercise."),
                 BodyPart.ELBOW,
                 MovementType.FLEXION,
-                "https://cdn.uflex.app/exercises/elbow-flexion.mp4");
+                UUID.randomUUID());
         var exercise = new Exercise(createCommand, new ClinicId(UUID.randomUUID()));
 
         var updateCommand = new UpdateExerciseCommand(
@@ -49,12 +50,12 @@ class ExerciseTests {
                 new ExerciseDescription("Updated elbow flexion exercise."),
                 BodyPart.ELBOW,
                 MovementType.FLEXION,
-                "   ");
+                null);
 
         exercise.update(updateCommand);
 
         assertEquals(BodyPart.ELBOW, exercise.getBodyPart());
         assertEquals(MovementType.FLEXION, exercise.getMovementType());
-        assertNull(exercise.getVideoUrl());
+        assertNull(exercise.getVideoAssetId());
     }
 }

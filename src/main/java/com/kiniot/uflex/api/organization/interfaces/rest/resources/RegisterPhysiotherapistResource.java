@@ -11,6 +11,7 @@ public record RegisterPhysiotherapistResource(
         String phoneNumber,
         String licenseNumber,
         String professionalSummary,
-        String photoUrl,
+        @Schema(description = "Optional media asset id of the profile photo", example = "019e1e7d-80c3-71c5-ae4b-2358fa9ae43c", nullable = true)
+        String photoAssetId,
         int yearsOfExperience
 ) {}

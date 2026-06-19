@@ -17,6 +17,11 @@ public class MediaUploadTicketResourceFromResultAssembler {
                 signed.uploadUrl(),
                 signed.token(),
                 signed.expiresInSeconds(),
+                signed.preferredStrategy(),
+                signed.resumableEndpoint(),
+                signed.resumableHeaders(),
+                signed.resumableMetadata(),
+                signed.resumableChunkSizeBytes(),
                 asset.getStatus().name()
         );
     }

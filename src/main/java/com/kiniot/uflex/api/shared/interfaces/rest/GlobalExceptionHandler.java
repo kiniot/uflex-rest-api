@@ -29,6 +29,7 @@ import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistAlread
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistClinicMismatchException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistLicenseInvalidException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistNotFoundException;
+import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistPhotoAssetInvalidException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistNotSuspendedException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistOperationNotAllowedException;
 import com.kiniot.uflex.api.organization.domain.exceptions.ProfileNotFoundException;
@@ -38,6 +39,7 @@ import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateExerciseSeriesOr
 import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateRoutineOrderException;
 import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateRoutineScheduleException;
 import com.kiniot.uflex.api.planning.domain.exceptions.ExerciseClinicMismatchException;
+import com.kiniot.uflex.api.planning.domain.exceptions.ExerciseVideoAssetInvalidException;
 import com.kiniot.uflex.api.planning.domain.exceptions.ExerciseWithIdNotFoundException;
 import com.kiniot.uflex.api.planning.domain.exceptions.CurrentUserPatientProfileNotFoundException;
 import com.kiniot.uflex.api.planning.domain.exceptions.InvalidTreatmentPlanStatusTransitionException;
@@ -69,6 +71,8 @@ import com.kiniot.uflex.api.subscription.domain.exceptions.SubscriptionOperation
 import com.kiniot.uflex.api.subscription.domain.exceptions.SubscriptionPriceMismatchException;
 import com.kiniot.uflex.api.subscription.domain.exceptions.TierNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -86,6 +90,8 @@ import java.util.Locale;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     private final ErrorResponseFactory errorResponseFactory;
 
@@ -203,7 +209,9 @@ public class GlobalExceptionHandler {
             IllegalArgumentException.class,
             InvalidCredentialsException.class,
             SubscriptionPriceMismatchException.class,
-            UnsupportedMediaContentTypeException.class
+            UnsupportedMediaContentTypeException.class,
+            PhysiotherapistPhotoAssetInvalidException.class,
+            ExerciseVideoAssetInvalidException.class
     })
     public ResponseEntity<ErrorResource> handleBadRequestExceptions(RuntimeException exception, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request, exception);
@@ -304,7 +312,23 @@ public class GlobalExceptionHandler {
             HttpServletRequest request,
             Throwable throwable
     ) {
+        logException(status, message, request, throwable);
         return errorResponseFactory.buildResponse(status, message, request, throwable);
+    }
+
+    private void logException(
+            HttpStatus status,
+            String message,
+            HttpServletRequest request,
+            Throwable throwable
+    ) {
+        var method = request.getMethod();
+        var path = request.getRequestURI();
+        if (status.is5xxServerError()) {
+            log.error("{} {} -> {} {} | {}", method, path, status.value(), status.getReasonPhrase(), message, throwable);
+            return;
+        }
+        log.warn("{} {} -> {} {} | {}", method, path, status.value(), status.getReasonPhrase(), message);
     }
 
     private String humanReadableTypeName(Class<?> type) {

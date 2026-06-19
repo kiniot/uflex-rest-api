@@ -1,5 +1,6 @@
 package com.kiniot.uflex.api.planning.interfaces.rest.controllers;
 
+import com.kiniot.uflex.api.planning.application.internal.outboundservices.acl.ExternalMediaService;
 import com.kiniot.uflex.api.planning.domain.model.commands.RemoveExerciseCommand;
 import com.kiniot.uflex.api.planning.domain.model.queries.GetAllExercisesQuery;
 import com.kiniot.uflex.api.planning.domain.model.queries.GetExerciseByIdQuery;
@@ -41,11 +42,16 @@ public class ExercisesController {
 
     private final ExerciseCommandService exerciseCommandService;
     private final ExerciseQueryService exerciseQueryService;
+    private final ExternalMediaService externalMediaService;
 
-    public ExercisesController(ExerciseCommandService exerciseCommandService,
-                               ExerciseQueryService exerciseQueryService) {
+    public ExercisesController(
+            ExerciseCommandService exerciseCommandService,
+            ExerciseQueryService exerciseQueryService,
+            ExternalMediaService externalMediaService
+    ) {
         this.exerciseCommandService = exerciseCommandService;
         this.exerciseQueryService = exerciseQueryService;
+        this.externalMediaService = externalMediaService;
     }
 
     @GetMapping
@@ -56,7 +62,7 @@ public class ExercisesController {
     })
     public ResponseEntity<List<ExerciseResource>> getExercises() {
         var exercises = exerciseQueryService.handle(new GetAllExercisesQuery()).stream()
-                .map(ExerciseResourceFromEntityAssembler::toResourceFromEntity)
+                .map(this::toResource)
                 .toList();
         return ResponseEntity.ok(exercises);
     }
@@ -70,7 +76,7 @@ public class ExercisesController {
     })
     public ResponseEntity<ExerciseResource> getExerciseById(@PathVariable String id) {
         return exerciseQueryService.handle(new GetExerciseByIdQuery(new ExerciseId(UUID.fromString(id))))
-                .map(ExerciseResourceFromEntityAssembler::toResourceFromEntity)
+                .map(this::toResource)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -91,7 +97,7 @@ public class ExercisesController {
                                       "description": "Controlled wrist supination exercise focused on forearm rotation.",
                                       "bodyPart": "WRIST",
                                       "movementType": "SUPINATION",
-                                      "videoUrl": "https://cdn.uflex.app/exercises/wrist-supination.mp4"
+                                      "videoAssetId": "019e1e7d-80c3-71c5-ae4b-2358fa9ae43d"
                                     }
                                     """
                     )
@@ -104,7 +110,7 @@ public class ExercisesController {
     public ResponseEntity<ExerciseResource> createExercise(@RequestBody CreateExerciseResource resource) {
         var command = CreateExerciseCommandFromResourceAssembler.toCommandFromResource(resource);
         return exerciseCommandService.handle(command)
-                .map(ExerciseResourceFromEntityAssembler::toResourceFromEntity)
+                .map(this::toResource)
                 .map(exercise -> new ResponseEntity<>(exercise, HttpStatus.CREATED))
                 .orElseGet(() -> ResponseEntity.badRequest().build());
     }
@@ -125,7 +131,7 @@ public class ExercisesController {
                                       "description": "Updated wrist supination exercise focused on controlled rotation and endurance.",
                                       "bodyPart": "WRIST",
                                       "movementType": "SUPINATION",
-                                      "videoUrl": "https://cdn.uflex.app/exercises/wrist-supination-v2.mp4"
+                                      "videoAssetId": "019e1e7d-80c3-71c5-ae4b-2358fa9ae43d"
                                     }
                                     """
                     )
@@ -140,7 +146,7 @@ public class ExercisesController {
                                                            @RequestBody UpdateExerciseResource resource) {
         var command = UpdateExerciseCommandFromResourceAssembler.toCommandFromResource(id, resource);
         return exerciseCommandService.handle(command)
-                .map(ExerciseResourceFromEntityAssembler::toResourceFromEntity)
+                .map(this::toResource)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.badRequest().build());
     }
@@ -157,5 +163,10 @@ public class ExercisesController {
         var command = new RemoveExerciseCommand(new ExerciseId(UUID.fromString(id)));
         exerciseCommandService.handle(command);
         return ResponseEntity.noContent().build();
+    }
+
+    private ExerciseResource toResource(com.kiniot.uflex.api.planning.domain.model.aggregates.Exercise exercise) {
+        var videoUrl = externalMediaService.createSignedDownloadUrl(exercise.getVideoAssetId());
+        return ExerciseResourceFromEntityAssembler.toResourceFromEntity(exercise, videoUrl);
     }
 }

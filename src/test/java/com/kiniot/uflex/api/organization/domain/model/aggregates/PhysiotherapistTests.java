@@ -4,7 +4,6 @@ import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistAlread
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistNotSuspendedException;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.LicenseNumber;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhoneNumber;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhotoUrl;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhysiotherapistStatus;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.ProfessionalSummary;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.Specialty;
@@ -79,7 +78,7 @@ class PhysiotherapistTests {
                 new PhoneNumber("+51", "987654321"),
                 new LicenseNumber("CPT12345"),
                 new ProfessionalSummary("Neuro rehab specialist"),
-                new PhotoUrl("https://example.com/physio.jpg"),
+                java.util.UUID.randomUUID(),
                 10
         );
     }

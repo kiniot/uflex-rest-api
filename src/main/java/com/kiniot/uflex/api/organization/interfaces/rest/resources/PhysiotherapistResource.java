@@ -11,6 +11,7 @@ public record PhysiotherapistResource(
         String phoneNumber,
         String licenseNumber,
         String professionalSummary,
+        String photoAssetId,
         String photoUrl,
         int yearsOfExperience,
         String hireDate,

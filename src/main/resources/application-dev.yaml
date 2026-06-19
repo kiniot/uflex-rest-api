@@ -13,3 +13,4 @@ spring:
 logging:
   level:
     org.hibernate.SQL: info
+    org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver: error

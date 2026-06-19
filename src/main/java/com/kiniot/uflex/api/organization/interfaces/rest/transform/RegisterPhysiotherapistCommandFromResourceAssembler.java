@@ -5,6 +5,8 @@ import com.kiniot.uflex.api.organization.domain.model.valueobjects.*;
 import com.kiniot.uflex.api.organization.interfaces.rest.resources.RegisterPhysiotherapistResource;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.Email;
 
+import java.util.UUID;
+
 public class RegisterPhysiotherapistCommandFromResourceAssembler {
 
     public static RegisterPhysiotherapistCommand toCommandFromResource(RegisterPhysiotherapistResource resource) {
@@ -15,9 +17,16 @@ public class RegisterPhysiotherapistCommandFromResourceAssembler {
                 new PhoneNumber(resource.countryCode(), resource.phoneNumber()),
                 new LicenseNumber(resource.licenseNumber()),
                 new ProfessionalSummary(resource.professionalSummary()),
-                new PhotoUrl(resource.photoUrl()),
+                parseOptionalUuid(resource.photoAssetId()),
                 resource.yearsOfExperience()
         );
+    }
+
+    private static UUID parseOptionalUuid(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return UUID.fromString(value);
     }
 
     private static Specialty parseSpecialty(String specialty) {

@@ -11,6 +11,7 @@ import com.kiniot.uflex.api.planning.interfaces.rest.resources.UpdateExerciseRes
 import java.util.UUID;
 
 public class UpdateExerciseCommandFromResourceAssembler {
+
     public static UpdateExerciseCommand toCommandFromResource(String exerciseId, UpdateExerciseResource resource) {
         return new UpdateExerciseCommand(
                 new ExerciseId(UUID.fromString(exerciseId)),
@@ -18,6 +19,7 @@ public class UpdateExerciseCommandFromResourceAssembler {
                 new ExerciseDescription(resource.description()),
                 BodyPart.valueOf(resource.bodyPart()),
                 MovementType.valueOf(resource.movementType()),
-                resource.videoUrl());
+                resource.videoAssetId() != null ? UUID.fromString(resource.videoAssetId()) : null
+        );
     }
 }

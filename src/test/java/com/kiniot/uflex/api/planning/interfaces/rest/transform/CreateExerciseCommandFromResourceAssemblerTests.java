@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class CreateExerciseCommandFromResourceAssemblerTests {
 
     @Test
-    void toCommandFromResourceParsesEnumsAndOptionalVideoUrl() {
+    void toCommandFromResourceParsesEnumsAndOptionalVideoAssetId() {
         var resource = new CreateExerciseResource(
                 "Wrist pronation",
                 "Controlled wrist pronation exercise.",
@@ -23,7 +23,7 @@ class CreateExerciseCommandFromResourceAssemblerTests {
 
         assertEquals(BodyPart.WRIST, command.bodyPart());
         assertEquals(MovementType.PRONATION, command.movementType());
-        assertEquals(null, command.videoUrl());
+        assertEquals(null, command.videoAssetId());
     }
 
     @Test

@@ -1,48 +1,52 @@
-# Media (Supabase Storage) — backend
+# Media (Supabase Storage) - backend
 
-Bounded context `com.kiniot.uflex.api.media`. Implementa el flujo de **URL firmada**
-para subir imágenes/videos a un bucket **privado** de Supabase Storage.
+Bounded context `com.kiniot.uflex.api.media`. It implements the **signed URL**
+flow to upload images/videos into a **private** Supabase Storage bucket.
 
-> Guía completa (arquitectura, web y móvil): `uflex-project-report/docs/media-storage-implementation.md`.
+> Full guide (architecture, web, and mobile): `uflex-project-report/docs/media-storage-implementation.md`.
 
-## Puesta en marcha
+## Setup
 
-1. Ejecuta `supabase/storage-setup.sql` en **Supabase → SQL Editor** (crea el bucket
-   `uflex-media` y la tabla `media_assets`).
-2. Configura en `.env` (y en Railway para prod):
+1. Run `supabase/storage-setup.sql` in **Supabase -> SQL Editor** (it creates the
+   `uflex-media` bucket and the `media_assets` table).
+2. Configure these values in `.env` (and in Railway for production):
 
    ```dotenv
    SUPABASE_URL=https://<ref>.supabase.co
-   SUPABASE_SERVICE_ROLE_KEY=<service_role secret>   # SOLO backend
+   SUPABASE_SERVICE_ROLE_KEY=<service_role secret>   # BACKEND ONLY
    SUPABASE_STORAGE_BUCKET=uflex-media
    ```
 
-3. Arranca y revisa los endpoints en `/scalar` (tag **Media**).
+3. Start the app and inspect the endpoints in `/scalar` (tag **Media**).
 
 ## Endpoints (`/api/v1/media`)
 
-| Método | Path | Descripción |
+| Method | Path | Description |
 |---|---|---|
-| `POST` | `/uploads` | Crea asset `PENDING` + URL firmada de subida |
-| `POST` | `/uploads/{id}/confirm` | Marca `UPLOADED` |
-| `GET`  | `/{id}` | Asset + URL firmada de descarga |
-| `GET`  | `/?ownerType=&ownerId=` | Lista assets `UPLOADED` de un dueño |
-| `DELETE` | `/{id}` | Borra en Storage + BD |
+| `POST` | `/uploads` | Creates a `PENDING` asset and returns a signed upload URL |
+| `POST` | `/uploads/{id}/confirm` | Marks the asset as `UPLOADED` |
+| `GET`  | `/{id}` | Returns the asset with a signed download URL |
+| `GET`  | `/?ownerType=&ownerId=` | Lists `UPLOADED` assets for an owner |
+| `DELETE` | `/{id}` | Deletes the object from Storage and the DB |
 
-`ownerType`: `PHYSIOTHERAPIST_RECORD` · `PATIENT_EVIDENCE` · `PROFILE_PHOTO` · `GENERIC`.
+`ownerType`: `PHYSIOTHERAPIST_RECORD` · `PATIENT_EVIDENCE` · `EXERCISE_VIDEO` · `PROFILE_PHOTO` · `GENERIC`.
 
-## Estructura
+## Structure
 
-```
+```text
 media/
-├── domain/            # MediaAsset (aggregate), value objects, commands, queries, events, services (puertos)
+├── domain/            # MediaAsset (aggregate), value objects, commands, queries, events, services (ports)
 ├── application/       # command/query services, ACL ExternalIamService
 ├── infrastructure/    # SupabaseStorageService (RestClient), properties, JPA repository
 └── interfaces/rest/   # MediaController, resources, assemblers
 ```
 
-## Notas
+## Notes
 
-- La clave `service_role` se usa solo aquí para firmar URLs; los clientes nunca la reciben.
-- Límites y MIME permitidos en `supabase.storage.*` (ver `application.yaml`).
-- En prod (`ddl-auto: validate`) la tabla debe existir → por eso el SQL la crea.
+- The `service_role` key is only used here to sign URLs; clients never receive it.
+- Limits and allowed MIME types live under `supabase.storage.*` (see `application.yaml`).
+- In production (`ddl-auto: validate`) the table must already exist, which is why the SQL creates it.
+- Current integration:
+  - `POST/PUT /api/v1/physiotherapists` uses `photoAssetId`
+  - `POST/PUT /api/v1/exercises` uses `videoAssetId`
+  - Responses return `assetId` + a signed `downloadUrl`
