@@ -71,6 +71,8 @@ import com.kiniot.uflex.api.subscription.domain.exceptions.SubscriptionOperation
 import com.kiniot.uflex.api.subscription.domain.exceptions.SubscriptionPriceMismatchException;
 import com.kiniot.uflex.api.subscription.domain.exceptions.TierNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -88,6 +90,8 @@ import java.util.Locale;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     private final ErrorResponseFactory errorResponseFactory;
 
@@ -308,7 +312,23 @@ public class GlobalExceptionHandler {
             HttpServletRequest request,
             Throwable throwable
     ) {
+        logException(status, message, request, throwable);
         return errorResponseFactory.buildResponse(status, message, request, throwable);
+    }
+
+    private void logException(
+            HttpStatus status,
+            String message,
+            HttpServletRequest request,
+            Throwable throwable
+    ) {
+        var method = request.getMethod();
+        var path = request.getRequestURI();
+        if (status.is5xxServerError()) {
+            log.error("{} {} -> {} {} | {}", method, path, status.value(), status.getReasonPhrase(), message, throwable);
+            return;
+        }
+        log.warn("{} {} -> {} {} | {}", method, path, status.value(), status.getReasonPhrase(), message);
     }
 
     private String humanReadableTypeName(Class<?> type) {
