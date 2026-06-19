@@ -4,7 +4,7 @@ import com.kiniot.uflex.api.planning.domain.model.aggregates.Exercise;
 import com.kiniot.uflex.api.planning.interfaces.rest.resources.ExerciseResource;
 
 public class ExerciseResourceFromEntityAssembler {
-    public static ExerciseResource toResourceFromEntity(Exercise entity) {
+    public static ExerciseResource toResourceFromEntity(Exercise entity, String videoUrl) {
         var exerciseId = entity.getId() != null ? entity.getId().id().toString() : null;
         var bodyPart = entity.getBodyPart() != null ? entity.getBodyPart().name() : null;
         var movementType = entity.getMovementType() != null ? entity.getMovementType().name() : null;
@@ -14,6 +14,7 @@ public class ExerciseResourceFromEntityAssembler {
                 entity.getDescription().description(),
                 bodyPart,
                 movementType,
-                entity.getVideoUrl());
+                entity.getVideoAssetId() != null ? entity.getVideoAssetId().toString() : null,
+                videoUrl);
     }
 }

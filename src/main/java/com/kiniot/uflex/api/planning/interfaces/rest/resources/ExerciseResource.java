@@ -13,6 +13,8 @@ public record ExerciseResource(
         String bodyPart,
         @Schema(allowableValues = {"PRONATION", "SUPINATION", "FLEXION", "EXTENSION"}, example = "SUPINATION")
         String movementType,
+        @Schema(example = "019e1e7d-80c3-71c5-ae4b-2358fa9ae43c", nullable = true)
+        String videoAssetId,
         @Schema(example = "https://cdn.uflex.app/exercises/wrist-supination.mp4", nullable = true)
         String videoUrl
 ) {

@@ -14,6 +14,8 @@ public class CreateExerciseCommandFromResourceAssembler {
                 new ExerciseDescription(resource.description()),
                 BodyPart.valueOf(resource.bodyPart()),
                 MovementType.valueOf(resource.movementType()),
-                resource.videoUrl());
+                resource.videoAssetId() != null && !resource.videoAssetId().isBlank()
+                        ? java.util.UUID.fromString(resource.videoAssetId())
+                        : null);
     }
 }

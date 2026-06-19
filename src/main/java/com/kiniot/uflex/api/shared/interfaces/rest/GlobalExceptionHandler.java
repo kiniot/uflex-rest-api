@@ -29,6 +29,7 @@ import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistAlread
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistClinicMismatchException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistLicenseInvalidException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistNotFoundException;
+import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistPhotoAssetInvalidException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistNotSuspendedException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistOperationNotAllowedException;
 import com.kiniot.uflex.api.organization.domain.exceptions.ProfileNotFoundException;
@@ -38,6 +39,7 @@ import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateExerciseSeriesOr
 import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateRoutineOrderException;
 import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateRoutineScheduleException;
 import com.kiniot.uflex.api.planning.domain.exceptions.ExerciseClinicMismatchException;
+import com.kiniot.uflex.api.planning.domain.exceptions.ExerciseVideoAssetInvalidException;
 import com.kiniot.uflex.api.planning.domain.exceptions.ExerciseWithIdNotFoundException;
 import com.kiniot.uflex.api.planning.domain.exceptions.CurrentUserPatientProfileNotFoundException;
 import com.kiniot.uflex.api.planning.domain.exceptions.InvalidTreatmentPlanStatusTransitionException;
@@ -203,7 +205,9 @@ public class GlobalExceptionHandler {
             IllegalArgumentException.class,
             InvalidCredentialsException.class,
             SubscriptionPriceMismatchException.class,
-            UnsupportedMediaContentTypeException.class
+            UnsupportedMediaContentTypeException.class,
+            PhysiotherapistPhotoAssetInvalidException.class,
+            ExerciseVideoAssetInvalidException.class
     })
     public ResponseEntity<ErrorResource> handleBadRequestExceptions(RuntimeException exception, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request, exception);

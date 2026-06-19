@@ -14,6 +14,7 @@ package com.kiniot.uflex.api.media.domain.model.valueobjects;
 public enum OwnerType {
     PHYSIOTHERAPIST_RECORD,
     PATIENT_EVIDENCE,
+    EXERCISE_VIDEO,
     PROFILE_PHOTO,
     GENERIC
 }

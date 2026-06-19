@@ -123,6 +123,11 @@ public class MediaAsset extends AuditableAbstractAggregateRoot<MediaAsset, Media
         this.status = MediaStatus.FAILED;
     }
 
+    public void assignOwner(OwnerType ownerType, UUID ownerId) {
+        this.ownerType = ownerType;
+        this.ownerId = ownerId;
+    }
+
     public boolean isUploaded() {
         return this.status == MediaStatus.UPLOADED;
     }
