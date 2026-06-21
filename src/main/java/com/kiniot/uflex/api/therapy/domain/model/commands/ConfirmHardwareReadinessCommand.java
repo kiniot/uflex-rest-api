@@ -4,6 +4,5 @@ import java.util.UUID;
 
 public record ConfirmHardwareReadinessCommand(
         UUID sessionId,
-        String deviceId,
         Boolean sensorsPlaced
 ) {}

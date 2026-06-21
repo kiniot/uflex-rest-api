@@ -22,7 +22,7 @@ public interface TherapySessionRepository extends JpaRepository<TherapySession, 
             @Param("statuses") Collection<SessionStatus> statuses
     );
 
-    @Query("SELECT ts FROM TherapySession ts WHERE ts.iotDeviceId = :deviceSerial AND ts.clinicId.id = :clinicId AND ts.status IN :statuses")
+    @Query("SELECT ts FROM TherapySession ts WHERE ts.iotDeviceId.value = :deviceSerial AND ts.clinicId.id = :clinicId AND ts.status IN :statuses")
     Optional<TherapySession> findActiveByIotDeviceId(
             @Param("deviceSerial") String deviceSerial,
             @Param("clinicId") UUID clinicId,

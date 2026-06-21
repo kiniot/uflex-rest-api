@@ -43,13 +43,12 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
     private TreatmentPlanId treatmentPlanId;
 
     /**
-     * The kit serial number of the device measuring this session. By contract this equals
-     * {@code Device.serialNumber} and the edge gateway's {@code device_id}; it is what links a
-     * session to its physical device and its forwarded measurements. It is not the backend
-     * Device UUID and not a MAC address (see device-identity-contract).
+     * The kit serial of the device measuring this session (see {@link KitSerial}). Links the
+     * session to its physical device and its forwarded measurements.
      */
-    @Column(nullable = false)
-    private String iotDeviceId;
+    @Embedded
+    @AttributeOverride(name = "value", column = @Column(name = "iot_device_id", nullable = false))
+    private KitSerial iotDeviceId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -59,12 +58,8 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
     @JoinColumn(name = "routine_execution_id")
     private RoutineExecution routine;
 
-    @Embedded
-    @AttributeOverrides({
-            @AttributeOverride(name = "deviceId", column = @Column(name = "snapshot_device_id")),
-            @AttributeOverride(name = "sensorsPlaced", column = @Column(name = "snapshot_sensors_placed"))
-    })
-    private IoTSensorSnapshot sensorSnapshot;
+    @Column(name = "sensors_placed")
+    private Boolean sensorsPlaced;
 
     @Embedded
     @AttributeOverride(name = "value", column = @Column(name = "pain_level"))
@@ -107,7 +102,7 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
         this.clinicId = clinicId;
         this.patientId = PatientId.of(command.patientId());
         this.treatmentPlanId = TreatmentPlanId.of(command.treatmentPlanId());
-        this.iotDeviceId = command.iotDeviceId();
+        this.iotDeviceId = KitSerial.of(command.iotDeviceId());
         this.routine = routine;
     }
 
@@ -115,11 +110,11 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
     // Business methods — state transitions (no event publishing)
     // -------------------------------------------------------------------------
 
-    public void confirmHardwareReadiness(IoTSensorSnapshot snapshot) {
-        if (!snapshot.sensorsPlaced()) {
-            throw IoTSensorsNotPlacedException.forDevice(snapshot.deviceId());
+    public void confirmHardwareReadiness(boolean sensorsPlaced) {
+        if (!sensorsPlaced) {
+            throw IoTSensorsNotPlacedException.forSession(TherapySessionId.toStringOrNull(this.id));
         }
-        this.sensorSnapshot = snapshot;
+        this.sensorsPlaced = true;
         this.status = SessionStatus.Ready;
     }
 
@@ -218,7 +213,7 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
                 .sessionId(TherapySessionId.toStringOrNull(this.id))
                 .patientId(PatientId.toStringOrNull(this.patientId))
                 .treatmentPlanId(TreatmentPlanId.toStringOrNull(this.treatmentPlanId))
-                .iotDeviceId(this.iotDeviceId)
+                .iotDeviceId(KitSerial.toStringOrNull(this.iotDeviceId))
                 .build();
     }
 
@@ -226,7 +221,7 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
         return HardwareReadinessConfirmed.builder()
                 .source(this)
                 .sessionId(TherapySessionId.toStringOrNull(this.id))
-                .deviceId(this.sensorSnapshot != null ? this.sensorSnapshot.deviceId() : null)
+                .deviceId(KitSerial.toStringOrNull(this.iotDeviceId))
                 .build();
     }
 

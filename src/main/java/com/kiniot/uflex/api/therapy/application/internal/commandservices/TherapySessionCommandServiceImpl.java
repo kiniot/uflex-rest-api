@@ -89,13 +89,12 @@ public class TherapySessionCommandServiceImpl implements TherapySessionCommandSe
     public TherapySession handle(ConfirmHardwareReadinessCommand command) {
         TherapySession session = findOwnedSession(command.sessionId());
 
-        IoTSensorSnapshot snapshot = IoTSensorSnapshot.of(command.deviceId(), command.sensorsPlaced());
-        session.confirmHardwareReadiness(snapshot);
+        session.confirmHardwareReadiness(command.sensorsPlaced());
         TherapySession saved = therapySessionRepository.save(session);
 
         eventPublisher.publishEvent(saved.publishHardwareReadinessConfirmed());
 
-        log.info("Hardware readiness confirmed: sessionId={}, deviceId={}", command.sessionId(), command.deviceId());
+        log.info("Hardware readiness confirmed: sessionId={}", command.sessionId());
         return saved;
     }
 
