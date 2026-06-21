@@ -11,6 +11,8 @@ public interface TherapySessionQueryService {
 
     TherapySession handle(GetActiveTherapySessionByPatientIdQuery query);
 
+    TherapySession handle(GetActiveTherapySessionByDeviceSerialQuery query);
+
     TherapySession handle(GetSessionProgressQuery query);
 
     TherapySession handle(GetSessionSummaryQuery query);

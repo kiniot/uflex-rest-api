@@ -42,6 +42,12 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
     @AttributeOverride(name = "id", column = @Column(name = "treatment_plan_id", columnDefinition = "UUID", nullable = false))
     private TreatmentPlanId treatmentPlanId;
 
+    /**
+     * The kit serial number of the device measuring this session. By contract this equals
+     * {@code Device.serialNumber} and the edge gateway's {@code device_id}; it is what links a
+     * session to its physical device and its forwarded measurements. It is not the backend
+     * Device UUID and not a MAC address (see device-identity-contract).
+     */
     @Column(nullable = false)
     private String iotDeviceId;
 

@@ -56,6 +56,18 @@ public class TherapySessionQueryServiceImpl implements TherapySessionQueryServic
     }
 
     @Override
+    public TherapySession handle(GetActiveTherapySessionByDeviceSerialQuery query) {
+        log.debug("Finding active therapy session: deviceSerial={}", query.deviceSerial());
+        // Naturally clinic-scoped: only sessions of the caller's clinic are returned, so the
+        // device-serial lookup cannot leak another clinic's session.
+        ClinicId clinicId = externalIamService.fetchCurrentClinicId()
+                .orElseThrow(() -> new IllegalStateException("Authenticated user has no associated clinic"));
+        return therapySessionRepository.findActiveByIotDeviceId(query.deviceSerial(), clinicId.id(), SessionStatus.ACTIVE_STATUSES)
+                .orElseThrow(() -> TherapySessionNotFoundException.withId(
+                        "active session for device " + query.deviceSerial()));
+    }
+
+    @Override
     public TherapySession handle(GetSessionProgressQuery query) {
         log.debug("Fetching session progress: sessionId={}", query.sessionId());
         TherapySession session = therapySessionRepository.findById(TherapySessionId.of(query.sessionId()))

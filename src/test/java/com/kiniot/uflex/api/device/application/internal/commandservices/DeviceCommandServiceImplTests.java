@@ -4,6 +4,7 @@ import com.kiniot.uflex.api.device.application.internal.outboundservices.acl.Ext
 import com.kiniot.uflex.api.device.domain.model.aggregates.Device;
 import com.kiniot.uflex.api.device.domain.model.commands.RegisterDeviceCommand;
 import com.kiniot.uflex.api.device.domain.model.commands.AssignDeviceToPatientCommand;
+import com.kiniot.uflex.api.device.domain.exceptions.DeviceAssignmentNotAllowedException;
 import com.kiniot.uflex.api.device.domain.model.valueobjects.AdvertisedName;
 import com.kiniot.uflex.api.device.domain.model.valueobjects.DeviceModel;
 import com.kiniot.uflex.api.device.domain.model.valueobjects.DeviceStatus;
@@ -12,6 +13,7 @@ import com.kiniot.uflex.api.device.domain.model.valueobjects.MacAddress;
 import com.kiniot.uflex.api.device.domain.model.valueobjects.SerialNumber;
 import com.kiniot.uflex.api.device.infrastructure.persistence.jpa.repositories.DeviceRepository;
 import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalIamService;
+import com.kiniot.uflex.api.shared.domain.exceptions.AuthenticatedUserClinicNotFoundException;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,7 +76,7 @@ class DeviceCommandServiceImplTests {
         when(deviceRepository.findById(command.deviceId())).thenReturn(Optional.of(device));
         when(externalIamService.fetchCurrentClinicId()).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> service.handle(command));
+        assertThrows(AuthenticatedUserClinicNotFoundException.class, () -> service.handle(command));
     }
 
     @Test
@@ -82,7 +84,7 @@ class DeviceCommandServiceImplTests {
         var device = availableDevice(new ClinicId(UUID.randomUUID()));
         device.assignToPatient(new PatientId());
 
-        assertThrows(IllegalStateException.class, () -> device.assignToPatient(new PatientId()));
+        assertThrows(DeviceAssignmentNotAllowedException.class, () -> device.assignToPatient(new PatientId()));
     }
 
     @Test

@@ -103,6 +103,17 @@ public interface TherapySessionController {
     })
     ResponseEntity<TherapySessionResource> getActiveTherapySession(@PathVariable UUID patientId);
 
+    @GetMapping("/active/by-device/{deviceSerial}")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
+    @Operation(summary = "Get active session by device serial", description = "Returns the Pending/Ready/InProgress session for a kit serial (kitSerial), if any. Used to correlate a physical device with its session.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Active session found."),
+            @ApiResponse(responseCode = "403", description = "Forbidden."),
+            @ApiResponse(responseCode = "404", description = "No active session for this device."),
+            @ApiResponse(responseCode = "500", description = "Internal server error.")
+    })
+    ResponseEntity<TherapySessionResource> getActiveTherapySessionByDevice(@PathVariable String deviceSerial);
+
     @GetMapping("/{id}/summary")
     @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     @Operation(summary = "Get session summary", description = "Returns the executive summary of a completed session.")

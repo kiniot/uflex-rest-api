@@ -1,5 +1,6 @@
 package com.kiniot.uflex.api.therapy.interfaces.rest.controllers;
 
+import com.kiniot.uflex.api.therapy.domain.model.queries.GetActiveTherapySessionByDeviceSerialQuery;
 import com.kiniot.uflex.api.therapy.domain.model.queries.GetActiveTherapySessionByPatientIdQuery;
 import com.kiniot.uflex.api.therapy.domain.model.queries.GetDailyScheduleQuery;
 import com.kiniot.uflex.api.therapy.domain.model.queries.GetSessionSummaryQuery;
@@ -85,6 +86,13 @@ public class TherapySessionControllerImpl implements TherapySessionController {
     @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     public ResponseEntity<TherapySessionResource> getActiveTherapySession(UUID patientId) {
         var session = therapySessionQueryService.handle(new GetActiveTherapySessionByPatientIdQuery(patientId));
+        return ResponseEntity.ok(TherapySessionResourceFromEntityAssembler.toResponseFromEntity(session));
+    }
+
+    @Override
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
+    public ResponseEntity<TherapySessionResource> getActiveTherapySessionByDevice(String deviceSerial) {
+        var session = therapySessionQueryService.handle(new GetActiveTherapySessionByDeviceSerialQuery(deviceSerial));
         return ResponseEntity.ok(TherapySessionResourceFromEntityAssembler.toResponseFromEntity(session));
     }
 

@@ -38,12 +38,18 @@ public class DeviceCommandServiceImpl implements DeviceCommandService {
         if (deviceRepository.existsBySerialNumber(command.serialNumber())) {
             throw new DeviceAlreadyRegisteredException(command.serialNumber().value());
         }
+        // Identity contract: advertisedName must equal the serial number (it is what the
+        // firmware actually advertises over BLE). Default it to the serial when omitted so
+        // discovery-by-name always matches the registry (see device-identity-contract).
+        var advertisedName = (command.advertisedName() == null || command.advertisedName().value() == null)
+                ? new AdvertisedName(command.serialNumber().value())
+                : command.advertisedName();
         var device = new Device(
                 command.serialNumber(),
                 command.macAddress(),
                 command.firmwareVersion(),
                 command.model(),
-                command.advertisedName(),
+                advertisedName,
                 clinicId
         );
         return deviceRepository.save(device);
