@@ -39,7 +39,7 @@ public class TherapySessionControllerImpl implements TherapySessionController {
     private final TherapySessionQueryService therapySessionQueryService;
 
     @Override
-    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     public ResponseEntity<TherapySessionResource> initiateTherapyPreparation(InitiateTherapyPreparationResource resource) {
         var command = InitiateTherapyPreparationCommandFromResourceAssembler.toCommandFromResource(resource);
         var session = therapySessionCommandService.handle(command);

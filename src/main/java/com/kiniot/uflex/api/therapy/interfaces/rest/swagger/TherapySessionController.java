@@ -26,8 +26,8 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 public interface TherapySessionController {
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
-    @Operation(summary = "Initiate therapy preparation", description = "Creates a new TherapySession in Pending state and emits TherapyPreparationInitiated.")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
+    @Operation(summary = "Initiate therapy preparation", description = "Creates a new TherapySession in Pending state and emits TherapyPreparationInitiated. A patient may only initiate for themselves.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Session created successfully."),
             @ApiResponse(responseCode = "400", description = "Invalid input data."),

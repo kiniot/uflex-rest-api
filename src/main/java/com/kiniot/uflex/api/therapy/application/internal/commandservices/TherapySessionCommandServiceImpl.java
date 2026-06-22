@@ -42,6 +42,8 @@ public class TherapySessionCommandServiceImpl implements TherapySessionCommandSe
     @Override
     @Transactional
     public TherapySession handle(InitiateTherapyPreparationCommand command) {
+        ensurePatientInitiatesForSelf(command.patientId());
+
         ClinicId clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(() -> new IllegalStateException("Authenticated user has no associated clinic"));
         ensurePatientBelongsToAuthenticatedClinic(command.patientId(), clinicId);
@@ -269,5 +271,20 @@ public class TherapySessionCommandServiceImpl implements TherapySessionCommandSe
     private boolean currentHasAuthority(String authority) {
         return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                 .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals(authority));
+    }
+
+    /**
+     * A patient may initiate a session only for themselves. Clinic staff (admin/physiotherapist)
+     * are unrestricted here; their clinic-scoping is enforced by the checks that follow.
+     */
+    private void ensurePatientInitiatesForSelf(java.util.UUID requestedPatientId) {
+        if (!currentHasAuthority("ROLE_PATIENT")) {
+            return;
+        }
+        PatientId currentPatientId = externalOrganizationService.fetchCurrentPatientId()
+                .orElseThrow(() -> new AccessDeniedException("Current patient profile not found"));
+        if (!currentPatientId.equals(PatientId.of(requestedPatientId))) {
+            throw new AccessDeniedException("A patient can only start a session for themselves");
+        }
     }
 }
