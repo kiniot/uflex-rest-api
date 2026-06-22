@@ -79,12 +79,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageConversionException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Locale;
 
@@ -299,6 +301,27 @@ public class GlobalExceptionHandler {
             detail = exception.getMessage();
         }
         return buildErrorResponse(status, detail, request, exception);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResource> handleMethodArgumentNotValidException(
+            MethodArgumentNotValidException exception,
+            HttpServletRequest request
+    ) {
+        String message = exception.getBindingResult().getFieldErrors().stream()
+                .map(error -> "%s: %s".formatted(error.getField(), error.getDefaultMessage()))
+                .reduce((first, second) -> first + "; " + second)
+                .orElse("Request body validation failed");
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request, exception);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResource> handleNoResourceFoundException(
+            NoResourceFoundException exception,
+            HttpServletRequest request
+    ) {
+        String message = "No endpoint found for %s %s".formatted(request.getMethod(), request.getRequestURI());
+        return buildErrorResponse(HttpStatus.NOT_FOUND, message, request, exception);
     }
 
     @ExceptionHandler(Exception.class)

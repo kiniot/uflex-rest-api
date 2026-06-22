@@ -6,12 +6,14 @@ import com.kiniot.uflex.api.therapy.domain.model.queries.GetDailyScheduleQuery;
 import com.kiniot.uflex.api.therapy.domain.model.queries.GetSessionSummaryQuery;
 import com.kiniot.uflex.api.therapy.domain.services.TherapySessionCommandService;
 import com.kiniot.uflex.api.therapy.domain.services.TherapySessionQueryService;
+import com.kiniot.uflex.api.therapy.interfaces.rest.resources.ActiveTherapySessionResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.CancelTherapySessionResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.ConfirmHardwareReadinessResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.DailyScheduleResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.InitiateTherapyPreparationResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.SessionSummaryResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.TherapySessionResource;
+import com.kiniot.uflex.api.therapy.interfaces.rest.transform.ActiveTherapySessionResourceFromEntityAssembler;
 import com.kiniot.uflex.api.therapy.interfaces.rest.transform.DailyScheduleResourceFromDtoAssembler;
 import com.kiniot.uflex.api.therapy.interfaces.rest.transform.SessionSummaryResourceFromEntityAssembler;
 import com.kiniot.uflex.api.therapy.interfaces.rest.transform.TherapySessionResourceFromEntityAssembler;
@@ -91,9 +93,9 @@ public class TherapySessionControllerImpl implements TherapySessionController {
 
     @Override
     @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
-    public ResponseEntity<TherapySessionResource> getActiveTherapySessionByDevice(String deviceSerial) {
+    public ResponseEntity<ActiveTherapySessionResource> getActiveTherapySessionByDevice(String deviceSerial) {
         var session = therapySessionQueryService.handle(new GetActiveTherapySessionByDeviceSerialQuery(deviceSerial));
-        return ResponseEntity.ok(TherapySessionResourceFromEntityAssembler.toResponseFromEntity(session));
+        return ResponseEntity.ok(ActiveTherapySessionResourceFromEntityAssembler.toResponseFromEntity(session));
     }
 
     @Override
