@@ -24,7 +24,7 @@ public final class SessionProgressResourceFromEntityAssembler {
                 .orElse(null);
 
         int completedSeries = (int) series.stream()
-                .filter(s -> s.getStatus() == SerieStatus.Validated)
+                .filter(s -> s.getStatus() == SerieStatus.Completed)
                 .count();
 
         List<SerieProgressResource> seriesProgress = series.stream()

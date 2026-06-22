@@ -19,7 +19,7 @@ public interface TherapySessionCommandService {
 
     TherapySession handle(RecordValidRepetitionCommand command);
 
-    void handle(RecordAnomalousMovementCommand command);
+    void handle(RecordCompensatoryMovementCommand command);
 
     void handle(ReportPainLevelCommand command);
 }

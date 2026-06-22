@@ -1,6 +1,6 @@
 package com.kiniot.uflex.api.therapy.interfaces.rest.swagger;
 
-import com.kiniot.uflex.api.therapy.interfaces.rest.resources.RecordAnomalousMovementResource;
+import com.kiniot.uflex.api.therapy.interfaces.rest.resources.RecordCompensatoryMovementResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.RecordValidRepetitionResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.ReportPainLevelResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.SerieDetailsResource;
@@ -52,20 +52,20 @@ public interface TherapyExecutionController {
             @RequestHeader(value = "X-Edge-Sequence-Id", required = false) UUID edgeSequenceId,
             @Valid @RequestBody RecordValidRepetitionResource resource);
 
-    @PostMapping("/{id}/anomalies")
-    @Operation(summary = "Record anomalous movement", description = "Persists an anomaly alert from the Edge App. Emits AnomalousMovementDetected or ExcessiveMovementAlertIssued.")
+    @PostMapping("/{id}/compensatory-movements")
+    @Operation(summary = "Record compensatory movement", description = "Persists a compensatory-movement event (e.g. shoulder/trunk compensation) detected by the Edge App. Emits CompensatoryMovementDetected.")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Anomaly recorded."),
+            @ApiResponse(responseCode = "201", description = "Compensatory movement recorded."),
             @ApiResponse(responseCode = "400", description = "Invalid input data."),
             @ApiResponse(responseCode = "403", description = "Forbidden."),
             @ApiResponse(responseCode = "404", description = "Session not found."),
             @ApiResponse(responseCode = "409", description = "Session not in progress."),
             @ApiResponse(responseCode = "500", description = "Internal server error.")
     })
-    ResponseEntity<Void> recordAnomalousMovement(
+    ResponseEntity<Void> recordCompensatoryMovement(
             @PathVariable UUID id,
             @RequestHeader(value = "X-Edge-Sequence-Id", required = false) UUID edgeSequenceId,
-            @Valid @RequestBody RecordAnomalousMovementResource resource);
+            @Valid @RequestBody RecordCompensatoryMovementResource resource);
 
     @PatchMapping("/{id}/pain")
     @PreAuthorize("hasAuthority('ROLE_PATIENT')")

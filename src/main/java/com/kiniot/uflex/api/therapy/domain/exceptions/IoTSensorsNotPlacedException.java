@@ -6,8 +6,8 @@ public class IoTSensorsNotPlacedException extends RuntimeException {
         super(message);
     }
 
-    public static IoTSensorsNotPlacedException forDevice(String deviceId) {
+    public static IoTSensorsNotPlacedException forSession(String sessionId) {
         return new IoTSensorsNotPlacedException(
-                "IoT sensors are not placed for device %s".formatted(deviceId));
+                "IoT sensors are not placed for session %s".formatted(sessionId));
     }
 }

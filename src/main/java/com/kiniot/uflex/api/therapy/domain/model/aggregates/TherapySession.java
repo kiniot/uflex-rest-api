@@ -4,7 +4,7 @@ import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggr
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.therapy.domain.exceptions.*;
 import com.kiniot.uflex.api.therapy.domain.model.commands.InitiateTherapyPreparationCommand;
-import com.kiniot.uflex.api.therapy.domain.model.entities.AnomalousMovement;
+import com.kiniot.uflex.api.therapy.domain.model.entities.CompensatoryMovement;
 import com.kiniot.uflex.api.therapy.domain.model.entities.CompletedRepetition;
 import com.kiniot.uflex.api.therapy.domain.model.entities.RoutineExecution;
 import com.kiniot.uflex.api.therapy.domain.model.entities.Serie;
@@ -42,8 +42,13 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
     @AttributeOverride(name = "id", column = @Column(name = "treatment_plan_id", columnDefinition = "UUID", nullable = false))
     private TreatmentPlanId treatmentPlanId;
 
-    @Column(nullable = false)
-    private String iotDeviceId;
+    /**
+     * The kit serial of the device measuring this session (see {@link KitSerial}). Links the
+     * session to its physical device and its forwarded measurements.
+     */
+    @Embedded
+    @AttributeOverride(name = "value", column = @Column(name = "iot_device_id", nullable = false))
+    private KitSerial iotDeviceId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -53,12 +58,8 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
     @JoinColumn(name = "routine_execution_id")
     private RoutineExecution routine;
 
-    @Embedded
-    @AttributeOverrides({
-            @AttributeOverride(name = "deviceId", column = @Column(name = "snapshot_device_id")),
-            @AttributeOverride(name = "sensorsPlaced", column = @Column(name = "snapshot_sensors_placed"))
-    })
-    private IoTSensorSnapshot sensorSnapshot;
+    @Column(name = "sensors_placed")
+    private Boolean sensorsPlaced;
 
     @Embedded
     @AttributeOverride(name = "value", column = @Column(name = "pain_level"))
@@ -83,12 +84,12 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "therapy_session_id")
-    private List<AnomalousMovement> anomalies;
+    private List<CompensatoryMovement> compensatoryMovements;
 
     public TherapySession() {
         super();
         this.status = SessionStatus.Pending;
-        this.anomalies = new ArrayList<>();
+        this.compensatoryMovements = new ArrayList<>();
         this.painReportsCount = 0;
         this.highPainReportsCount = 0;
         this.maxReportedPainLevel = 0;
@@ -101,7 +102,7 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
         this.clinicId = clinicId;
         this.patientId = PatientId.of(command.patientId());
         this.treatmentPlanId = TreatmentPlanId.of(command.treatmentPlanId());
-        this.iotDeviceId = command.iotDeviceId();
+        this.iotDeviceId = KitSerial.of(command.iotDeviceId());
         this.routine = routine;
     }
 
@@ -109,11 +110,11 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
     // Business methods — state transitions (no event publishing)
     // -------------------------------------------------------------------------
 
-    public void confirmHardwareReadiness(IoTSensorSnapshot snapshot) {
-        if (!snapshot.sensorsPlaced()) {
-            throw IoTSensorsNotPlacedException.forDevice(snapshot.deviceId());
+    public void confirmHardwareReadiness(boolean sensorsPlaced) {
+        if (!sensorsPlaced) {
+            throw IoTSensorsNotPlacedException.forSession(TherapySessionId.toStringOrNull(this.id));
         }
-        this.sensorSnapshot = snapshot;
+        this.sensorsPlaced = true;
         this.status = SessionStatus.Ready;
     }
 
@@ -156,21 +157,22 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
      * repetition is a duplicate (same edgeSequenceId) and was ignored, so callers
      * can skip event publication.
      */
-    public boolean recordRepetition(SerieId serieId, Double achievedAngle, LocalDateTime recordedAt, UUID edgeSequenceId) {
+    public boolean recordRepetition(SerieId serieId, Double peakAngle, Double achievedRom,
+                                    RepetitionClassification classification, LocalDateTime recordedAt, UUID edgeSequenceId) {
         ensureInProgress();
         Serie serie = routine.findSerie(serieId)
                 .orElseThrow(() -> SerieNotFoundException.withId(SerieId.toStringOrNull(serieId)));
         if (serie.isDuplicateRepetition(edgeSequenceId)) return false;
-        serie.addRepetition(new CompletedRepetition(achievedAngle, recordedAt, edgeSequenceId));
+        serie.addRepetition(new CompletedRepetition(peakAngle, achievedRom, classification, recordedAt, edgeSequenceId));
         routine.checkCompletion();
         return true;
     }
 
-    public AnomalousMovement recordAnomalousMovement(AlertType alertType) {
+    public CompensatoryMovement recordCompensatoryMovement(CompensatoryMovementType type) {
         ensureInProgress();
-        AnomalousMovement anomaly = new AnomalousMovement(alertType, Instant.now());
-        this.anomalies.add(anomaly);
-        return anomaly;
+        CompensatoryMovement movement = new CompensatoryMovement(type, Instant.now());
+        this.compensatoryMovements.add(movement);
+        return movement;
     }
 
     private void ensureInProgress() {
@@ -198,8 +200,8 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
         return routine.findSerie(serieId);
     }
 
-    public int getAnomaliesCount() {
-        return anomalies.size();
+    public int getCompensatoryMovementsCount() {
+        return compensatoryMovements.size();
     }
 
     // -------------------------------------------------------------------------
@@ -212,7 +214,7 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
                 .sessionId(TherapySessionId.toStringOrNull(this.id))
                 .patientId(PatientId.toStringOrNull(this.patientId))
                 .treatmentPlanId(TreatmentPlanId.toStringOrNull(this.treatmentPlanId))
-                .iotDeviceId(this.iotDeviceId)
+                .iotDeviceId(KitSerial.toStringOrNull(this.iotDeviceId))
                 .build();
     }
 
@@ -220,7 +222,7 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
         return HardwareReadinessConfirmed.builder()
                 .source(this)
                 .sessionId(TherapySessionId.toStringOrNull(this.id))
-                .deviceId(this.sensorSnapshot != null ? this.sensorSnapshot.deviceId() : null)
+                .deviceId(KitSerial.toStringOrNull(this.iotDeviceId))
                 .build();
     }
 
@@ -259,12 +261,15 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
                 .build();
     }
 
-    public RepetitionRecorded publishRepetitionRecorded(SerieId serieId, Double achievedAngle, LocalDateTime recordedAt) {
+    public RepetitionRecorded publishRepetitionRecorded(SerieId serieId, Double peakAngle, Double achievedRom,
+                                                        RepetitionClassification classification, LocalDateTime recordedAt) {
         return RepetitionRecorded.builder()
                 .source(this)
                 .sessionId(TherapySessionId.toStringOrNull(this.id))
                 .serieId(SerieId.toStringOrNull(serieId))
-                .achievedAngle(achievedAngle)
+                .peakAngle(peakAngle)
+                .achievedRom(achievedRom)
+                .classification(RepetitionClassification.toStringOrNull(classification))
                 .recordedAt(recordedAt)
                 .build();
     }
@@ -277,21 +282,12 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
                 .build();
     }
 
-    public AnomalousMovementDetected publishAnomalousMovementDetected(AnomalousMovement anomaly) {
-        return AnomalousMovementDetected.builder()
+    public CompensatoryMovementDetected publishCompensatoryMovementDetected(CompensatoryMovement movement) {
+        return CompensatoryMovementDetected.builder()
                 .source(this)
                 .sessionId(TherapySessionId.toStringOrNull(this.id))
-                .alertType(AlertType.toStringOrNull(anomaly.getAlertType()))
-                .detectedAt(anomaly.getDetectedAt())
-                .build();
-    }
-
-    public ExcessiveMovementAlertIssued publishExcessiveMovementAlertIssued(AnomalousMovement anomaly) {
-        return ExcessiveMovementAlertIssued.builder()
-                .source(this)
-                .sessionId(TherapySessionId.toStringOrNull(this.id))
-                .alertType(AlertType.toStringOrNull(anomaly.getAlertType()))
-                .detectedAt(anomaly.getDetectedAt())
+                .type(CompensatoryMovementType.toStringOrNull(movement.getType()))
+                .detectedAt(movement.getDetectedAt())
                 .build();
     }
 

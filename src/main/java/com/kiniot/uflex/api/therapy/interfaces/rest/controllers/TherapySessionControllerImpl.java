@@ -1,16 +1,19 @@
 package com.kiniot.uflex.api.therapy.interfaces.rest.controllers;
 
+import com.kiniot.uflex.api.therapy.domain.model.queries.GetActiveTherapySessionByDeviceSerialQuery;
 import com.kiniot.uflex.api.therapy.domain.model.queries.GetActiveTherapySessionByPatientIdQuery;
 import com.kiniot.uflex.api.therapy.domain.model.queries.GetDailyScheduleQuery;
 import com.kiniot.uflex.api.therapy.domain.model.queries.GetSessionSummaryQuery;
 import com.kiniot.uflex.api.therapy.domain.services.TherapySessionCommandService;
 import com.kiniot.uflex.api.therapy.domain.services.TherapySessionQueryService;
+import com.kiniot.uflex.api.therapy.interfaces.rest.resources.ActiveTherapySessionResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.CancelTherapySessionResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.ConfirmHardwareReadinessResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.DailyScheduleResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.InitiateTherapyPreparationResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.SessionSummaryResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.TherapySessionResource;
+import com.kiniot.uflex.api.therapy.interfaces.rest.transform.ActiveTherapySessionResourceFromEntityAssembler;
 import com.kiniot.uflex.api.therapy.interfaces.rest.transform.DailyScheduleResourceFromDtoAssembler;
 import com.kiniot.uflex.api.therapy.interfaces.rest.transform.SessionSummaryResourceFromEntityAssembler;
 import com.kiniot.uflex.api.therapy.interfaces.rest.transform.TherapySessionResourceFromEntityAssembler;
@@ -38,7 +41,7 @@ public class TherapySessionControllerImpl implements TherapySessionController {
     private final TherapySessionQueryService therapySessionQueryService;
 
     @Override
-    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
     public ResponseEntity<TherapySessionResource> initiateTherapyPreparation(InitiateTherapyPreparationResource resource) {
         var command = InitiateTherapyPreparationCommandFromResourceAssembler.toCommandFromResource(resource);
         var session = therapySessionCommandService.handle(command);
@@ -86,6 +89,13 @@ public class TherapySessionControllerImpl implements TherapySessionController {
     public ResponseEntity<TherapySessionResource> getActiveTherapySession(UUID patientId) {
         var session = therapySessionQueryService.handle(new GetActiveTherapySessionByPatientIdQuery(patientId));
         return ResponseEntity.ok(TherapySessionResourceFromEntityAssembler.toResponseFromEntity(session));
+    }
+
+    @Override
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_EDGE')")
+    public ResponseEntity<ActiveTherapySessionResource> getActiveTherapySessionByDevice(String deviceSerial) {
+        var session = therapySessionQueryService.handle(new GetActiveTherapySessionByDeviceSerialQuery(deviceSerial));
+        return ResponseEntity.ok(ActiveTherapySessionResourceFromEntityAssembler.toResponseFromEntity(session));
     }
 
     @Override

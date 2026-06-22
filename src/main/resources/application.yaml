@@ -76,3 +76,10 @@ brevo:
   from:
     address: ${BREVO_FROM_ADDRESS:}
     name: ${BREVO_FROM_NAME:}
+
+uflex:
+  developer:
+    # Platform developer account (no tenant) bootstrapped on startup to manage the global
+    # device inventory (ROLE_DEVELOPER). Bootstrap is skipped when either value is blank.
+    email: ${DEVELOPER_EMAIL:}
+    password: ${DEVELOPER_PASSWORD:}

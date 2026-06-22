@@ -1,5 +1,6 @@
 package com.kiniot.uflex.api.therapy.interfaces.rest.swagger;
 
+import com.kiniot.uflex.api.therapy.interfaces.rest.resources.ActiveTherapySessionResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.CancelTherapySessionResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.ConfirmHardwareReadinessResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.DailyScheduleResource;
@@ -14,6 +15,7 @@ import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -26,8 +28,8 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 public interface TherapySessionController {
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
-    @Operation(summary = "Initiate therapy preparation", description = "Creates a new TherapySession in Pending state and emits TherapyPreparationInitiated.")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
+    @Operation(summary = "Initiate therapy preparation", description = "Creates a new TherapySession in Pending state and emits TherapyPreparationInitiated. A patient may only initiate for themselves.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Session created successfully."),
             @ApiResponse(responseCode = "400", description = "Invalid input data."),
@@ -67,7 +69,7 @@ public interface TherapySessionController {
 
     @PatchMapping("/{id}/finalize")
     @PreAuthorize("hasAnyAuthority('ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
-    @Operation(summary = "Finalize therapy session", description = "Closes the session. Requires all series Validated. Emits TherapySessionCompleted.")
+    @Operation(summary = "Finalize therapy session", description = "Closes the session. Requires all series Completed. Emits TherapySessionCompleted.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Session finalized."),
             @ApiResponse(responseCode = "403", description = "Forbidden."),
@@ -103,9 +105,22 @@ public interface TherapySessionController {
     })
     ResponseEntity<TherapySessionResource> getActiveTherapySession(@PathVariable UUID patientId);
 
+    @Transactional(readOnly = true)
+    @GetMapping("/active/by-device/{deviceSerial}")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
+    @Operation(summary = "Get active session by device serial", description = "Returns the Pending/Ready/InProgress session for a kit serial (kitSerial), including its series with their targets (targetRom, movementType, bodyPart). Used by the edge to correlate a device with its session and read the active serie parameters.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Active session found."),
+            @ApiResponse(responseCode = "403", description = "Forbidden."),
+            @ApiResponse(responseCode = "404", description = "No active session for this device."),
+            @ApiResponse(responseCode = "500", description = "Internal server error.")
+    })
+    ResponseEntity<ActiveTherapySessionResource> getActiveTherapySessionByDevice(@PathVariable String deviceSerial);
+
+    @Transactional(readOnly = true)
     @GetMapping("/{id}/summary")
     @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")
-    @Operation(summary = "Get session summary", description = "Returns the executive summary of a completed session.")
+    @Operation(summary = "Get session summary", description = "Returns the executive summary of a completed session, including repetition-quality counts and average achieved ROM.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Summary retrieved."),
             @ApiResponse(responseCode = "403", description = "Forbidden."),

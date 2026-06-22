@@ -9,8 +9,9 @@ public record SerieDetailsResource(
         UUID serieId,
         UUID exerciseId,
         Integer targetRepetitions,
-        Double minAngle,
-        Double maxAngle,
+        Double targetRom,
+        String movementType,
+        String bodyPart,
         Integer durationSeconds,
         Integer restDurationSeconds,
         String status

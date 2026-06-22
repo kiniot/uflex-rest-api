@@ -9,25 +9,25 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Embeddable
-public record AnomalousMovementId(
+public record CompensatoryMovementId(
         @Column(columnDefinition = "UUID", nullable = false, unique = true)
         UUID id
 ) implements Serializable {
 
-    public AnomalousMovementId {
-        Objects.requireNonNull(id, "anomalousMovementId must not be null");
+    public CompensatoryMovementId {
+        Objects.requireNonNull(id, "compensatoryMovementId must not be null");
     }
 
-    public AnomalousMovementId() {
+    public CompensatoryMovementId() {
         this(Generators.timeBasedEpochGenerator().generate());
     }
 
-    public static AnomalousMovementId of(UUID id) {
-        Objects.requireNonNull(id, "anomalousMovementId must not be null");
-        return new AnomalousMovementId(id);
+    public static CompensatoryMovementId of(UUID id) {
+        Objects.requireNonNull(id, "compensatoryMovementId must not be null");
+        return new CompensatoryMovementId(id);
     }
 
-    public static String toStringOrNull(AnomalousMovementId vo) {
+    public static String toStringOrNull(CompensatoryMovementId vo) {
         return vo == null ? null : vo.id().toString();
     }
 }

@@ -8,7 +8,7 @@ import com.kiniot.uflex.api.therapy.domain.model.valueobjects.SerieId;
 import com.kiniot.uflex.api.therapy.domain.model.valueobjects.SerieStatus;
 import com.kiniot.uflex.api.therapy.domain.services.TherapySessionCommandService;
 import com.kiniot.uflex.api.therapy.domain.services.TherapySessionQueryService;
-import com.kiniot.uflex.api.therapy.interfaces.rest.resources.RecordAnomalousMovementResource;
+import com.kiniot.uflex.api.therapy.interfaces.rest.resources.RecordCompensatoryMovementResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.RecordValidRepetitionResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.ReportPainLevelResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.SerieDetailsResource;
@@ -16,7 +16,7 @@ import com.kiniot.uflex.api.therapy.interfaces.rest.resources.SerieProgressResou
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.SessionProgressResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.transform.SerieDetailsResourceFromEntityAssembler;
 import com.kiniot.uflex.api.therapy.interfaces.rest.transform.SessionProgressResourceFromEntityAssembler;
-import com.kiniot.uflex.api.therapy.interfaces.rest.transform.RecordAnomalousMovementCommandFromResourceAssembler;
+import com.kiniot.uflex.api.therapy.interfaces.rest.transform.RecordCompensatoryMovementCommandFromResourceAssembler;
 import com.kiniot.uflex.api.therapy.interfaces.rest.transform.RecordValidRepetitionCommandFromResourceAssembler;
 import com.kiniot.uflex.api.therapy.interfaces.rest.transform.ReportPainLevelCommandFromResourceAssembler;
 import com.kiniot.uflex.api.therapy.interfaces.rest.swagger.TherapyExecutionController;
@@ -46,6 +46,7 @@ public class TherapyExecutionControllerImpl implements TherapyExecutionControlle
     }
 
     @Override
+    @PreAuthorize("hasAuthority('ROLE_EDGE')")
     public ResponseEntity<SerieProgressResource> recordRepetition(
             UUID id, UUID serieId, UUID edgeSequenceId, RecordValidRepetitionResource resource) {
         var command = RecordValidRepetitionCommandFromResourceAssembler
@@ -64,8 +65,9 @@ public class TherapyExecutionControllerImpl implements TherapyExecutionControlle
     }
 
     @Override
-    public ResponseEntity<Void> recordAnomalousMovement(UUID id, UUID edgeSequenceId, RecordAnomalousMovementResource resource) {
-        var command = RecordAnomalousMovementCommandFromResourceAssembler
+    @PreAuthorize("hasAuthority('ROLE_EDGE')")
+    public ResponseEntity<Void> recordCompensatoryMovement(UUID id, UUID edgeSequenceId, RecordCompensatoryMovementResource resource) {
+        var command = RecordCompensatoryMovementCommandFromResourceAssembler
                 .toCommandFromResource(id, edgeSequenceId, resource);
         therapySessionCommandService.handle(command);
         URI location = ServletUriComponentsBuilder

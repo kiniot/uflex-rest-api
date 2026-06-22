@@ -2,8 +2,8 @@ package com.kiniot.uflex.api.therapy.domain.model.commands;
 
 import java.util.UUID;
 
-public record RecordAnomalousMovementCommand(
+public record RecordCompensatoryMovementCommand(
         UUID sessionId,
-        String alertType,
+        String type,
         UUID edgeSequenceId
 ) {}

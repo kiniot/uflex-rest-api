@@ -4,6 +4,7 @@ import com.kiniot.uflex.api.shared.domain.model.aggregates.AuditableAbstractAggr
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.subscription.domain.model.commands.CreateSubscriptionCommand;
 import com.kiniot.uflex.api.subscription.domain.exceptions.SubscriptionOperationNotAllowedException;
+import com.kiniot.uflex.api.subscription.domain.model.events.SubscriptionActivatedEvent;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.Money;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionId;
 import com.kiniot.uflex.api.subscription.domain.model.valueobjects.SubscriptionKitSelection;
@@ -84,6 +85,7 @@ public class Subscription extends AuditableAbstractAggregateRoot<Subscription, S
         this.renewsAt = calculateRenewsAt(this.startedAt);
         this.endsAt = null;
         this.cancelledAt = null;
+        this.addDomainEvent(new SubscriptionActivatedEvent(this, this.clinicId, this.kitSelection.requestedTotalKits()));
     }
 
     public void markPastDue() {
