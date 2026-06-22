@@ -21,6 +21,12 @@ public interface DeviceCommandService {
     int handle(AssignStockToClinicCommand command);
 
     /**
+     * On-demand fulfillment for one clinic: resolves its entitlement and assigns the
+     * shortfall from stock. Returns how many devices were assigned.
+     */
+    int handle(FulfillClinicCommand command);
+
+    /**
      * Seeds demo stock devices (local/demo only). Returns how many were newly created.
      */
     int handle(SeedDevicesCommand command);

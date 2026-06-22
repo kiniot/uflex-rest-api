@@ -4,11 +4,13 @@ import com.kiniot.uflex.api.iam.application.internal.outboundservices.hashing.Ha
 import com.kiniot.uflex.api.iam.application.internal.outboundservices.identity.IdentityService;
 import com.kiniot.uflex.api.iam.application.internal.outboundservices.verification.VerificationService;
 import com.kiniot.uflex.api.iam.domain.exceptions.EdgeServiceAccountAlreadyExistsException;
+import com.kiniot.uflex.api.iam.domain.exceptions.EdgeServiceAccountNotFoundException;
 import com.kiniot.uflex.api.iam.domain.exceptions.EmailAlreadyInUseException;
 import com.kiniot.uflex.api.iam.domain.exceptions.RoleNotFoundException;
 import com.kiniot.uflex.api.iam.domain.model.aggregates.EdgeServiceAccount;
 import com.kiniot.uflex.api.iam.domain.model.aggregates.User;
 import com.kiniot.uflex.api.iam.domain.model.commands.ProvisionEdgeServiceAccountCommand;
+import com.kiniot.uflex.api.iam.domain.model.commands.RevokeEdgeServiceAccountCommand;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.EdgeServiceAccountCredentials;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.Email;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.Password;
@@ -78,6 +80,17 @@ public class EdgeServiceAccountCommandServiceImpl implements EdgeServiceAccountC
         edgeServiceAccountRepository.save(account);
 
         return new EdgeServiceAccountCredentials(emailAddress, password, serialNumber);
+    }
+
+    @Override
+    @Transactional
+    public void handle(RevokeEdgeServiceAccountCommand command) {
+        var account = edgeServiceAccountRepository.findById(command.edgeServiceAccountId())
+                .orElseThrow(() -> new EdgeServiceAccountNotFoundException(
+                        command.edgeServiceAccountId().id().toString()));
+        var userId = account.getUserId();
+        edgeServiceAccountRepository.delete(account);
+        userRepository.deleteById(userId);
     }
 
     /**

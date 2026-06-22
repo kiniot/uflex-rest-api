@@ -1,6 +1,7 @@
 package com.kiniot.uflex.api.device.application.internal.commandservices;
 
 import com.kiniot.uflex.api.device.application.internal.outboundservices.acl.ExternalOrganizationService;
+import com.kiniot.uflex.api.device.application.internal.outboundservices.acl.ExternalSubscriptionService;
 import com.kiniot.uflex.api.device.domain.exceptions.DeviceAlreadyRegisteredException;
 import com.kiniot.uflex.api.device.domain.exceptions.DeviceNotFoundException;
 import com.kiniot.uflex.api.device.domain.model.aggregates.Device;
@@ -22,15 +23,18 @@ public class DeviceCommandServiceImpl implements DeviceCommandService {
     private final DeviceRepository deviceRepository;
     private final ExternalIamService externalIamService;
     private final ExternalOrganizationService externalOrganizationService;
+    private final ExternalSubscriptionService externalSubscriptionService;
 
     public DeviceCommandServiceImpl(
             DeviceRepository deviceRepository,
             ExternalIamService externalIamService,
-            ExternalOrganizationService externalOrganizationService
+            ExternalOrganizationService externalOrganizationService,
+            ExternalSubscriptionService externalSubscriptionService
     ) {
         this.deviceRepository = deviceRepository;
         this.externalIamService = externalIamService;
         this.externalOrganizationService = externalOrganizationService;
+        this.externalSubscriptionService = externalSubscriptionService;
     }
 
     @Override
@@ -72,6 +76,16 @@ public class DeviceCommandServiceImpl implements DeviceCommandService {
             deviceRepository.save(device);
         }
         return toAssign;
+    }
+
+    @Override
+    @Transactional
+    public int handle(FulfillClinicCommand command) {
+        // Resolve how many kits the clinic is entitled to from its current subscription,
+        // then assign the shortfall from available stock (reuses the activation-time logic).
+        int requested = externalSubscriptionService.getRequestedTotalKits(command.clinicId());
+        if (requested <= 0) return 0;
+        return handle(new AssignStockToClinicCommand(command.clinicId(), requested));
     }
 
     @Override

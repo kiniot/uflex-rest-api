@@ -1,10 +1,12 @@
 package com.kiniot.uflex.api.device.application.internal.commandservices;
 
 import com.kiniot.uflex.api.device.application.internal.outboundservices.acl.ExternalOrganizationService;
+import com.kiniot.uflex.api.device.application.internal.outboundservices.acl.ExternalSubscriptionService;
 import com.kiniot.uflex.api.device.domain.model.aggregates.Device;
 import com.kiniot.uflex.api.device.domain.model.commands.RegisterDeviceCommand;
 import com.kiniot.uflex.api.device.domain.model.commands.AssignDeviceToPatientCommand;
 import com.kiniot.uflex.api.device.domain.model.commands.AssignStockToClinicCommand;
+import com.kiniot.uflex.api.device.domain.model.commands.FulfillClinicCommand;
 import com.kiniot.uflex.api.device.domain.exceptions.DeviceAssignmentNotAllowedException;
 import com.kiniot.uflex.api.device.domain.exceptions.DeviceNotInStockException;
 import com.kiniot.uflex.api.device.domain.model.valueobjects.AdvertisedName;
@@ -42,6 +44,7 @@ class DeviceCommandServiceImplTests {
     private DeviceRepository deviceRepository;
     private ExternalIamService externalIamService;
     private ExternalOrganizationService externalOrganizationService;
+    private ExternalSubscriptionService externalSubscriptionService;
     private DeviceCommandServiceImpl service;
 
     @BeforeEach
@@ -49,7 +52,9 @@ class DeviceCommandServiceImplTests {
         deviceRepository = mock(DeviceRepository.class);
         externalIamService = mock(ExternalIamService.class);
         externalOrganizationService = mock(ExternalOrganizationService.class);
-        service = new DeviceCommandServiceImpl(deviceRepository, externalIamService, externalOrganizationService);
+        externalSubscriptionService = mock(ExternalSubscriptionService.class);
+        service = new DeviceCommandServiceImpl(
+                deviceRepository, externalIamService, externalOrganizationService, externalSubscriptionService);
     }
 
     @Test
@@ -189,6 +194,30 @@ class DeviceCommandServiceImplTests {
         int assigned = service.handle(new AssignStockToClinicCommand(clinicId, 3));
 
         assertEquals(1, assigned);
+    }
+
+    @Test
+    void fulfillClinicResolvesEntitlementAndAssignsShortfall() {
+        var clinicId = new ClinicId(UUID.randomUUID());
+        when(externalSubscriptionService.getRequestedTotalKits(clinicId)).thenReturn(3);
+        when(deviceRepository.countByClinicIdAndStatusNot(clinicId, DeviceStatus.RETIRED)).thenReturn(1L);
+        when(deviceRepository.findAllInStockByStatus(DeviceStatus.IN_STOCK))
+                .thenReturn(new ArrayList<>(List.of(stockDevice("KIT-1"), stockDevice("KIT-2"), stockDevice("KIT-3"))));
+
+        int assigned = service.handle(new FulfillClinicCommand(clinicId));
+
+        assertEquals(2, assigned); // needed = requested(3) - owned(1)
+    }
+
+    @Test
+    void fulfillClinicAssignsNothingWhenNoEntitlement() {
+        var clinicId = new ClinicId(UUID.randomUUID());
+        when(externalSubscriptionService.getRequestedTotalKits(clinicId)).thenReturn(0);
+
+        int assigned = service.handle(new FulfillClinicCommand(clinicId));
+
+        assertEquals(0, assigned);
+        verify(deviceRepository, never()).findAllInStockByStatus(any());
     }
 
     private Device stockDevice(String serial) {

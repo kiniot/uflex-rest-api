@@ -14,4 +14,6 @@ public interface DeviceQueryService {
     ClinicFleetMetrics handle(GetClinicFleetMetricsQuery query);
     List<Device> handle(GetStockDevicesQuery query);
     GlobalDeviceOverview handle(GetGlobalDeviceOverviewQuery query);
+    List<FulfillmentRow> handle(GetFulfillmentQueueQuery query);
+    FleetHealth handle(GetFleetHealthQuery query);
 }

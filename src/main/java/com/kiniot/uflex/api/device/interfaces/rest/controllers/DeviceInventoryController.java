@@ -1,16 +1,25 @@
 package com.kiniot.uflex.api.device.interfaces.rest.controllers;
 
+import com.kiniot.uflex.api.device.domain.model.commands.FulfillClinicCommand;
+import com.kiniot.uflex.api.device.domain.model.queries.GetFleetHealthQuery;
+import com.kiniot.uflex.api.device.domain.model.queries.GetFulfillmentQueueQuery;
 import com.kiniot.uflex.api.device.domain.model.queries.GetGlobalDeviceOverviewQuery;
 import com.kiniot.uflex.api.device.domain.model.queries.GetStockDevicesQuery;
 import com.kiniot.uflex.api.device.domain.services.DeviceCommandService;
 import com.kiniot.uflex.api.device.domain.services.DeviceQueryService;
 import com.kiniot.uflex.api.device.interfaces.rest.resources.DeviceResource;
+import com.kiniot.uflex.api.device.interfaces.rest.resources.FleetHealthResource;
+import com.kiniot.uflex.api.device.interfaces.rest.resources.FulfillResultResource;
+import com.kiniot.uflex.api.device.interfaces.rest.resources.FulfillmentRowResource;
 import com.kiniot.uflex.api.device.interfaces.rest.resources.GlobalDeviceOverviewResource;
 import com.kiniot.uflex.api.device.interfaces.rest.resources.RegisterDeviceResource;
 import com.kiniot.uflex.api.device.interfaces.rest.resources.RegisterStockDevicesBatchResource;
 import com.kiniot.uflex.api.device.interfaces.rest.transform.DeviceResourceFromEntityAssembler;
+import com.kiniot.uflex.api.device.interfaces.rest.transform.FleetHealthResourceFromResultAssembler;
+import com.kiniot.uflex.api.device.interfaces.rest.transform.FulfillmentRowResourceFromResultAssembler;
 import com.kiniot.uflex.api.device.interfaces.rest.transform.GlobalDeviceOverviewResourceFromResultAssembler;
 import com.kiniot.uflex.api.device.interfaces.rest.transform.RegisterDeviceCommandFromResourceAssembler;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
@@ -20,6 +29,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Global device inventory (stock) management — a platform/operations concern restricted to
@@ -80,5 +90,32 @@ public class DeviceInventoryController {
     public ResponseEntity<GlobalDeviceOverviewResource> getOverview() {
         var overview = deviceQueryService.handle(new GetGlobalDeviceOverviewQuery());
         return ResponseEntity.ok(GlobalDeviceOverviewResourceFromResultAssembler.toResourceFromResult(overview));
+    }
+
+    @GetMapping("/fulfillment")
+    @Operation(summary = "Fulfillment queue",
+            description = "Clinics that paid for more kits than they own (pending shipment), ordered by shortfall.")
+    public ResponseEntity<List<FulfillmentRowResource>> getFulfillmentQueue() {
+        var rows = deviceQueryService.handle(new GetFulfillmentQueueQuery()).stream()
+                .map(FulfillmentRowResourceFromResultAssembler::toResourceFromResult)
+                .toList();
+        return ResponseEntity.ok(rows);
+    }
+
+    @PostMapping("/fulfillment/{clinicId}")
+    @Operation(summary = "Fulfill a clinic from stock",
+            description = "Assigns available stock to the clinic to cover its kit shortfall. Returns how many were assigned.")
+    public ResponseEntity<FulfillResultResource> fulfillClinic(@PathVariable String clinicId) {
+        var clinic = new ClinicId(UUID.fromString(clinicId));
+        int assigned = deviceCommandService.handle(new FulfillClinicCommand(clinic));
+        return ResponseEntity.ok(new FulfillResultResource(clinicId, assigned));
+    }
+
+    @GetMapping("/health")
+    @Operation(summary = "Fleet health",
+            description = "Cross-clinic deployed devices that are offline, low on battery, or need calibration.")
+    public ResponseEntity<FleetHealthResource> getFleetHealth() {
+        var health = deviceQueryService.handle(new GetFleetHealthQuery());
+        return ResponseEntity.ok(FleetHealthResourceFromResultAssembler.toResourceFromResult(health));
     }
 }

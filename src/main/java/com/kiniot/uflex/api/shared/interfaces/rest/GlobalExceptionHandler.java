@@ -11,6 +11,7 @@ import com.kiniot.uflex.api.media.domain.exceptions.MediaStorageException;
 import com.kiniot.uflex.api.media.domain.exceptions.MediaUploadNotConfirmableException;
 import com.kiniot.uflex.api.media.domain.exceptions.UnsupportedMediaContentTypeException;
 import com.kiniot.uflex.api.iam.domain.exceptions.EdgeServiceAccountAlreadyExistsException;
+import com.kiniot.uflex.api.iam.domain.exceptions.EdgeServiceAccountNotFoundException;
 import com.kiniot.uflex.api.iam.domain.exceptions.EmailAlreadyInUseException;
 import com.kiniot.uflex.api.iam.domain.exceptions.InvalidCredentialsException;
 import com.kiniot.uflex.api.iam.domain.exceptions.RoleNotFoundException;
@@ -171,6 +172,7 @@ public class GlobalExceptionHandler {
             AuthenticatedUserIdNotFoundException.class,
             AuthenticatedTenantNotFoundException.class,
             DeviceNotFoundException.class,
+            EdgeServiceAccountNotFoundException.class,
             MediaAssetNotFoundException.class,
             TierNotFoundException.class,
             SubscriptionNotFoundException.class
