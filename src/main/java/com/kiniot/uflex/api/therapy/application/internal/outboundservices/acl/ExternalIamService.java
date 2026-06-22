@@ -26,4 +26,12 @@ public class ExternalIamService {
         var userId = iamContextFacade.fetchContextUserId();
         return (userId == null || userId.isBlank()) ? Optional.empty() : Optional.of(new UserId(UUID.fromString(userId)));
     }
+
+    /**
+     * The kit serial bound to the current principal when it is an edge service account;
+     * empty for human callers. Used to enforce per-edge least-privilege on ingestion.
+     */
+    public Optional<String> findEdgeSerialForCurrentUser() {
+        return iamContextFacade.findEdgeSerialForCurrentUser();
+    }
 }

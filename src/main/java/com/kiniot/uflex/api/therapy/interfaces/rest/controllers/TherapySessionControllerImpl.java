@@ -92,7 +92,7 @@ public class TherapySessionControllerImpl implements TherapySessionController {
     }
 
     @Override
-    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_EDGE')")
     public ResponseEntity<ActiveTherapySessionResource> getActiveTherapySessionByDevice(String deviceSerial) {
         var session = therapySessionQueryService.handle(new GetActiveTherapySessionByDeviceSerialQuery(deviceSerial));
         return ResponseEntity.ok(ActiveTherapySessionResourceFromEntityAssembler.toResponseFromEntity(session));

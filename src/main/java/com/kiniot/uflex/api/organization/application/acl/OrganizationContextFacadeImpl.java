@@ -1,6 +1,7 @@
 package com.kiniot.uflex.api.organization.application.acl;
 
 import com.kiniot.uflex.api.organization.domain.model.aggregates.Patient;
+import com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.repositories.ClinicRepository;
 import com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.repositories.PatientRepository;
 import com.kiniot.uflex.api.organization.interfaces.acl.OrganizationContextFacade;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
@@ -10,15 +11,19 @@ import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class OrganizationContextFacadeImpl implements OrganizationContextFacade {
 
     private final PatientRepository patientRepository;
+    private final ClinicRepository clinicRepository;
 
-    public OrganizationContextFacadeImpl(PatientRepository patientRepository) {
+    public OrganizationContextFacadeImpl(PatientRepository patientRepository, ClinicRepository clinicRepository) {
         this.patientRepository = patientRepository;
+        this.clinicRepository = clinicRepository;
     }
 
     @Override
@@ -59,6 +64,21 @@ public class OrganizationContextFacadeImpl implements OrganizationContextFacade 
         return patientRepository.findById(new PatientId(UUID.fromString(patientId)))
                 .map(this::formatPatientName)
                 .orElse(null);
+    }
+
+    @Override
+    public Map<String, String> getClinicNamesByIds(List<String> clinicIds) {
+        if (clinicIds == null || clinicIds.isEmpty()) {
+            return Map.of();
+        }
+        var ids = clinicIds.stream()
+                .map(id -> new ClinicId(UUID.fromString(id)))
+                .toList();
+        return clinicRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(
+                        clinic -> clinic.getId().id().toString(),
+                        clinic -> clinic.getCommercialName().commercialName()
+                ));
     }
 
     private String formatPatientName(Patient patient) {

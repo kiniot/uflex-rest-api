@@ -46,6 +46,7 @@ public class TherapyExecutionControllerImpl implements TherapyExecutionControlle
     }
 
     @Override
+    @PreAuthorize("hasAuthority('ROLE_EDGE')")
     public ResponseEntity<SerieProgressResource> recordRepetition(
             UUID id, UUID serieId, UUID edgeSequenceId, RecordValidRepetitionResource resource) {
         var command = RecordValidRepetitionCommandFromResourceAssembler
@@ -64,6 +65,7 @@ public class TherapyExecutionControllerImpl implements TherapyExecutionControlle
     }
 
     @Override
+    @PreAuthorize("hasAuthority('ROLE_EDGE')")
     public ResponseEntity<Void> recordCompensatoryMovement(UUID id, UUID edgeSequenceId, RecordCompensatoryMovementResource resource) {
         var command = RecordCompensatoryMovementCommandFromResourceAssembler
                 .toCommandFromResource(id, edgeSequenceId, resource);

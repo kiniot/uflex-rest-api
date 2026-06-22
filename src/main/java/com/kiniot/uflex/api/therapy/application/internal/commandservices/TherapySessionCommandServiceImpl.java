@@ -239,7 +239,24 @@ public class TherapySessionCommandServiceImpl implements TherapySessionCommandSe
             ensureSessionBelongsToCurrentPatient(session);
             return;
         }
+        if (currentHasAuthority("ROLE_EDGE")) {
+            ensureSessionBelongsToCurrentEdge(session);
+            return;
+        }
         ensureSessionBelongsToAuthenticatedClinic(session);
+    }
+
+    /**
+     * Per-edge least-privilege: an edge may only write to the session of the kit it is bound
+     * to. Matching the globally-unique serial is stronger than (and implies) the clinic scope.
+     */
+    private void ensureSessionBelongsToCurrentEdge(TherapySession session) {
+        String edgeSerial = externalIamService.findEdgeSerialForCurrentUser()
+                .orElseThrow(() -> new AccessDeniedException("Edge service account is not bound to a kit"));
+        String sessionSerial = session.getIotDeviceId() != null ? session.getIotDeviceId().value() : null;
+        if (!edgeSerial.equals(sessionSerial)) {
+            throw new AccessDeniedException("An edge may only write for its own kit");
+        }
     }
 
     private void ensureSessionBelongsToAuthenticatedClinic(TherapySession session) {

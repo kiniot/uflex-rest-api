@@ -1,12 +1,15 @@
 package com.kiniot.uflex.api.device.interfaces.rest.controllers;
 
+import com.kiniot.uflex.api.device.domain.model.queries.GetGlobalDeviceOverviewQuery;
 import com.kiniot.uflex.api.device.domain.model.queries.GetStockDevicesQuery;
 import com.kiniot.uflex.api.device.domain.services.DeviceCommandService;
 import com.kiniot.uflex.api.device.domain.services.DeviceQueryService;
 import com.kiniot.uflex.api.device.interfaces.rest.resources.DeviceResource;
+import com.kiniot.uflex.api.device.interfaces.rest.resources.GlobalDeviceOverviewResource;
 import com.kiniot.uflex.api.device.interfaces.rest.resources.RegisterDeviceResource;
 import com.kiniot.uflex.api.device.interfaces.rest.resources.RegisterStockDevicesBatchResource;
 import com.kiniot.uflex.api.device.interfaces.rest.transform.DeviceResourceFromEntityAssembler;
+import com.kiniot.uflex.api.device.interfaces.rest.transform.GlobalDeviceOverviewResourceFromResultAssembler;
 import com.kiniot.uflex.api.device.interfaces.rest.transform.RegisterDeviceCommandFromResourceAssembler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,7 +27,7 @@ import java.util.List;
  * stay {@code IN_STOCK} until a clinic's subscription activation assigns them automatically.
  */
 @RestController
-@RequestMapping(value = "/api/v1/devices/stock", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/v1/devices", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "Device Inventory", description = "Global device inventory (stock) endpoints — ROLE_DEVELOPER only")
 @PreAuthorize("hasAuthority('ROLE_DEVELOPER')")
 public class DeviceInventoryController {
@@ -40,7 +43,7 @@ public class DeviceInventoryController {
         this.deviceQueryService = deviceQueryService;
     }
 
-    @PostMapping
+    @PostMapping("/stock")
     @Operation(summary = "Register a device into stock",
             description = "Adds a single device to the global, clinic-less inventory.")
     public ResponseEntity<DeviceResource> registerStockDevice(@RequestBody RegisterDeviceResource resource) {
@@ -49,7 +52,7 @@ public class DeviceInventoryController {
         return new ResponseEntity<>(DeviceResourceFromEntityAssembler.toResourceFromEntity(device, null), HttpStatus.CREATED);
     }
 
-    @PostMapping("/batch")
+    @PostMapping("/stock/batch")
     @Operation(summary = "Register a batch of devices into stock",
             description = "Adds multiple devices to the global inventory in a single request.")
     public ResponseEntity<List<DeviceResource>> registerStockDevicesBatch(@RequestBody RegisterStockDevicesBatchResource resource) {
@@ -61,7 +64,7 @@ public class DeviceInventoryController {
         return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
 
-    @GetMapping
+    @GetMapping("/stock")
     @Operation(summary = "List devices in stock",
             description = "Returns all devices currently in the global, clinic-less inventory.")
     public ResponseEntity<List<DeviceResource>> getStockDevices() {
@@ -69,5 +72,13 @@ public class DeviceInventoryController {
                 .map(device -> DeviceResourceFromEntityAssembler.toResourceFromEntity(device, null))
                 .toList();
         return ResponseEntity.ok(resources);
+    }
+
+    @GetMapping("/overview")
+    @Operation(summary = "Global device inventory overview",
+            description = "Cross-clinic aggregate counts plus per-clinic device totals.")
+    public ResponseEntity<GlobalDeviceOverviewResource> getOverview() {
+        var overview = deviceQueryService.handle(new GetGlobalDeviceOverviewQuery());
+        return ResponseEntity.ok(GlobalDeviceOverviewResourceFromResultAssembler.toResourceFromResult(overview));
     }
 }

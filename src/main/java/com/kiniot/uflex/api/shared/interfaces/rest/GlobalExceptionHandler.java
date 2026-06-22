@@ -10,6 +10,7 @@ import com.kiniot.uflex.api.media.domain.exceptions.MediaFileTooLargeException;
 import com.kiniot.uflex.api.media.domain.exceptions.MediaStorageException;
 import com.kiniot.uflex.api.media.domain.exceptions.MediaUploadNotConfirmableException;
 import com.kiniot.uflex.api.media.domain.exceptions.UnsupportedMediaContentTypeException;
+import com.kiniot.uflex.api.iam.domain.exceptions.EdgeServiceAccountAlreadyExistsException;
 import com.kiniot.uflex.api.iam.domain.exceptions.EmailAlreadyInUseException;
 import com.kiniot.uflex.api.iam.domain.exceptions.InvalidCredentialsException;
 import com.kiniot.uflex.api.iam.domain.exceptions.RoleNotFoundException;
@@ -113,6 +114,7 @@ public class GlobalExceptionHandler {
             CrossClinicAssignmentException.class,
             TenantAssignmentException.class,
             EmailAlreadyInUseException.class,
+            EdgeServiceAccountAlreadyExistsException.class,
             UserTenantAlreadyAssignedException.class,
             UserTenantNotAssignedException.class,
             ExerciseClinicMismatchException.class,

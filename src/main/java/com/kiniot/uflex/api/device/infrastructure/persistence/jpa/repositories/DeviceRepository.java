@@ -51,4 +51,10 @@ public interface DeviceRepository extends JpaRepository<Device, DeviceId> {
 
     @Query("SELECT COUNT(d) FROM Device d WHERE d.clinicId = :clinicId AND d.status <> :status")
     long countByClinicIdAndStatusNot(@Param("clinicId") ClinicId clinicId, @Param("status") DeviceStatus status);
+
+    long countByStatus(DeviceStatus status);
+
+    /** Device counts grouped by owning clinic (excludes stock). Each row is [clinicId (UUID), count (Long)]. */
+    @Query("SELECT d.clinicId.id, COUNT(d) FROM Device d WHERE d.clinicId.id IS NOT NULL GROUP BY d.clinicId.id")
+    List<Object[]> countGroupedByClinicId();
 }
