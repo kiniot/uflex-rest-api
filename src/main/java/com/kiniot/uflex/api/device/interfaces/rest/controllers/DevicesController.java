@@ -10,12 +10,10 @@ import com.kiniot.uflex.api.device.domain.services.DeviceCommandService;
 import com.kiniot.uflex.api.device.domain.services.DeviceQueryService;
 import com.kiniot.uflex.api.device.interfaces.rest.resources.*;
 import com.kiniot.uflex.api.device.interfaces.rest.transform.DeviceResourceFromEntityAssembler;
-import com.kiniot.uflex.api.device.interfaces.rest.transform.RegisterDeviceCommandFromResourceAssembler;
 import com.kiniot.uflex.api.shared.domain.exceptions.AuthenticatedUserClinicNotFoundException;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -44,17 +42,6 @@ public class DevicesController {
         this.deviceQueryService = deviceQueryService;
         this.externalIamService = externalIamService;
         this.externalOrganizationService = externalOrganizationService;
-    }
-
-    @PostMapping
-    @PreAuthorize("hasAuthority('ROLE_CLINIC_ADMIN')")
-    @Operation(summary = "Register a new device", description = "Creates a new device in the authenticated clinic administrator's clinic.")
-    public ResponseEntity<DeviceResource> registerDevice(@RequestBody RegisterDeviceResource resource) {
-        var clinicId = externalIamService.fetchCurrentClinicId()
-                .orElseThrow(AuthenticatedUserClinicNotFoundException::new);
-        var command = RegisterDeviceCommandFromResourceAssembler.toCommandFromResource(resource);
-        var device = deviceCommandService.handle(command, clinicId);
-        return new ResponseEntity<>(DeviceResourceFromEntityAssembler.toResourceFromEntity(device, null), HttpStatus.CREATED);
     }
 
     @GetMapping
@@ -110,13 +97,15 @@ public class DevicesController {
                 metrics.assigned(),
                 metrics.inMaintenance(),
                 metrics.lowBattery(),
-                metrics.offline()
+                metrics.offline(),
+                metrics.requestedKits(),
+                metrics.pendingKits()
         ));
     }
 
     @PatchMapping("/{deviceId}/status")
-    @PreAuthorize("hasAuthority('ROLE_CLINIC_ADMIN')")
-    @Operation(summary = "Update device status", description = "Updates the status of a device.")
+    @PreAuthorize("hasAuthority('ROLE_DEVELOPER')")
+    @Operation(summary = "Update device status", description = "Updates the status of a device. Platform/operations action (ROLE_DEVELOPER).")
     public ResponseEntity<DeviceResource> updateDeviceStatus(
             @PathVariable String deviceId,
             @RequestBody UpdateDeviceStatusResource resource
@@ -196,8 +185,8 @@ public class DevicesController {
     }
 
     @DeleteMapping("/{deviceId}")
-    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
-    @Operation(summary = "Delete a device", description = "Deletes a device by internal identifier.")
+    @PreAuthorize("hasAuthority('ROLE_DEVELOPER')")
+    @Operation(summary = "Delete a device", description = "Deletes a device by internal identifier. Platform/operations action (ROLE_DEVELOPER).")
     public ResponseEntity<Void> deleteDevice(@PathVariable String deviceId) {
         var command = new DeleteDeviceCommand(toDeviceId(deviceId));
         deviceCommandService.handle(command);

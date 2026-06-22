@@ -12,4 +12,5 @@ public interface DeviceQueryService {
     Optional<Device> handle(GetMyAssignedDeviceQuery query);
     List<Device> handle(GetAllDevicesByClinicIdQuery query);
     ClinicFleetMetrics handle(GetClinicFleetMetricsQuery query);
+    List<Device> handle(GetStockDevicesQuery query);
 }

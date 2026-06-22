@@ -4,6 +4,7 @@ import com.kiniot.uflex.api.device.domain.exceptions.DeviceAlreadyRegisteredExce
 import com.kiniot.uflex.api.device.domain.exceptions.DeviceAssignmentNotAllowedException;
 import com.kiniot.uflex.api.device.domain.exceptions.DeviceClinicMismatchException;
 import com.kiniot.uflex.api.device.domain.exceptions.DeviceNotFoundException;
+import com.kiniot.uflex.api.device.domain.exceptions.DeviceNotInStockException;
 import com.kiniot.uflex.api.media.domain.exceptions.MediaAssetNotFoundException;
 import com.kiniot.uflex.api.media.domain.exceptions.MediaFileTooLargeException;
 import com.kiniot.uflex.api.media.domain.exceptions.MediaStorageException;
@@ -118,6 +119,7 @@ public class GlobalExceptionHandler {
             DeviceAlreadyRegisteredException.class,
             DeviceClinicMismatchException.class,
             DeviceAssignmentNotAllowedException.class,
+            DeviceNotInStockException.class,
             DuplicateRoutineOrderException.class,
             DuplicateRoutineScheduleException.class,
             DuplicateExerciseSeriesOrderException.class,

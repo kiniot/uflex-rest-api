@@ -81,6 +81,7 @@ The JSON error shape is:
 - `DEVICE_ASSIGNMENT_NOT_ALLOWED`
 - `DEVICE_CLINIC_MISMATCH`
 - `DEVICE_NOT_FOUND`
+- `DEVICE_NOT_IN_STOCK`
 
 ### Device-related shared codes
 

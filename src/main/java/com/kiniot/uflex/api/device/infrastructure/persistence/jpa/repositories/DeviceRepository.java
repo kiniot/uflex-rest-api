@@ -39,4 +39,16 @@ public interface DeviceRepository extends JpaRepository<Device, DeviceId> {
     long countByClinicId(ClinicId clinicId);
 
     long countByClinicIdAndStatus(ClinicId clinicId, DeviceStatus status);
+
+    @Query("SELECT d FROM Device d WHERE d.clinicId.id IS NULL")
+    List<Device> findAllInStock();
+
+    @Query("SELECT d FROM Device d WHERE d.clinicId.id IS NULL AND d.status = :status")
+    List<Device> findAllInStockByStatus(@Param("status") DeviceStatus status);
+
+    @Query("SELECT COUNT(d) FROM Device d WHERE d.clinicId.id IS NULL")
+    long countInStock();
+
+    @Query("SELECT COUNT(d) FROM Device d WHERE d.clinicId = :clinicId AND d.status <> :status")
+    long countByClinicIdAndStatusNot(@Param("clinicId") ClinicId clinicId, @Param("status") DeviceStatus status);
 }

@@ -3,6 +3,7 @@ package com.kiniot.uflex.api.device.application.internal.queryservices;
 import com.kiniot.uflex.api.device.domain.model.aggregates.Device;
 import com.kiniot.uflex.api.device.domain.model.queries.*;
 import com.kiniot.uflex.api.device.domain.model.valueobjects.DeviceStatus;
+import com.kiniot.uflex.api.device.application.internal.outboundservices.acl.ExternalSubscriptionService;
 import com.kiniot.uflex.api.device.domain.services.DeviceQueryService;
 import com.kiniot.uflex.api.device.infrastructure.persistence.jpa.repositories.DeviceRepository;
 import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalIamService;
@@ -19,13 +20,16 @@ public class DeviceQueryServiceImpl implements DeviceQueryService {
 
     private final DeviceRepository deviceRepository;
     private final ExternalIamService externalIamService;
+    private final ExternalSubscriptionService externalSubscriptionService;
 
     public DeviceQueryServiceImpl(
             DeviceRepository deviceRepository,
-            ExternalIamService externalIamService
+            ExternalIamService externalIamService,
+            ExternalSubscriptionService externalSubscriptionService
     ) {
         this.deviceRepository = deviceRepository;
         this.externalIamService = externalIamService;
+        this.externalSubscriptionService = externalSubscriptionService;
     }
 
     @Override
@@ -83,6 +87,18 @@ public class DeviceQueryServiceImpl implements DeviceQueryService {
                 .filter(Device::isOffline)
                 .count();
 
-        return new ClinicFleetMetrics(total, available, assigned, inMaintenance, lowBattery, offline);
+        int owned = (int) devices.stream()
+                .filter(d -> d.getStatus() != DeviceStatus.RETIRED)
+                .count();
+        int requestedKits = externalSubscriptionService.getRequestedTotalKits(query.clinicId());
+        int pendingKits = Math.max(0, requestedKits - owned);
+
+        return new ClinicFleetMetrics(total, available, assigned, inMaintenance, lowBattery, offline, requestedKits, pendingKits);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Device> handle(GetStockDevicesQuery query) {
+        return deviceRepository.findAllInStock();
     }
 }

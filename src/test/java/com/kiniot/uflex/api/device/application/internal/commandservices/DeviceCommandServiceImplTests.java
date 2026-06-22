@@ -4,7 +4,9 @@ import com.kiniot.uflex.api.device.application.internal.outboundservices.acl.Ext
 import com.kiniot.uflex.api.device.domain.model.aggregates.Device;
 import com.kiniot.uflex.api.device.domain.model.commands.RegisterDeviceCommand;
 import com.kiniot.uflex.api.device.domain.model.commands.AssignDeviceToPatientCommand;
+import com.kiniot.uflex.api.device.domain.model.commands.AssignStockToClinicCommand;
 import com.kiniot.uflex.api.device.domain.exceptions.DeviceAssignmentNotAllowedException;
+import com.kiniot.uflex.api.device.domain.exceptions.DeviceNotInStockException;
 import com.kiniot.uflex.api.device.domain.model.valueobjects.AdvertisedName;
 import com.kiniot.uflex.api.device.domain.model.valueobjects.DeviceModel;
 import com.kiniot.uflex.api.device.domain.model.valueobjects.DeviceStatus;
@@ -19,6 +21,8 @@ import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,7 +30,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -123,6 +130,75 @@ class DeviceCommandServiceImplTests {
         );
 
         assertEquals("UFLEX-DEV-0012", command.advertisedName().value());
+    }
+
+    @Test
+    void assignToClinicMovesStockDeviceToAvailable() {
+        var device = stockDevice("KIT-STOCK-1");
+        var clinicId = new ClinicId(UUID.randomUUID());
+
+        device.assignToClinic(clinicId);
+
+        assertEquals(DeviceStatus.AVAILABLE, device.getStatus());
+        assertEquals(clinicId, device.getClinicId());
+    }
+
+    @Test
+    void assignToClinicRejectsDeviceNotInStock() {
+        var device = availableDevice(new ClinicId(UUID.randomUUID()));
+
+        assertThrows(DeviceNotInStockException.class,
+                () -> device.assignToClinic(new ClinicId(UUID.randomUUID())));
+    }
+
+    @Test
+    void assignStockAssignsOnlyTheShortfallCappedByStock() {
+        var clinicId = new ClinicId(UUID.randomUUID());
+        when(deviceRepository.countByClinicIdAndStatusNot(clinicId, DeviceStatus.RETIRED)).thenReturn(1L);
+        var stock = new ArrayList<>(List.of(stockDevice("KIT-1"), stockDevice("KIT-2"), stockDevice("KIT-3")));
+        when(deviceRepository.findAllInStockByStatus(DeviceStatus.IN_STOCK)).thenReturn(stock);
+
+        int assigned = service.handle(new AssignStockToClinicCommand(clinicId, 3));
+
+        assertEquals(2, assigned);
+        assertEquals(DeviceStatus.AVAILABLE, stock.get(0).getStatus());
+        assertEquals(clinicId, stock.get(0).getClinicId());
+        assertEquals(DeviceStatus.AVAILABLE, stock.get(1).getStatus());
+        assertEquals(DeviceStatus.IN_STOCK, stock.get(2).getStatus());
+        verify(deviceRepository, times(2)).save(any(Device.class));
+    }
+
+    @Test
+    void assignStockIsIdempotentWhenClinicAlreadyOwnsEnough() {
+        var clinicId = new ClinicId(UUID.randomUUID());
+        when(deviceRepository.countByClinicIdAndStatusNot(clinicId, DeviceStatus.RETIRED)).thenReturn(3L);
+
+        int assigned = service.handle(new AssignStockToClinicCommand(clinicId, 3));
+
+        assertEquals(0, assigned);
+        verify(deviceRepository, never()).findAllInStockByStatus(any());
+    }
+
+    @Test
+    void assignStockLeavesShortfallPendingWhenStockInsufficient() {
+        var clinicId = new ClinicId(UUID.randomUUID());
+        when(deviceRepository.countByClinicIdAndStatusNot(clinicId, DeviceStatus.RETIRED)).thenReturn(0L);
+        when(deviceRepository.findAllInStockByStatus(DeviceStatus.IN_STOCK))
+                .thenReturn(new ArrayList<>(List.of(stockDevice("KIT-1"))));
+
+        int assigned = service.handle(new AssignStockToClinicCommand(clinicId, 3));
+
+        assertEquals(1, assigned);
+    }
+
+    private Device stockDevice(String serial) {
+        return Device.registerToStock(
+                new SerialNumber(serial),
+                new MacAddress("AA:BB:CC:DD:EE:FF"),
+                new FirmwareVersion("1.0.0"),
+                new DeviceModel("uFlex Tracker"),
+                new AdvertisedName(serial)
+        );
     }
 
     private Device availableDevice(ClinicId clinicId) {
