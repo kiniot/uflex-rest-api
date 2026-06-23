@@ -107,4 +107,10 @@ public class IamContextFacadeImpl implements IamContextFacade {
                 .flatMap(edgeServiceAccountRepository::findByUserId)
                 .map(EdgeServiceAccount::getSerialNumber);
     }
+
+    @Override
+    public Optional<String> findEdgeLanUrlBySerial(String serialNumber) {
+        return edgeServiceAccountRepository.findBySerialNumber(serialNumber)
+                .map(EdgeServiceAccount::getCurrentLanUrl);
+    }
 }

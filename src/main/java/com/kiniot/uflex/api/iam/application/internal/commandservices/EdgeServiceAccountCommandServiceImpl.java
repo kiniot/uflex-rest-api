@@ -10,6 +10,7 @@ import com.kiniot.uflex.api.iam.domain.exceptions.RoleNotFoundException;
 import com.kiniot.uflex.api.iam.domain.model.aggregates.EdgeServiceAccount;
 import com.kiniot.uflex.api.iam.domain.model.aggregates.User;
 import com.kiniot.uflex.api.iam.domain.model.commands.ProvisionEdgeServiceAccountCommand;
+import com.kiniot.uflex.api.iam.domain.model.commands.ReportEdgeLanUrlCommand;
 import com.kiniot.uflex.api.iam.domain.model.commands.RevokeEdgeServiceAccountCommand;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.EdgeServiceAccountCredentials;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.Email;
@@ -21,6 +22,7 @@ import com.kiniot.uflex.api.iam.infrastructure.persistence.jpa.repositories.Edge
 import com.kiniot.uflex.api.iam.infrastructure.persistence.jpa.repositories.RoleRepository;
 import com.kiniot.uflex.api.iam.infrastructure.persistence.jpa.repositories.UserRepository;
 import com.kiniot.uflex.api.shared.domain.exceptions.AuthenticatedTenantNotFoundException;
+import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import jakarta.transaction.Transactional;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -80,6 +82,17 @@ public class EdgeServiceAccountCommandServiceImpl implements EdgeServiceAccountC
         edgeServiceAccountRepository.save(account);
 
         return new EdgeServiceAccountCredentials(emailAddress, password, serialNumber);
+    }
+
+    @Override
+    @Transactional
+    public void handle(ReportEdgeLanUrlCommand command) {
+        var userId = identityService.getUserId()
+                .orElseThrow(() -> new AccessDeniedException("No authenticated principal"));
+        var account = edgeServiceAccountRepository.findByUserId(new UserId(UUID.fromString(userId)))
+                .orElseThrow(() -> new AccessDeniedException("Current principal is not an edge service account"));
+        account.reportLanUrl(command.lanUrl());
+        edgeServiceAccountRepository.save(account);
     }
 
     @Override

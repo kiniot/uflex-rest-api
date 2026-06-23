@@ -34,4 +34,12 @@ public class ExternalIamService {
     public Optional<String> findEdgeSerialForCurrentUser() {
         return iamContextFacade.findEdgeSerialForCurrentUser();
     }
+
+    /**
+     * The last LAN base URL reported by the edge bound to {@code serialNumber}; empty when no edge
+     * account exists for it or it has not reported a URL yet. Used by the mobile rendezvous endpoint.
+     */
+    public Optional<String> findEdgeLanUrlBySerial(String serialNumber) {
+        return iamContextFacade.findEdgeLanUrlBySerial(serialNumber);
+    }
 }

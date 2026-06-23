@@ -20,4 +20,6 @@ public interface TherapySessionQueryService {
     Serie handle(GetSerieDetailsQuery query);
 
     DailyRoutineDto handle(GetDailyScheduleQuery query);
+
+    EdgeConnection handle(GetEdgeConnectionForCurrentPatientQuery query);
 }

@@ -13,6 +13,8 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 
+import java.time.Instant;
+
 /**
  * Aggregate root linking an edge service-account {@link User} (a {@code ROLE_EDGE}
  * principal) to the IoT kit it serves.
@@ -45,6 +47,18 @@ public class EdgeServiceAccount extends AuditableAbstractAggregateRoot<EdgeServi
     @AttributeOverride(name = "tenantId", column = @Column(name = "tenant_id", columnDefinition = "UUID", nullable = false))
     private TenantId tenantId;
 
+    /**
+     * Last LAN base URL (e.g. {@code http://192.168.1.4:5050}) the edge reported for itself.
+     * Used by the mobile rendezvous endpoint to discover where to reach the edge on the local
+     * network. Nullable until the edge first reports in. The edge's LAN IP is DHCP-assigned, so
+     * this is refreshed periodically by the edge.
+     */
+    @Column(name = "current_lan_url", length = 255)
+    private String currentLanUrl;
+
+    @Column(name = "lan_reported_at")
+    private Instant lanReportedAt;
+
     protected EdgeServiceAccount() {}
 
     public EdgeServiceAccount(UserId userId, String serialNumber, TenantId tenantId) {
@@ -56,6 +70,14 @@ public class EdgeServiceAccount extends AuditableAbstractAggregateRoot<EdgeServi
         this.userId = userId;
         this.serialNumber = serialNumber;
         this.tenantId = tenantId;
+    }
+
+    /** Records the edge's current LAN base URL, reported by the edge itself. */
+    public void reportLanUrl(String lanUrl) {
+        if (lanUrl == null || lanUrl.isBlank())
+            throw new IllegalArgumentException("lanUrl cannot be null or blank");
+        this.currentLanUrl = lanUrl;
+        this.lanReportedAt = Instant.now();
     }
 
     @Override
