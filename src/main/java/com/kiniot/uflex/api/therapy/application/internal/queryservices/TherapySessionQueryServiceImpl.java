@@ -11,6 +11,7 @@ import com.kiniot.uflex.api.therapy.domain.exceptions.TherapySessionStillInProgr
 import com.kiniot.uflex.api.therapy.domain.model.aggregates.TherapySession;
 import com.kiniot.uflex.api.therapy.domain.model.entities.Serie;
 import com.kiniot.uflex.api.therapy.domain.model.queries.*;
+import com.kiniot.uflex.api.therapy.domain.model.valueobjects.KitSerial;
 import com.kiniot.uflex.api.therapy.domain.model.valueobjects.PatientId;
 import com.kiniot.uflex.api.therapy.domain.model.valueobjects.SerieId;
 import com.kiniot.uflex.api.therapy.domain.model.valueobjects.SessionStatus;
@@ -111,6 +112,22 @@ public class TherapySessionQueryServiceImpl implements TherapySessionQueryServic
                 .orElseThrow(() -> new IllegalStateException("Authenticated user has no associated clinic"));
         return externalPlanningService.resolveRoutineForDate(
                 clinicId.id().toString(), query.patientId().toString(), query.date());
+    }
+
+    @Override
+    public EdgeConnection handle(GetEdgeConnectionForCurrentPatientQuery query) {
+        log.debug("Resolving edge connection for current patient");
+        PatientId patientId = externalOrganizationService.fetchCurrentPatientId()
+                .orElseThrow(() -> new AccessDeniedException("Current patient profile not found"));
+        ClinicId clinicId = externalIamService.fetchCurrentClinicId()
+                .orElseThrow(() -> new IllegalStateException("Authenticated user has no associated clinic"));
+        TherapySession session = therapySessionRepository
+                .findActiveByPatientId(patientId.id(), clinicId.id(), SessionStatus.ACTIVE_STATUSES)
+                .orElseThrow(() -> TherapySessionNotFoundException.withId(
+                        "active session for patient " + patientId.id()));
+        String serial = KitSerial.toStringOrNull(session.getIotDeviceId());
+        String lanUrl = externalIamService.findEdgeLanUrlBySerial(serial).orElse(null);
+        return new EdgeConnection(lanUrl, session.getEdgePairingToken(), null);
     }
 
     private void ensureSessionAccess(TherapySession session) {

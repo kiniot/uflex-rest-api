@@ -12,6 +12,12 @@ public interface IamContextFacade {
      */
     Optional<String> findEdgeSerialForCurrentUser();
 
+    /**
+     * Returns the last LAN base URL reported by the edge bound to {@code serialNumber}, or
+     * empty when no edge account exists for that serial or it has not reported a URL yet.
+     */
+    Optional<String> findEdgeLanUrlBySerial(String serialNumber);
+
     String signUpVerifiedUser(String email, List<String> roles);
 
     void updateUserEmail(String userId, String email);

@@ -1,5 +1,6 @@
 package com.kiniot.uflex.api.iam.interfaces.rest.controllers;
 
+import com.kiniot.uflex.api.iam.domain.model.commands.ReportEdgeLanUrlCommand;
 import com.kiniot.uflex.api.iam.domain.model.commands.RevokeEdgeServiceAccountCommand;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.EdgeServiceAccountId;
 import com.kiniot.uflex.api.iam.domain.services.EdgeServiceAccountCommandService;
@@ -7,6 +8,7 @@ import com.kiniot.uflex.api.iam.domain.services.EdgeServiceAccountQueryService;
 import com.kiniot.uflex.api.iam.interfaces.rest.resources.EdgeServiceAccountCredentialsResource;
 import com.kiniot.uflex.api.iam.interfaces.rest.resources.EdgeServiceAccountResource;
 import com.kiniot.uflex.api.iam.interfaces.rest.resources.ProvisionEdgeServiceAccountResource;
+import com.kiniot.uflex.api.iam.interfaces.rest.resources.ReportEdgeLanUrlResource;
 import com.kiniot.uflex.api.iam.interfaces.rest.transform.EdgeServiceAccountCredentialsResourceFromResultAssembler;
 import com.kiniot.uflex.api.iam.interfaces.rest.transform.EdgeServiceAccountResourceFromEntityAssembler;
 import com.kiniot.uflex.api.iam.interfaces.rest.transform.ProvisionEdgeServiceAccountCommandFromResourceAssembler;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -63,6 +66,23 @@ public class EdgeServiceAccountsController {
         var credentials = edgeServiceAccountCommandService.handle(command);
         var responseResource = EdgeServiceAccountCredentialsResourceFromResultAssembler.toResourceFromResult(credentials);
         return new ResponseEntity<>(responseResource, HttpStatus.CREATED);
+    }
+
+    @PutMapping("/me/lan-url")
+    @PreAuthorize("hasAuthority('ROLE_EDGE')")
+    @Operation(
+            summary = "Report this edge's current LAN URL",
+            description = "The authenticated edge reports the LAN base URL where it can be reached "
+                    + "(e.g. http://192.168.1.4:5050). Used by the mobile rendezvous endpoint to discover "
+                    + "the edge on the local network. The target account is resolved from the authenticated "
+                    + "principal, so an edge can only update its own URL.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "LAN URL recorded"),
+            @ApiResponse(responseCode = "403", description = "Caller is not an edge service account"),
+    })
+    public ResponseEntity<Void> reportLanUrl(@RequestBody ReportEdgeLanUrlResource resource) {
+        edgeServiceAccountCommandService.handle(new ReportEdgeLanUrlCommand(resource.lanUrl()));
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping

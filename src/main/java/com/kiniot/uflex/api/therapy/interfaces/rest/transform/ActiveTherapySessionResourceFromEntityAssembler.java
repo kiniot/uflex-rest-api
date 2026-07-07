@@ -30,6 +30,7 @@ public final class ActiveTherapySessionResourceFromEntityAssembler {
                 .requiresClinicalReview(session.getRequiresClinicalReview())
                 .startedAt(session.getStartedAt())
                 .finalizedAt(session.getFinalizedAt())
+                .edgePairingToken(session.getEdgePairingToken())
                 .series(serieResources)
                 .build();
     }

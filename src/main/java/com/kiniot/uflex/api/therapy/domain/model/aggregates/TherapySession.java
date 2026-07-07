@@ -82,6 +82,16 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
     @Column(length = 500)
     private String cancellationReason;
 
+    /**
+     * Opaque pairing token the patient's mobile app presents when subscribing to the edge's
+     * live SSE progress stream on the LAN. Minted once at preparation; it travels to the edge
+     * via {@code GET /active/by-device} and to the mobile via {@code GET /patients/me/edge-connection}.
+     * Tied to the session lifetime: once the session is no longer active, the active-session
+     * read paths stop returning it, so it is effectively invalidated.
+     */
+    @Column(name = "edge_pairing_token", length = 64)
+    private String edgePairingToken;
+
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "therapy_session_id")
     private List<CompensatoryMovement> compensatoryMovements;
@@ -104,6 +114,7 @@ public class TherapySession extends AuditableAbstractAggregateRoot<TherapySessio
         this.treatmentPlanId = TreatmentPlanId.of(command.treatmentPlanId());
         this.iotDeviceId = KitSerial.of(command.iotDeviceId());
         this.routine = routine;
+        this.edgePairingToken = UUID.randomUUID().toString();
     }
 
     // -------------------------------------------------------------------------

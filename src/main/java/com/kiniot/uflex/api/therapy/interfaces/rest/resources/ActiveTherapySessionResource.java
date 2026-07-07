@@ -23,5 +23,6 @@ public record ActiveTherapySessionResource(
         Boolean requiresClinicalReview,
         Instant startedAt,
         Instant finalizedAt,
+        String edgePairingToken,
         List<SerieDetailsResource> series
 ) {}
