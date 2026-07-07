@@ -2,10 +2,9 @@ package com.kiniot.uflex.api.device.domain.services;
 
 import com.kiniot.uflex.api.device.domain.model.aggregates.Device;
 import com.kiniot.uflex.api.device.domain.model.commands.*;
-import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 
 public interface DeviceCommandService {
-    Device handle(RegisterDeviceCommand command, ClinicId clinicId);
+    Device handle(RegisterDeviceCommand command);
     void handle(AssignDeviceToPatientCommand command);
     void handle(ReturnDeviceCommand command);
     void handle(UpdateDeviceTelemetryCommand command);
@@ -13,4 +12,22 @@ public interface DeviceCommandService {
     void handle(MarkCalibrationAsInvalidCommand command);
     void handle(UpdateDeviceStatusCommand command);
     void handle(DeleteDeviceCommand command);
+
+    /**
+     * Assigns stock devices to the clinic to cover the shortfall between the kits it paid
+     * for and the kits it already owns, capped by available stock. Returns how many were
+     * actually assigned (may be less than requested when stock is short).
+     */
+    int handle(AssignStockToClinicCommand command);
+
+    /**
+     * On-demand fulfillment for one clinic: resolves its entitlement and assigns the
+     * shortfall from stock. Returns how many devices were assigned.
+     */
+    int handle(FulfillClinicCommand command);
+
+    /**
+     * Seeds demo stock devices (local/demo only). Returns how many were newly created.
+     */
+    int handle(SeedDevicesCommand command);
 }

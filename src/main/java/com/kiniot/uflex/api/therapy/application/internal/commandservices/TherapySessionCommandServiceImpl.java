@@ -11,7 +11,7 @@ import com.kiniot.uflex.api.therapy.domain.exceptions.PatientAlreadyInActiveSess
 import com.kiniot.uflex.api.therapy.domain.exceptions.TherapySessionNotFoundException;
 import com.kiniot.uflex.api.therapy.domain.model.aggregates.TherapySession;
 import com.kiniot.uflex.api.therapy.domain.model.commands.*;
-import com.kiniot.uflex.api.therapy.domain.model.entities.AnomalousMovement;
+import com.kiniot.uflex.api.therapy.domain.model.entities.CompensatoryMovement;
 import com.kiniot.uflex.api.therapy.domain.model.entities.RoutineExecution;
 import com.kiniot.uflex.api.therapy.domain.model.entities.Serie;
 import com.kiniot.uflex.api.therapy.domain.model.valueobjects.*;
@@ -42,6 +42,8 @@ public class TherapySessionCommandServiceImpl implements TherapySessionCommandSe
     @Override
     @Transactional
     public TherapySession handle(InitiateTherapyPreparationCommand command) {
+        ensurePatientInitiatesForSelf(command.patientId());
+
         ClinicId clinicId = externalIamService.fetchCurrentClinicId()
                 .orElseThrow(() -> new IllegalStateException("Authenticated user has no associated clinic"));
         ensurePatientBelongsToAuthenticatedClinic(command.patientId(), clinicId);
@@ -89,13 +91,12 @@ public class TherapySessionCommandServiceImpl implements TherapySessionCommandSe
     public TherapySession handle(ConfirmHardwareReadinessCommand command) {
         TherapySession session = findOwnedSession(command.sessionId());
 
-        IoTSensorSnapshot snapshot = IoTSensorSnapshot.of(command.deviceId(), command.sensorsPlaced());
-        session.confirmHardwareReadiness(snapshot);
+        session.confirmHardwareReadiness(command.sensorsPlaced());
         TherapySession saved = therapySessionRepository.save(session);
 
         eventPublisher.publishEvent(saved.publishHardwareReadinessConfirmed());
 
-        log.info("Hardware readiness confirmed: sessionId={}, deviceId={}", command.sessionId(), command.deviceId());
+        log.info("Hardware readiness confirmed: sessionId={}", command.sessionId());
         return saved;
     }
 
@@ -165,40 +166,38 @@ public class TherapySessionCommandServiceImpl implements TherapySessionCommandSe
 
         SerieId serieId = SerieId.of(command.serieId());
         boolean recorded = session.recordRepetition(
-                serieId, command.achievedAngle(), command.recordedAt(), command.edgeSequenceId());
+                serieId, command.peakAngle(), command.achievedRom(), command.classification(),
+                command.recordedAt(), command.edgeSequenceId());
         TherapySession saved = therapySessionRepository.save(session);
 
         if (recorded) {
-            eventPublisher.publishEvent(saved.publishRepetitionRecorded(serieId, command.achievedAngle(), command.recordedAt()));
+            eventPublisher.publishEvent(saved.publishRepetitionRecorded(
+                    serieId, command.peakAngle(), command.achievedRom(), command.classification(), command.recordedAt()));
 
             saved.findSerie(serieId).ifPresent(serie -> {
-                if (serie.getStatus() == SerieStatus.Validated) {
+                if (serie.getStatus() == SerieStatus.Completed) {
                     eventPublisher.publishEvent(saved.publishSerieAchieved(serieId));
                 }
             });
         }
 
-        log.info("Repetition recorded: sessionId={}, serieId={}, achievedAngle={}",
-                command.sessionId(), command.serieId(), command.achievedAngle());
+        log.info("Repetition recorded: sessionId={}, serieId={}, peakAngle={}, classification={}",
+                command.sessionId(), command.serieId(), command.peakAngle(), command.classification());
         return saved;
     }
 
     @Override
     @Transactional
-    public void handle(RecordAnomalousMovementCommand command) {
+    public void handle(RecordCompensatoryMovementCommand command) {
         TherapySession session = findOwnedSession(command.sessionId());
 
-        AlertType alertType = AlertType.of(command.alertType());
-        AnomalousMovement anomaly = session.recordAnomalousMovement(alertType);
+        CompensatoryMovementType type = CompensatoryMovementType.of(command.type());
+        CompensatoryMovement movement = session.recordCompensatoryMovement(type);
         TherapySession saved = therapySessionRepository.save(session);
 
-        if (alertType == AlertType.ExcessiveMovement) {
-            eventPublisher.publishEvent(saved.publishExcessiveMovementAlertIssued(anomaly));
-        } else {
-            eventPublisher.publishEvent(saved.publishAnomalousMovementDetected(anomaly));
-        }
+        eventPublisher.publishEvent(saved.publishCompensatoryMovementDetected(movement));
 
-        log.info("Anomalous movement recorded: sessionId={}, alertType={}", command.sessionId(), command.alertType());
+        log.info("Compensatory movement recorded: sessionId={}, type={}", command.sessionId(), command.type());
     }
 
     @Override
@@ -215,12 +214,14 @@ public class TherapySessionCommandServiceImpl implements TherapySessionCommandSe
     }
 
     private Serie buildSerie(SerieDetailsDto dto) {
-        // Therapy defines the valid range as [0, rangeOfMotion]: planning only
-        // prescribes the target range of motion, not a lower bound.
+        // The edge derives the safe ceiling from targetRom; the backend only snapshots the
+        // target plus the exercise's movement type / body part (for the edge's detection).
         return new Serie(
                 ExerciseId.of(java.util.UUID.fromString(dto.exerciseId())),
                 dto.targetRepetitions(),
-                AngleThreshold.of(0.0, dto.rangeOfMotion()),
+                dto.rangeOfMotion(),
+                dto.movementType(),
+                dto.bodyPart(),
                 dto.durationSeconds(),
                 dto.restDurationSeconds()
         );
@@ -238,7 +239,24 @@ public class TherapySessionCommandServiceImpl implements TherapySessionCommandSe
             ensureSessionBelongsToCurrentPatient(session);
             return;
         }
+        if (currentHasAuthority("ROLE_EDGE")) {
+            ensureSessionBelongsToCurrentEdge(session);
+            return;
+        }
         ensureSessionBelongsToAuthenticatedClinic(session);
+    }
+
+    /**
+     * Per-edge least-privilege: an edge may only write to the session of the kit it is bound
+     * to. Matching the globally-unique serial is stronger than (and implies) the clinic scope.
+     */
+    private void ensureSessionBelongsToCurrentEdge(TherapySession session) {
+        String edgeSerial = externalIamService.findEdgeSerialForCurrentUser()
+                .orElseThrow(() -> new AccessDeniedException("Edge service account is not bound to a kit"));
+        String sessionSerial = session.getIotDeviceId() != null ? session.getIotDeviceId().value() : null;
+        if (!edgeSerial.equals(sessionSerial)) {
+            throw new AccessDeniedException("An edge may only write for its own kit");
+        }
     }
 
     private void ensureSessionBelongsToAuthenticatedClinic(TherapySession session) {
@@ -270,5 +288,20 @@ public class TherapySessionCommandServiceImpl implements TherapySessionCommandSe
     private boolean currentHasAuthority(String authority) {
         return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                 .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals(authority));
+    }
+
+    /**
+     * A patient may initiate a session only for themselves. Clinic staff (admin/physiotherapist)
+     * are unrestricted here; their clinic-scoping is enforced by the checks that follow.
+     */
+    private void ensurePatientInitiatesForSelf(java.util.UUID requestedPatientId) {
+        if (!currentHasAuthority("ROLE_PATIENT")) {
+            return;
+        }
+        PatientId currentPatientId = externalOrganizationService.fetchCurrentPatientId()
+                .orElseThrow(() -> new AccessDeniedException("Current patient profile not found"));
+        if (!currentPatientId.equals(PatientId.of(requestedPatientId))) {
+            throw new AccessDeniedException("A patient can only start a session for themselves");
+        }
     }
 }

@@ -2,7 +2,6 @@ package com.kiniot.uflex.api.therapy.domain.model.entities;
 
 import com.kiniot.uflex.api.shared.domain.model.entities.AuditableModel;
 import com.kiniot.uflex.api.therapy.domain.exceptions.SerieNotStartedException;
-import com.kiniot.uflex.api.therapy.domain.model.valueobjects.AngleThreshold;
 import com.kiniot.uflex.api.therapy.domain.model.valueobjects.ExerciseId;
 import com.kiniot.uflex.api.therapy.domain.model.valueobjects.SerieId;
 import com.kiniot.uflex.api.therapy.domain.model.valueobjects.SerieStatus;
@@ -29,8 +28,20 @@ public class Serie extends AuditableModel<SerieId> {
     @Column(nullable = false)
     private Integer targetRepetitions;
 
-    @Embedded
-    private AngleThreshold angleThreshold;
+    /**
+     * Target range of motion (degrees) the patient should achieve. Prescribed by planning;
+     * the edge derives the safe ceiling from it. The backend only stores/exposes this target.
+     */
+    @Column
+    private Double targetRom;
+
+    /** Snapshot of the exercise's movement type (planning vocabulary, kept as String). */
+    @Column(length = 40)
+    private String movementType;
+
+    /** Snapshot of the exercise's body part (planning vocabulary, kept as String). */
+    @Column(length = 40)
+    private String bodyPart;
 
     @Column
     private Integer durationSeconds;
@@ -46,12 +57,15 @@ public class Serie extends AuditableModel<SerieId> {
     @JoinColumn(name = "serie_id")
     private List<CompletedRepetition> repetitions = new ArrayList<>();
 
-    public Serie(ExerciseId exerciseId, Integer targetRepetitions, AngleThreshold angleThreshold,
+    public Serie(ExerciseId exerciseId, Integer targetRepetitions, Double targetRom,
+                 String movementType, String bodyPart,
                  Integer durationSeconds, Integer restDurationSeconds) {
         this.id = new SerieId();
         this.exerciseId = exerciseId;
         this.targetRepetitions = targetRepetitions;
-        this.angleThreshold = angleThreshold;
+        this.targetRom = targetRom;
+        this.movementType = movementType;
+        this.bodyPart = bodyPart;
         this.durationSeconds = durationSeconds;
         this.restDurationSeconds = restDurationSeconds;
         this.status = SerieStatus.Pending;
@@ -67,16 +81,12 @@ public class Serie extends AuditableModel<SerieId> {
         }
         this.repetitions.add(repetition);
         if (this.repetitions.size() >= this.targetRepetitions) {
-            this.status = SerieStatus.Validated;
+            this.status = SerieStatus.Completed;
         }
     }
 
     public int getCurrentRepetitions() {
         return repetitions.size();
-    }
-
-    public boolean isWithinThreshold(Double achievedAngle) {
-        return angleThreshold.contains(achievedAngle);
     }
 
     public boolean isDuplicateRepetition(UUID edgeSequenceId) {

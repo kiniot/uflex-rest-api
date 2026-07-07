@@ -3,7 +3,7 @@ package com.kiniot.uflex.api.therapy.domain.model.valueobjects;
 import java.util.Objects;
 
 public enum SerieStatus {
-    Pending, Started, Validated, Failed;
+    Pending, Started, Completed, Failed;
 
     public static SerieStatus of(String value) {
         Objects.requireNonNull(value, "serieStatus must not be null");

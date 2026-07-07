@@ -15,8 +15,8 @@ public class RepetitionRecordedEventHandler {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Async
     public void handle(RepetitionRecorded event) {
-        log.info("RepetitionRecorded processed: sessionId={}, serieId={}, achievedAngle={}",
-                event.getSessionId(), event.getSerieId(), event.getAchievedAngle());
+        log.info("RepetitionRecorded processed: sessionId={}, serieId={}, peakAngle={}, classification={}",
+                event.getSessionId(), event.getSerieId(), event.getPeakAngle(), event.getClassification());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

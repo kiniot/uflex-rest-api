@@ -1,11 +1,11 @@
 package com.kiniot.uflex.api.organization.application.internal.commandservices;
 
 import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalIamService;
+import com.kiniot.uflex.api.organization.application.internal.outboundservices.acl.ExternalMediaService;
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistLicenseInvalidException;
 import com.kiniot.uflex.api.organization.domain.model.commands.RegisterPhysiotherapistCommand;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.LicenseNumber;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhoneNumber;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhotoUrl;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.ProfessionalSummary;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.Specialty;
 import com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.repositories.PatientRepository;
@@ -30,6 +30,7 @@ class PhysiotherapistCommandServiceImplTests {
 
     private PhysiotherapistRepository physiotherapistRepository;
     private ExternalIamService externalIamService;
+    private ExternalMediaService externalMediaService;
     private PhysiotherapistCommandServiceImpl service;
 
     @BeforeEach
@@ -37,11 +38,13 @@ class PhysiotherapistCommandServiceImplTests {
         physiotherapistRepository = mock(PhysiotherapistRepository.class);
         var patientRepository = mock(PatientRepository.class);
         externalIamService = mock(ExternalIamService.class);
+        externalMediaService = mock(ExternalMediaService.class);
         var statusSynchronizationService = mock(PhysiotherapistStatusSynchronizationService.class);
         service = new PhysiotherapistCommandServiceImpl(
                 physiotherapistRepository,
                 patientRepository,
                 externalIamService,
+                externalMediaService,
                 statusSynchronizationService
         );
     }
@@ -84,7 +87,7 @@ class PhysiotherapistCommandServiceImplTests {
                 new PhoneNumber("+51", "987654321"),
                 new LicenseNumber("CPT12345"),
                 new ProfessionalSummary("Neurological rehabilitation specialist"),
-                new PhotoUrl("https://example.com/physio.jpg"),
+                null,
                 10
         );
     }

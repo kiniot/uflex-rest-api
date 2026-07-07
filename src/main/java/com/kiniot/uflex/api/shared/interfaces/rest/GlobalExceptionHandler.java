@@ -4,6 +4,14 @@ import com.kiniot.uflex.api.device.domain.exceptions.DeviceAlreadyRegisteredExce
 import com.kiniot.uflex.api.device.domain.exceptions.DeviceAssignmentNotAllowedException;
 import com.kiniot.uflex.api.device.domain.exceptions.DeviceClinicMismatchException;
 import com.kiniot.uflex.api.device.domain.exceptions.DeviceNotFoundException;
+import com.kiniot.uflex.api.device.domain.exceptions.DeviceNotInStockException;
+import com.kiniot.uflex.api.media.domain.exceptions.MediaAssetNotFoundException;
+import com.kiniot.uflex.api.media.domain.exceptions.MediaFileTooLargeException;
+import com.kiniot.uflex.api.media.domain.exceptions.MediaStorageException;
+import com.kiniot.uflex.api.media.domain.exceptions.MediaUploadNotConfirmableException;
+import com.kiniot.uflex.api.media.domain.exceptions.UnsupportedMediaContentTypeException;
+import com.kiniot.uflex.api.iam.domain.exceptions.EdgeServiceAccountAlreadyExistsException;
+import com.kiniot.uflex.api.iam.domain.exceptions.EdgeServiceAccountNotFoundException;
 import com.kiniot.uflex.api.iam.domain.exceptions.EmailAlreadyInUseException;
 import com.kiniot.uflex.api.iam.domain.exceptions.InvalidCredentialsException;
 import com.kiniot.uflex.api.iam.domain.exceptions.RoleNotFoundException;
@@ -24,6 +32,7 @@ import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistAlread
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistClinicMismatchException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistLicenseInvalidException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistNotFoundException;
+import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistPhotoAssetInvalidException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistNotSuspendedException;
 import com.kiniot.uflex.api.organization.domain.exceptions.PhysiotherapistOperationNotAllowedException;
 import com.kiniot.uflex.api.organization.domain.exceptions.ProfileNotFoundException;
@@ -33,6 +42,7 @@ import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateExerciseSeriesOr
 import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateRoutineOrderException;
 import com.kiniot.uflex.api.planning.domain.exceptions.DuplicateRoutineScheduleException;
 import com.kiniot.uflex.api.planning.domain.exceptions.ExerciseClinicMismatchException;
+import com.kiniot.uflex.api.planning.domain.exceptions.ExerciseVideoAssetInvalidException;
 import com.kiniot.uflex.api.planning.domain.exceptions.ExerciseWithIdNotFoundException;
 import com.kiniot.uflex.api.planning.domain.exceptions.CurrentUserPatientProfileNotFoundException;
 import com.kiniot.uflex.api.planning.domain.exceptions.InvalidTreatmentPlanStatusTransitionException;
@@ -64,23 +74,29 @@ import com.kiniot.uflex.api.subscription.domain.exceptions.SubscriptionOperation
 import com.kiniot.uflex.api.subscription.domain.exceptions.SubscriptionPriceMismatchException;
 import com.kiniot.uflex.api.subscription.domain.exceptions.TierNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageConversionException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Locale;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     private final ErrorResponseFactory errorResponseFactory;
 
@@ -99,12 +115,14 @@ public class GlobalExceptionHandler {
             CrossClinicAssignmentException.class,
             TenantAssignmentException.class,
             EmailAlreadyInUseException.class,
+            EdgeServiceAccountAlreadyExistsException.class,
             UserTenantAlreadyAssignedException.class,
             UserTenantNotAssignedException.class,
             ExerciseClinicMismatchException.class,
             DeviceAlreadyRegisteredException.class,
             DeviceClinicMismatchException.class,
             DeviceAssignmentNotAllowedException.class,
+            DeviceNotInStockException.class,
             DuplicateRoutineOrderException.class,
             DuplicateRoutineScheduleException.class,
             DuplicateExerciseSeriesOrderException.class,
@@ -119,7 +137,6 @@ public class GlobalExceptionHandler {
             OverlappingTreatmentPlanPeriodException.class,
             CurrentSubscriptionAlreadyExistsException.class,
             SubscriptionOperationNotAllowedException.class,
-            OverlappingTreatmentPlanPeriodException.class,
             PatientAlreadyInActiveSessionException.class,
             TherapySessionAlreadyFinalizedException.class,
             TherapySessionNotInProgressException.class,
@@ -127,7 +144,8 @@ public class GlobalExceptionHandler {
             HardwareNotReadyException.class,
             IoTSensorsNotPlacedException.class,
             RoutineNotCompletedException.class,
-            SerieNotStartedException.class
+            SerieNotStartedException.class,
+            MediaUploadNotConfirmableException.class
     })
     public ResponseEntity<ErrorResource> handleConflictExceptions(RuntimeException exception, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.CONFLICT, exception.getMessage(), request, exception);
@@ -154,6 +172,8 @@ public class GlobalExceptionHandler {
             AuthenticatedUserIdNotFoundException.class,
             AuthenticatedTenantNotFoundException.class,
             DeviceNotFoundException.class,
+            EdgeServiceAccountNotFoundException.class,
+            MediaAssetNotFoundException.class,
             TierNotFoundException.class,
             SubscriptionNotFoundException.class
     })
@@ -177,10 +197,29 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.BAD_GATEWAY, exception.getMessage(), request, exception);
     }
 
+    @ExceptionHandler(MediaFileTooLargeException.class)
+    public ResponseEntity<ErrorResource> handleMediaFileTooLargeException(
+            MediaFileTooLargeException exception,
+            HttpServletRequest request
+    ) {
+        return buildErrorResponse(HttpStatus.PAYLOAD_TOO_LARGE, exception.getMessage(), request, exception);
+    }
+
+    @ExceptionHandler(MediaStorageException.class)
+    public ResponseEntity<ErrorResource> handleMediaStorageException(
+            MediaStorageException exception,
+            HttpServletRequest request
+    ) {
+        return buildErrorResponse(HttpStatus.BAD_GATEWAY, exception.getMessage(), request, exception);
+    }
+
     @ExceptionHandler({
             IllegalArgumentException.class,
             InvalidCredentialsException.class,
-            SubscriptionPriceMismatchException.class
+            SubscriptionPriceMismatchException.class,
+            UnsupportedMediaContentTypeException.class,
+            PhysiotherapistPhotoAssetInvalidException.class,
+            ExerciseVideoAssetInvalidException.class
     })
     public ResponseEntity<ErrorResource> handleBadRequestExceptions(RuntimeException exception, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request, exception);
@@ -270,6 +309,27 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(status, detail, request, exception);
     }
 
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResource> handleMethodArgumentNotValidException(
+            MethodArgumentNotValidException exception,
+            HttpServletRequest request
+    ) {
+        String message = exception.getBindingResult().getFieldErrors().stream()
+                .map(error -> "%s: %s".formatted(error.getField(), error.getDefaultMessage()))
+                .reduce((first, second) -> first + "; " + second)
+                .orElse("Request body validation failed");
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request, exception);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResource> handleNoResourceFoundException(
+            NoResourceFoundException exception,
+            HttpServletRequest request
+    ) {
+        String message = "No endpoint found for %s %s".formatted(request.getMethod(), request.getRequestURI());
+        return buildErrorResponse(HttpStatus.NOT_FOUND, message, request, exception);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResource> handleUnhandledException(Exception exception, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred", request, exception);
@@ -281,7 +341,23 @@ public class GlobalExceptionHandler {
             HttpServletRequest request,
             Throwable throwable
     ) {
+        logException(status, message, request, throwable);
         return errorResponseFactory.buildResponse(status, message, request, throwable);
+    }
+
+    private void logException(
+            HttpStatus status,
+            String message,
+            HttpServletRequest request,
+            Throwable throwable
+    ) {
+        var method = request.getMethod();
+        var path = request.getRequestURI();
+        if (status.is5xxServerError()) {
+            log.error("{} {} -> {} {} | {}", method, path, status.value(), status.getReasonPhrase(), message, throwable);
+            return;
+        }
+        log.warn("{} {} -> {} {} | {}", method, path, status.value(), status.getReasonPhrase(), message);
     }
 
     private String humanReadableTypeName(Class<?> type) {

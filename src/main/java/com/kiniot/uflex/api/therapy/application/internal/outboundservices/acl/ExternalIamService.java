@@ -26,4 +26,20 @@ public class ExternalIamService {
         var userId = iamContextFacade.fetchContextUserId();
         return (userId == null || userId.isBlank()) ? Optional.empty() : Optional.of(new UserId(UUID.fromString(userId)));
     }
+
+    /**
+     * The kit serial bound to the current principal when it is an edge service account;
+     * empty for human callers. Used to enforce per-edge least-privilege on ingestion.
+     */
+    public Optional<String> findEdgeSerialForCurrentUser() {
+        return iamContextFacade.findEdgeSerialForCurrentUser();
+    }
+
+    /**
+     * The last LAN base URL reported by the edge bound to {@code serialNumber}; empty when no edge
+     * account exists for it or it has not reported a URL yet. Used by the mobile rendezvous endpoint.
+     */
+    public Optional<String> findEdgeLanUrlBySerial(String serialNumber) {
+        return iamContextFacade.findEdgeLanUrlBySerial(serialNumber);
+    }
 }

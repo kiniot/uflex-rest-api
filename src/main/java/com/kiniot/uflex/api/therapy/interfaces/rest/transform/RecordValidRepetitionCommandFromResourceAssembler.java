@@ -1,6 +1,7 @@
 package com.kiniot.uflex.api.therapy.interfaces.rest.transform;
 
 import com.kiniot.uflex.api.therapy.domain.model.commands.RecordValidRepetitionCommand;
+import com.kiniot.uflex.api.therapy.domain.model.valueobjects.RepetitionClassification;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.RecordValidRepetitionResource;
 
 import java.util.UUID;
@@ -14,7 +15,9 @@ public final class RecordValidRepetitionCommandFromResourceAssembler {
         return new RecordValidRepetitionCommand(
                 sessionId,
                 serieId,
-                resource.achievedAngle(),
+                resource.peakAngle(),
+                resource.achievedRom(),
+                RepetitionClassification.of(resource.classification()),
                 resource.recordedAt(),
                 edgeSequenceId
         );

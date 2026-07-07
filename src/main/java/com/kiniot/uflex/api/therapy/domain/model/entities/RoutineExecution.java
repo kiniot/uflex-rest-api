@@ -49,7 +49,7 @@ public class RoutineExecution extends AuditableModel<RoutineId> {
     }
 
     public boolean isCompleted() {
-        return !series.isEmpty() && series.stream().allMatch(s -> s.getStatus() == SerieStatus.Validated);
+        return !series.isEmpty() && series.stream().allMatch(s -> s.getStatus() == SerieStatus.Completed);
     }
 
     public void checkCompletion() {

@@ -19,7 +19,7 @@ public class DeviceResourceFromEntityAssembler {
                 entity.getCalibrationStatus(),
                 entity.getStatus(),
                 entity.getLastSeenAt(),
-                entity.getClinicId().id().toString(),
+                entity.getClinicId() != null && entity.getClinicId().id() != null ? entity.getClinicId().id().toString() : null,
                 entity.getCurrentPatientId() != null ? entity.getCurrentPatientId().patientId().toString() : null,
                 patientFullName,
                 entity.isOffline()

@@ -9,7 +9,7 @@ public class PhysiotherapistResourceFromEntityAssembler {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
-    public static PhysiotherapistResource toResourceFromEntity(Physiotherapist entity) {
+    public static PhysiotherapistResource toResourceFromEntity(Physiotherapist entity, String photoUrl) {
         return new PhysiotherapistResource(
                 entity.getId().physiotherapistId().toString(),
                 entity.getUserId().id().toString(),
@@ -21,7 +21,8 @@ public class PhysiotherapistResourceFromEntityAssembler {
                 entity.getPhoneNumber().number(),
                 entity.getLicenseNumber().licenseNumber(),
                 entity.getProfessionalSummary().summary(),
-                entity.getPhotoUrl().url(),
+                entity.getPhotoAssetId() != null ? entity.getPhotoAssetId().toString() : null,
+                photoUrl,
                 entity.getYearsOfExperience(),
                 entity.getHireDate().format(DATE_FORMATTER),
                 entity.getStatus().name()

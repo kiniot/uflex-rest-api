@@ -5,8 +5,10 @@ import com.kiniot.uflex.api.iam.domain.model.entities.Role;
 import com.kiniot.uflex.api.iam.domain.model.queries.*;
 import com.kiniot.uflex.api.iam.domain.model.valueobjects.Email;
 import com.kiniot.uflex.api.iam.domain.model.commands.DeleteUserCommand;
+import com.kiniot.uflex.api.iam.domain.model.aggregates.EdgeServiceAccount;
 import com.kiniot.uflex.api.iam.domain.services.UserCommandService;
 import com.kiniot.uflex.api.iam.domain.services.UserQueryService;
+import com.kiniot.uflex.api.iam.infrastructure.persistence.jpa.repositories.EdgeServiceAccountRepository;
 import com.kiniot.uflex.api.iam.interfaces.acl.IamContextFacade;
 import com.kiniot.uflex.api.iam.domain.model.commands.SignUpVerifiedUserCommand;
 import com.kiniot.uflex.api.iam.domain.model.commands.UpdateUserEmailCommand;
@@ -14,6 +16,7 @@ import com.kiniot.uflex.api.shared.domain.model.valueobjects.UserId;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -22,15 +25,18 @@ public class IamContextFacadeImpl implements IamContextFacade {
     private final UserCommandService userCommandService;
     private final UserQueryService userQueryService;
     private final VerificationService verificationService;
+    private final EdgeServiceAccountRepository edgeServiceAccountRepository;
 
     public IamContextFacadeImpl(
             UserCommandService userCommandService,
             UserQueryService userQueryService,
-            VerificationService verificationService
+            VerificationService verificationService,
+            EdgeServiceAccountRepository edgeServiceAccountRepository
     ) {
         this.userCommandService = userCommandService;
         this.userQueryService = userQueryService;
         this.verificationService = verificationService;
+        this.edgeServiceAccountRepository = edgeServiceAccountRepository;
     }
 
     @Override
@@ -93,5 +99,18 @@ public class IamContextFacadeImpl implements IamContextFacade {
     public String fetchCurrentTenantId() {
         var tenantId = userQueryService.handle(new GetCurrentTenantIdQuery());
         return tenantId.isEmpty() ? "" : tenantId.get().tenantId().toString();
+    }
+
+    @Override
+    public Optional<String> findEdgeSerialForCurrentUser() {
+        return userQueryService.handle(new GetCurrentUserIdQuery())
+                .flatMap(edgeServiceAccountRepository::findByUserId)
+                .map(EdgeServiceAccount::getSerialNumber);
+    }
+
+    @Override
+    public Optional<String> findEdgeLanUrlBySerial(String serialNumber) {
+        return edgeServiceAccountRepository.findBySerialNumber(serialNumber)
+                .map(EdgeServiceAccount::getCurrentLanUrl);
     }
 }

@@ -11,12 +11,17 @@ public record SessionSummaryResource(
         UUID patientId,
         Integer totalSeries,
         Integer completedSeries,
+        Integer totalRepetitions,
+        Integer goodRepetitions,
+        Integer incompleteRepetitions,
+        Integer unsafeRepetitions,
+        Double averageAchievedRom,
         Integer painLevel,
         Integer painReportsCount,
         Integer highPainReportsCount,
         Integer maxReportedPainLevel,
         Boolean requiresClinicalReview,
-        Integer anomaliesDetected,
+        Integer compensatoryMovementsDetected,
         Instant startedAt,
         Instant finalizedAt
 ) {}

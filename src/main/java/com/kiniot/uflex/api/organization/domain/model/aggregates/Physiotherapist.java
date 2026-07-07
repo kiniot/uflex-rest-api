@@ -8,7 +8,6 @@ import com.kiniot.uflex.api.organization.domain.model.events.PhysiotherapistProf
 import com.kiniot.uflex.api.organization.domain.model.events.PhysiotherapistProfileRegisteredEvent;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.LicenseNumber;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhoneNumber;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhotoUrl;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PhysiotherapistId;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.ProfessionalSummary;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhysiotherapistStatus;
@@ -21,6 +20,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Getter
 @Entity
@@ -55,8 +55,8 @@ public class Physiotherapist extends AuditableAbstractAggregateRoot<Physiotherap
     @Embedded
     private ProfessionalSummary professionalSummary;
 
-    @Embedded
-    private PhotoUrl photoUrl;
+    @Column(name = "photo_asset_id", columnDefinition = "UUID")
+    private UUID photoAssetId;
 
     private int yearsOfExperience;
 
@@ -69,7 +69,7 @@ public class Physiotherapist extends AuditableAbstractAggregateRoot<Physiotherap
 
     public Physiotherapist(UserId userId, ClinicId clinicId, String fullName, Specialty specialty,
                            Email emailAddress, PhoneNumber phoneNumber, LicenseNumber licenseNumber,
-                           ProfessionalSummary professionalSummary, PhotoUrl photoUrl, int yearsOfExperience) {
+                           ProfessionalSummary professionalSummary, UUID photoAssetId, int yearsOfExperience) {
         this.id = new PhysiotherapistId();
         this.userId = userId;
         this.clinicId = clinicId;
@@ -79,7 +79,7 @@ public class Physiotherapist extends AuditableAbstractAggregateRoot<Physiotherap
         this.phoneNumber = phoneNumber;
         this.licenseNumber = licenseNumber;
         this.professionalSummary = professionalSummary;
-        this.photoUrl = photoUrl;
+        this.photoAssetId = photoAssetId;
         this.yearsOfExperience = yearsOfExperience;
         this.hireDate = LocalDate.now();
         this.status = PhysiotherapistStatus.INACTIVE;
@@ -88,7 +88,7 @@ public class Physiotherapist extends AuditableAbstractAggregateRoot<Physiotherap
     public Physiotherapist(RegisterPhysiotherapistCommand command, UserId userId, ClinicId clinicId) {
         this(userId, clinicId, command.fullName(), command.specialty(),
                 command.emailAddress(), command.phoneNumber(), command.licenseNumber(),
-                command.professionalSummary(), command.photoUrl(), command.yearsOfExperience());
+                command.professionalSummary(), command.photoAssetId(), command.yearsOfExperience());
     }
 
     public void register() {
@@ -141,7 +141,7 @@ public class Physiotherapist extends AuditableAbstractAggregateRoot<Physiotherap
             PhoneNumber phoneNumber,
             LicenseNumber licenseNumber,
             ProfessionalSummary professionalSummary,
-            PhotoUrl photoUrl,
+            UUID photoAssetId,
             int yearsOfExperience
     ) {
         this.fullName = fullName;
@@ -150,7 +150,7 @@ public class Physiotherapist extends AuditableAbstractAggregateRoot<Physiotherap
         this.phoneNumber = phoneNumber;
         this.licenseNumber = licenseNumber;
         this.professionalSummary = professionalSummary;
-        this.photoUrl = photoUrl;
+        this.photoAssetId = photoAssetId;
         this.yearsOfExperience = yearsOfExperience;
     }
 

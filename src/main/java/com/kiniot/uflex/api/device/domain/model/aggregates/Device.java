@@ -1,6 +1,8 @@
 package com.kiniot.uflex.api.device.domain.model.aggregates;
 
 import com.kiniot.uflex.api.device.domain.exceptions.DeviceAssignmentNotAllowedException;
+import com.kiniot.uflex.api.device.domain.exceptions.DeviceNotInStockException;
+import com.kiniot.uflex.api.device.domain.model.events.DeviceAddedToStockEvent;
 import com.kiniot.uflex.api.device.domain.model.events.DeviceAssignedToPatientEvent;
 import com.kiniot.uflex.api.device.domain.model.events.DeviceBatteryLowEvent;
 import com.kiniot.uflex.api.device.domain.model.events.DeviceRegisteredEvent;
@@ -56,7 +58,7 @@ public class Device extends AuditableAbstractAggregateRoot<Device, DeviceId> {
     private LocalDateTime lastSeenAt;
 
     @Embedded
-    @AttributeOverride(name = "id", column = @Column(name = "clinic_id", columnDefinition = "UUID", nullable = false))
+    @AttributeOverride(name = "id", column = @Column(name = "clinic_id", columnDefinition = "UUID", nullable = true))
     private ClinicId clinicId;
 
     @Embedded
@@ -80,6 +82,44 @@ public class Device extends AuditableAbstractAggregateRoot<Device, DeviceId> {
         this.clinicId = clinicId;
         this.currentPatientId = null;
         this.addDomainEvent(new DeviceRegisteredEvent(this, serialNumber.value(), clinicId));
+    }
+
+    /**
+     * Registers a device into the global, clinic-less inventory (stock). Devices stay
+     * {@link DeviceStatus#IN_STOCK} until a clinic's subscription is activated and the
+     * device is assigned to it via {@link #assignToClinic(ClinicId)}.
+     */
+    public static Device registerToStock(SerialNumber serialNumber, MacAddress macAddress,
+                                         FirmwareVersion firmwareVersion, DeviceModel model,
+                                         AdvertisedName advertisedName) {
+        var device = new Device();
+        device.id = new DeviceId();
+        device.serialNumber = serialNumber;
+        device.macAddress = macAddress;
+        device.firmwareVersion = firmwareVersion;
+        device.batteryLevel = new BatteryLevel(100);
+        device.model = model;
+        device.advertisedName = advertisedName;
+        device.calibrationStatus = CalibrationStatus.VALID;
+        device.status = DeviceStatus.IN_STOCK;
+        device.lastSeenAt = null;
+        device.clinicId = null;
+        device.currentPatientId = null;
+        device.addDomainEvent(new DeviceAddedToStockEvent(device, serialNumber.value()));
+        return device;
+    }
+
+    /**
+     * Hands a stock device over to a clinic when its subscription is activated.
+     * Only devices currently {@link DeviceStatus#IN_STOCK} can be assigned.
+     */
+    public void assignToClinic(ClinicId clinicId) {
+        if (this.status != DeviceStatus.IN_STOCK) {
+            throw new DeviceNotInStockException(this.serialNumber.value(), this.status);
+        }
+        this.clinicId = clinicId;
+        this.status = DeviceStatus.AVAILABLE;
+        this.addDomainEvent(new DeviceRegisteredEvent(this, this.serialNumber.value(), clinicId));
     }
 
     public void assignToPatient(PatientId patientId) {

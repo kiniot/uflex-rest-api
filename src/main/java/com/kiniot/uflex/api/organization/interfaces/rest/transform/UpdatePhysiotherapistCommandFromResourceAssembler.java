@@ -3,7 +3,6 @@ package com.kiniot.uflex.api.organization.interfaces.rest.transform;
 import com.kiniot.uflex.api.organization.domain.model.commands.UpdatePhysiotherapistCommand;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.LicenseNumber;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhoneNumber;
-import com.kiniot.uflex.api.organization.domain.model.valueobjects.PhotoUrl;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.ProfessionalSummary;
 import com.kiniot.uflex.api.organization.domain.model.valueobjects.Specialty;
 import com.kiniot.uflex.api.organization.interfaces.rest.resources.UpdatePhysiotherapistResource;
@@ -23,7 +22,7 @@ public class UpdatePhysiotherapistCommandFromResourceAssembler {
                 new PhoneNumber(resource.countryCode(), resource.phoneNumber()),
                 new LicenseNumber(resource.licenseNumber()),
                 new ProfessionalSummary(resource.professionalSummary()),
-                new PhotoUrl(resource.photoUrl()),
+                resource.photoAssetId() != null ? UUID.fromString(resource.photoAssetId()) : null,
                 resource.yearsOfExperience()
         );
     }

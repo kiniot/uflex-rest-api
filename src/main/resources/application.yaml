@@ -43,6 +43,18 @@ stripe:
   success-url: ${STRIPE_SUCCESS_URL:}
   cancel-url: ${STRIPE_CANCEL_URL:}
 
+supabase:
+  storage:
+    # Base Supabase project URL, e.g. https://gjapoeuqwcnmidswhrgu.supabase.co
+    url: ${SUPABASE_URL:}
+    # service_role secret key — SERVER SIDE ONLY, never expose to web/mobile clients
+    service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
+    bucket: ${SUPABASE_STORAGE_BUCKET:uflex-media}
+    upload-url-expiry-seconds: ${SUPABASE_UPLOAD_URL_EXPIRY_SECONDS:120}
+    download-url-expiry-seconds: ${SUPABASE_DOWNLOAD_URL_EXPIRY_SECONDS:3600}
+    max-image-bytes: ${SUPABASE_MAX_IMAGE_BYTES:10485760}
+    max-video-bytes: ${SUPABASE_MAX_VIDEO_BYTES:524288000}
+
 scalar:
   enabled: true
   theme: kepler
@@ -64,3 +76,10 @@ brevo:
   from:
     address: ${BREVO_FROM_ADDRESS:}
     name: ${BREVO_FROM_NAME:}
+
+uflex:
+  developer:
+    # Platform developer account (no tenant) bootstrapped on startup to manage the global
+    # device inventory (ROLE_DEVELOPER). Bootstrap is skipped when either value is blank.
+    email: ${DEVELOPER_EMAIL:}
+    password: ${DEVELOPER_PASSWORD:}

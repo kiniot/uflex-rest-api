@@ -6,6 +6,8 @@ public record ClinicFleetMetricsResource(
         int assigned,
         int inMaintenance,
         int lowBattery,
-        int offline
+        int offline,
+        int requestedKits,
+        int pendingKits
 ) {
 }

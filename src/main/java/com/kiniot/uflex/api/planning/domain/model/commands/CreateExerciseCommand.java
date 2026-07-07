@@ -5,12 +5,14 @@ import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseDescripti
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.ExerciseName;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.MovementType;
 
+import java.util.UUID;
+
 public record CreateExerciseCommand(
         ExerciseName name,
         ExerciseDescription description,
         BodyPart bodyPart,
         MovementType movementType,
-        String videoUrl
+        UUID videoAssetId
 ) {
     public CreateExerciseCommand {
         if (name == null) {

@@ -1,11 +1,13 @@
 package com.kiniot.uflex.api.planning.application.acl;
 
+import com.kiniot.uflex.api.planning.domain.model.aggregates.Exercise;
 import com.kiniot.uflex.api.planning.domain.model.aggregates.TreatmentPlan;
 import com.kiniot.uflex.api.planning.domain.model.entities.Routine;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.RoutineId;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanId;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanPeriod;
 import com.kiniot.uflex.api.planning.domain.model.valueobjects.TreatmentPlanStatus;
+import com.kiniot.uflex.api.planning.infrastructure.persistence.jpa.repositories.ExerciseRepository;
 import com.kiniot.uflex.api.planning.infrastructure.persistence.jpa.repositories.RoutineRepository;
 import com.kiniot.uflex.api.planning.infrastructure.persistence.jpa.repositories.TreatmentPlanRepository;
 import com.kiniot.uflex.api.planning.interfaces.acl.PlanningContextFacade;
@@ -31,13 +33,16 @@ public class PlanningContextFacadeImpl implements PlanningContextFacade {
 
     private final RoutineRepository routineRepository;
     private final TreatmentPlanRepository treatmentPlanRepository;
+    private final ExerciseRepository exerciseRepository;
 
     public PlanningContextFacadeImpl(
             RoutineRepository routineRepository,
-            TreatmentPlanRepository treatmentPlanRepository
+            TreatmentPlanRepository treatmentPlanRepository,
+            ExerciseRepository exerciseRepository
     ) {
         this.routineRepository = routineRepository;
         this.treatmentPlanRepository = treatmentPlanRepository;
+        this.exerciseRepository = exerciseRepository;
     }
 
     @Override
@@ -54,13 +59,20 @@ public class PlanningContextFacadeImpl implements PlanningContextFacade {
 
         List<SerieDetailsDto> series = routine.getExerciseSeries().stream()
                 .sorted(Comparator.comparing(exerciseSeries -> exerciseSeries.order().value()))
-                .map(exerciseSeries -> new SerieDetailsDto(
-                        exerciseSeries.exerciseId().id().toString(),
-                        exerciseSeries.repetitions().value(),
-                        exerciseSeries.rangeOfMotion().degrees().doubleValue(),
-                        exerciseSeries.duration().seconds(),
-                        exerciseSeries.restDuration().seconds()
-                ))
+                .map(exerciseSeries -> {
+                    Exercise exercise = exerciseRepository.findById(exerciseSeries.exerciseId())
+                            .orElseThrow(() -> new IllegalArgumentException(
+                                    "Exercise not found: " + exerciseSeries.exerciseId().id()));
+                    return new SerieDetailsDto(
+                            exerciseSeries.exerciseId().id().toString(),
+                            exerciseSeries.repetitions().value(),
+                            exerciseSeries.rangeOfMotion().degrees().doubleValue(),
+                            exercise.getMovementType().name(),
+                            exercise.getBodyPart().name(),
+                            exerciseSeries.duration().seconds(),
+                            exerciseSeries.restDuration().seconds()
+                    );
+                })
                 .toList();
 
         return new RoutineDetailsDto(routineId, series);

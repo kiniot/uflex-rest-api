@@ -8,9 +8,11 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.web.ErrorResponseException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Locale;
 
@@ -33,13 +35,17 @@ public class ApiErrorCodeResolver {
         if (throwable instanceof IllegalStateException) {
             return "CONFLICT";
         }
-        if (throwable instanceof MethodArgumentTypeMismatchException
+        if (throwable instanceof MethodArgumentNotValidException
+                || throwable instanceof MethodArgumentTypeMismatchException
                 || throwable instanceof TypeMismatchException
                 || throwable instanceof MissingServletRequestParameterException
                 || throwable instanceof ServletRequestBindingException
                 || throwable instanceof HttpMessageNotReadableException
                 || throwable instanceof HttpMessageConversionException) {
             return "BAD_REQUEST";
+        }
+        if (throwable instanceof NoResourceFoundException) {
+            return "NOT_FOUND";
         }
         if (throwable instanceof ErrorResponseException errorResponseException) {
             return resolveFromStatus(errorResponseException.getStatusCode());

@@ -11,6 +11,7 @@ import com.kiniot.uflex.api.therapy.domain.exceptions.TherapySessionStillInProgr
 import com.kiniot.uflex.api.therapy.domain.model.aggregates.TherapySession;
 import com.kiniot.uflex.api.therapy.domain.model.entities.Serie;
 import com.kiniot.uflex.api.therapy.domain.model.queries.*;
+import com.kiniot.uflex.api.therapy.domain.model.valueobjects.KitSerial;
 import com.kiniot.uflex.api.therapy.domain.model.valueobjects.PatientId;
 import com.kiniot.uflex.api.therapy.domain.model.valueobjects.SerieId;
 import com.kiniot.uflex.api.therapy.domain.model.valueobjects.SessionStatus;
@@ -56,6 +57,20 @@ public class TherapySessionQueryServiceImpl implements TherapySessionQueryServic
     }
 
     @Override
+    public TherapySession handle(GetActiveTherapySessionByDeviceSerialQuery query) {
+        log.debug("Finding active therapy session: deviceSerial={}", query.deviceSerial());
+        // Per-edge least-privilege: an edge caller may only query its own kit's serial.
+        ensureEdgeMayQuerySerial(query.deviceSerial());
+        // Naturally clinic-scoped: only sessions of the caller's clinic are returned, so the
+        // device-serial lookup cannot leak another clinic's session.
+        ClinicId clinicId = externalIamService.fetchCurrentClinicId()
+                .orElseThrow(() -> new IllegalStateException("Authenticated user has no associated clinic"));
+        return therapySessionRepository.findActiveByIotDeviceId(query.deviceSerial(), clinicId.id(), SessionStatus.ACTIVE_STATUSES)
+                .orElseThrow(() -> TherapySessionNotFoundException.withId(
+                        "active session for device " + query.deviceSerial()));
+    }
+
+    @Override
     public TherapySession handle(GetSessionProgressQuery query) {
         log.debug("Fetching session progress: sessionId={}", query.sessionId());
         TherapySession session = therapySessionRepository.findById(TherapySessionId.of(query.sessionId()))
@@ -97,6 +112,22 @@ public class TherapySessionQueryServiceImpl implements TherapySessionQueryServic
                 .orElseThrow(() -> new IllegalStateException("Authenticated user has no associated clinic"));
         return externalPlanningService.resolveRoutineForDate(
                 clinicId.id().toString(), query.patientId().toString(), query.date());
+    }
+
+    @Override
+    public EdgeConnection handle(GetEdgeConnectionForCurrentPatientQuery query) {
+        log.debug("Resolving edge connection for current patient");
+        PatientId patientId = externalOrganizationService.fetchCurrentPatientId()
+                .orElseThrow(() -> new AccessDeniedException("Current patient profile not found"));
+        ClinicId clinicId = externalIamService.fetchCurrentClinicId()
+                .orElseThrow(() -> new IllegalStateException("Authenticated user has no associated clinic"));
+        TherapySession session = therapySessionRepository
+                .findActiveByPatientId(patientId.id(), clinicId.id(), SessionStatus.ACTIVE_STATUSES)
+                .orElseThrow(() -> TherapySessionNotFoundException.withId(
+                        "active session for patient " + patientId.id()));
+        String serial = KitSerial.toStringOrNull(session.getIotDeviceId());
+        String lanUrl = externalIamService.findEdgeLanUrlBySerial(serial).orElse(null);
+        return new EdgeConnection(lanUrl, session.getEdgePairingToken(), null);
     }
 
     private void ensureSessionAccess(TherapySession session) {
@@ -148,6 +179,22 @@ public class TherapySessionQueryServiceImpl implements TherapySessionQueryServic
                 .orElseThrow(() -> new AccessDeniedException("Current patient profile not found"));
         if (!currentPatientId.equals(PatientId.of(patientId))) {
             throw new AccessDeniedException("You do not have permission to access this patient");
+        }
+    }
+
+    /**
+     * Per-edge least-privilege for the device-serial lookup: a {@code ROLE_EDGE} caller may only
+     * query the serial of the kit it is bound to. Human callers (clinic admin / physiotherapist)
+     * remain unrestricted here; their clinic scope is enforced by the query below.
+     */
+    private void ensureEdgeMayQuerySerial(String requestedSerial) {
+        if (!currentHasAuthority("ROLE_EDGE")) {
+            return;
+        }
+        String edgeSerial = externalIamService.findEdgeSerialForCurrentUser()
+                .orElseThrow(() -> new AccessDeniedException("Edge service account is not bound to a kit"));
+        if (!edgeSerial.equals(requestedSerial)) {
+            throw new AccessDeniedException("An edge may only query its own kit");
         }
     }
 
