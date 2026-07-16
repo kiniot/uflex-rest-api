@@ -7,6 +7,7 @@ import com.kiniot.uflex.api.therapy.domain.model.valueobjects.SerieStatus;
 import com.kiniot.uflex.api.therapy.domain.model.valueobjects.SessionStatus;
 import com.kiniot.uflex.api.therapy.domain.model.valueobjects.TherapySessionId;
 import com.kiniot.uflex.api.therapy.infrastructure.persistence.jpa.repositories.projections.CompensatoryMovementCountRow;
+import com.kiniot.uflex.api.therapy.infrastructure.persistence.jpa.repositories.projections.PatientTherapyOverviewRow;
 import com.kiniot.uflex.api.therapy.infrastructure.persistence.jpa.repositories.projections.SerieRepetitionAggregateRow;
 import com.kiniot.uflex.api.therapy.infrastructure.persistence.jpa.repositories.projections.TherapySessionHistoryRow;
 import org.springframework.data.domain.Limit;
@@ -137,6 +138,50 @@ public interface TherapySessionRepository extends JpaRepository<TherapySession, 
             GROUP BY ts.id.id
             """)
     List<CompensatoryMovementCountRow> countCompensatoryMovements(@Param("sessionIds") Collection<UUID> sessionIds);
+
+    /**
+     * One row per patient for the clinician's index: how much therapy they have done and how well.
+     *
+     * <p>Sessions with no repetitions still count towards {@code totalSessions} — a session that
+     * recorded nothing is itself the finding — but contribute no ROM, hence the AVG skipping nulls.
+     */
+    @Query("""
+            SELECT new com.kiniot.uflex.api.therapy.infrastructure.persistence.jpa.repositories.projections.PatientTherapyOverviewRow(
+                ts.patientId.id,
+                COUNT(DISTINCT ts.id.id),
+                COUNT(DISTINCT CASE WHEN ts.status = :completedStatus THEN ts.id.id END),
+                COUNT(DISTINCT CASE WHEN ts.requiresClinicalReview = true THEN ts.id.id END),
+                MAX(ts.startedAt),
+                COUNT(rep.id.id),
+                COUNT(CASE WHEN rep.classification = :good THEN 1 END),
+                AVG(rep.achievedRom))
+            FROM TherapySession ts
+            LEFT JOIN ts.routine r
+            LEFT JOIN r.series ser
+            LEFT JOIN ser.repetitions rep
+            WHERE ts.patientId.id IN :patientIds
+              AND ts.clinicId.id = :clinicId
+            GROUP BY ts.patientId.id
+            """)
+    List<PatientTherapyOverviewRow> aggregateTherapyOverviewByPatient(
+            @Param("patientIds") Collection<UUID> patientIds,
+            @Param("clinicId") UUID clinicId,
+            @Param("completedStatus") SessionStatus completedStatus,
+            @Param("good") RepetitionClassification good
+    );
+
+    /** Which of these patients are mid-session right now, so the index can mark them as live. */
+    @Query("""
+            SELECT DISTINCT ts.patientId.id FROM TherapySession ts
+            WHERE ts.patientId.id IN :patientIds
+              AND ts.clinicId.id = :clinicId
+              AND ts.status IN :statuses
+            """)
+    List<UUID> findPatientIdsWithActiveSession(
+            @Param("patientIds") Collection<UUID> patientIds,
+            @Param("clinicId") UUID clinicId,
+            @Param("statuses") Collection<SessionStatus> statuses
+    );
 
     /**
      * Hydrates the persistence context with the session's series and their repetitions in one shot,

@@ -13,6 +13,8 @@ public interface TherapySessionQueryService {
 
     List<TherapySessionHistoryItem> handle(GetTherapySessionHistoryQuery query);
 
+    List<PatientTherapyOverview> handle(GetPatientTherapyOverviewQuery query);
+
     /**
      * @return the session with {@code routine.series} and their repetitions hydrated, ready to be
      *         walked outside the transaction by the detail assembler

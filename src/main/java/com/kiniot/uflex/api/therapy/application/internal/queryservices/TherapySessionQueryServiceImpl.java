@@ -21,6 +21,7 @@ import com.kiniot.uflex.api.therapy.domain.model.valueobjects.TherapySessionId;
 import com.kiniot.uflex.api.therapy.domain.services.TherapySessionQueryService;
 import com.kiniot.uflex.api.therapy.infrastructure.persistence.jpa.repositories.TherapySessionRepository;
 import com.kiniot.uflex.api.therapy.infrastructure.persistence.jpa.repositories.projections.CompensatoryMovementCountRow;
+import com.kiniot.uflex.api.therapy.infrastructure.persistence.jpa.repositories.projections.PatientTherapyOverviewRow;
 import com.kiniot.uflex.api.therapy.infrastructure.persistence.jpa.repositories.projections.SerieRepetitionAggregateRow;
 import com.kiniot.uflex.api.therapy.infrastructure.persistence.jpa.repositories.projections.TherapySessionHistoryRow;
 import lombok.RequiredArgsConstructor;
@@ -31,8 +32,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -97,6 +100,39 @@ public class TherapySessionQueryServiceImpl implements TherapySessionQueryServic
         return rows.stream()
                 .map(row -> toHistoryItem(row, executionAggregates.get(row.sessionId()),
                         compensatoryCounts.get(row.sessionId())))
+                .toList();
+    }
+
+    @Override
+    public List<PatientTherapyOverview> handle(GetPatientTherapyOverviewQuery query) {
+        log.debug("Listing patient therapy overview for the current physiotherapist");
+        String physiotherapistId = externalOrganizationService.fetchCurrentPhysiotherapistId()
+                .orElseThrow(() -> new AccessDeniedException("Current physiotherapist profile not found"));
+        ClinicId clinicId = externalIamService.fetchCurrentClinicId()
+                .orElseThrow(() -> new IllegalStateException("Authenticated user has no associated clinic"));
+
+        List<PatientId> patientIds = externalOrganizationService.findPatientIdsByPhysiotherapistAndClinic(
+                physiotherapistId, clinicId.id().toString());
+        if (patientIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<UUID> rawPatientIds = patientIds.stream().map(PatientId::id).toList();
+        Map<UUID, PatientTherapyOverviewRow> aggregates = therapySessionRepository
+                .aggregateTherapyOverviewByPatient(rawPatientIds, clinicId.id(),
+                        SessionStatus.Completed, RepetitionClassification.Good)
+                .stream()
+                .collect(Collectors.toMap(PatientTherapyOverviewRow::patientId, row -> row));
+        Set<UUID> patientsInSession = Set.copyOf(therapySessionRepository.findPatientIdsWithActiveSession(
+                rawPatientIds, clinicId.id(), SessionStatus.ACTIVE_STATUSES));
+        Map<String, String> names = externalOrganizationService.fetchPatientNames(patientIds);
+
+        return rawPatientIds.stream()
+                .map(patientId -> toOverview(patientId, names.get(patientId.toString()),
+                        aggregates.get(patientId), patientsInSession.contains(patientId)))
+                // Never-started patients sort first: an untouched caseload is the point of this list.
+                .sorted(Comparator.comparing(PatientTherapyOverview::lastSessionAt,
+                        Comparator.nullsFirst(Comparator.reverseOrder())))
                 .toList();
     }
 
@@ -198,6 +234,23 @@ public class TherapySessionQueryServiceImpl implements TherapySessionQueryServic
         String serial = KitSerial.toStringOrNull(session.getIotDeviceId());
         String lanUrl = externalIamService.findEdgeLanUrlBySerial(serial).orElse(null);
         return new EdgeConnection(lanUrl, session.getEdgePairingToken(), null);
+    }
+
+    /** A patient with no sessions at all yields no aggregate row, hence the zeroed defaults. */
+    private PatientTherapyOverview toOverview(UUID patientId, String fullName,
+                                              PatientTherapyOverviewRow row, boolean hasActiveSession) {
+        return new PatientTherapyOverview(
+                patientId,
+                fullName,
+                row != null ? Math.toIntExact(row.totalSessions()) : 0,
+                row != null ? Math.toIntExact(row.completedSessions()) : 0,
+                row != null ? Math.toIntExact(row.sessionsRequiringReview()) : 0,
+                row != null ? row.lastSessionAt() : null,
+                row != null ? Math.toIntExact(row.totalRepetitions()) : 0,
+                row != null ? Math.toIntExact(row.goodRepetitions()) : 0,
+                row != null ? row.averageAchievedRom() : null,
+                hasActiveSession
+        );
     }
 
     /**
