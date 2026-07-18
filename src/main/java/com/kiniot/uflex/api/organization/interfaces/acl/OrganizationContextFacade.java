@@ -12,7 +12,13 @@ public interface OrganizationContextFacade {
 
     String findPatientIdByUserId(String userId);
 
+    /** Empty string when the user has no physiotherapist profile, mirroring findPatientIdByUserId. */
+    String findPhysiotherapistIdByUserId(String userId);
+
     String getPatientFullName(String patientId);
+
+    /** Maps patient ids to their full name. Unknown ids are omitted from the result. */
+    Map<String, String> getPatientNamesByIds(List<String> patientIds);
 
     /** Maps clinic ids to their commercial name. Unknown ids are omitted from the result. */
     Map<String, String> getClinicNamesByIds(List<String> clinicIds);

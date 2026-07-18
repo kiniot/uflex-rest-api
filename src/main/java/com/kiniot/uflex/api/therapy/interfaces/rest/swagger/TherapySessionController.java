@@ -6,6 +6,7 @@ import com.kiniot.uflex.api.therapy.interfaces.rest.resources.ConfirmHardwareRea
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.DailyScheduleResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.InitiateTherapyPreparationResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.SessionSummaryResource;
+import com.kiniot.uflex.api.therapy.interfaces.rest.resources.TherapySessionDetailResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.TherapySessionResource;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -129,6 +130,23 @@ public interface TherapySessionController {
             @ApiResponse(responseCode = "500", description = "Internal server error.")
     })
     ResponseEntity<SessionSummaryResource> getSessionSummary(@PathVariable UUID id);
+
+    @Transactional(readOnly = true)
+    @GetMapping("/{id}/detail")
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
+    @Operation(summary = "Get session detail",
+            description = "Returns the full inspection view of a session for clinical follow-up: the "
+                    + "summary aggregates plus every serie and the individual repetitions recorded "
+                    + "against it (peak angle, achieved ROM, classification), and the compensatory "
+                    + "movements. Unlike /summary, it resolves in any status so a clinician can drill "
+                    + "into a session that is still in progress.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Detail retrieved."),
+            @ApiResponse(responseCode = "403", description = "Forbidden."),
+            @ApiResponse(responseCode = "404", description = "Session not found."),
+            @ApiResponse(responseCode = "500", description = "Internal server error.")
+    })
+    ResponseEntity<TherapySessionDetailResource> getSessionDetail(@PathVariable UUID id);
 
     @GetMapping("/schedule/{patientId}")
     @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST', 'ROLE_PATIENT')")

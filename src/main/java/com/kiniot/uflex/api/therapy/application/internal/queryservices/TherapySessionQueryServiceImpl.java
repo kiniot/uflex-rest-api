@@ -13,23 +13,44 @@ import com.kiniot.uflex.api.therapy.domain.model.entities.Serie;
 import com.kiniot.uflex.api.therapy.domain.model.queries.*;
 import com.kiniot.uflex.api.therapy.domain.model.valueobjects.KitSerial;
 import com.kiniot.uflex.api.therapy.domain.model.valueobjects.PatientId;
+import com.kiniot.uflex.api.therapy.domain.model.valueobjects.RepetitionClassification;
 import com.kiniot.uflex.api.therapy.domain.model.valueobjects.SerieId;
+import com.kiniot.uflex.api.therapy.domain.model.valueobjects.SerieStatus;
 import com.kiniot.uflex.api.therapy.domain.model.valueobjects.SessionStatus;
 import com.kiniot.uflex.api.therapy.domain.model.valueobjects.TherapySessionId;
 import com.kiniot.uflex.api.therapy.domain.services.TherapySessionQueryService;
 import com.kiniot.uflex.api.therapy.infrastructure.persistence.jpa.repositories.TherapySessionRepository;
+import com.kiniot.uflex.api.therapy.infrastructure.persistence.jpa.repositories.projections.CompensatoryMovementCountRow;
+import com.kiniot.uflex.api.therapy.infrastructure.persistence.jpa.repositories.projections.PatientTherapyOverviewRow;
+import com.kiniot.uflex.api.therapy.infrastructure.persistence.jpa.repositories.projections.SerieRepetitionAggregateRow;
+import com.kiniot.uflex.api.therapy.infrastructure.persistence.jpa.repositories.projections.TherapySessionHistoryRow;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Limit;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class TherapySessionQueryServiceImpl implements TherapySessionQueryService {
+
+    /**
+     * Hard cap on the history read. The clinic web plots the whole result rather than a page, so a
+     * server-side page size would silently truncate the trend line; this bound only exists to keep a
+     * pathological patient from returning unbounded rows.
+     */
+    private static final int HISTORY_MAX_RESULTS = 500;
 
     private final TherapySessionRepository therapySessionRepository;
     private final ExternalIamService externalIamService;
@@ -42,6 +63,91 @@ public class TherapySessionQueryServiceImpl implements TherapySessionQueryServic
         TherapySession session = therapySessionRepository.findById(TherapySessionId.of(query.sessionId()))
                 .orElseThrow(() -> TherapySessionNotFoundException.withId(query.sessionId().toString()));
         ensureSessionAccess(session);
+        return session;
+    }
+
+    @Override
+    public List<TherapySessionHistoryItem> handle(GetTherapySessionHistoryQuery query) {
+        log.debug("Listing therapy session history: patientId={}, treatmentPlanId={}",
+                query.patientId(), query.treatmentPlanId());
+        ensurePatientAccess(query.patientId());
+        ClinicId clinicId = externalIamService.fetchCurrentClinicId()
+                .orElseThrow(() -> new IllegalStateException("Authenticated user has no associated clinic"));
+
+        List<TherapySessionHistoryRow> rows = query.treatmentPlanId() != null
+                ? therapySessionRepository.findHistoryByPatientIdAndTreatmentPlanId(
+                        query.patientId(), clinicId.id(), query.treatmentPlanId(),
+                        Limit.of(HISTORY_MAX_RESULTS))
+                : therapySessionRepository.findHistoryByPatientId(
+                        query.patientId(), clinicId.id(), Limit.of(HISTORY_MAX_RESULTS));
+        if (rows.isEmpty()) {
+            return List.of();
+        }
+
+        List<UUID> sessionIds = rows.stream().map(TherapySessionHistoryRow::sessionId).toList();
+        Map<UUID, SerieRepetitionAggregateRow> executionAggregates = therapySessionRepository
+                .aggregateSeriesAndRepetitions(sessionIds, SerieStatus.Completed,
+                        RepetitionClassification.Good, RepetitionClassification.Incomplete,
+                        RepetitionClassification.Unsafe)
+                .stream()
+                .collect(Collectors.toMap(SerieRepetitionAggregateRow::sessionId, row -> row));
+        Map<UUID, Long> compensatoryCounts = therapySessionRepository
+                .countCompensatoryMovements(sessionIds)
+                .stream()
+                .collect(Collectors.toMap(CompensatoryMovementCountRow::sessionId,
+                        CompensatoryMovementCountRow::compensatoryMovementsDetected));
+
+        return rows.stream()
+                .map(row -> toHistoryItem(row, executionAggregates.get(row.sessionId()),
+                        compensatoryCounts.get(row.sessionId())))
+                .toList();
+    }
+
+    @Override
+    public List<PatientTherapyOverview> handle(GetPatientTherapyOverviewQuery query) {
+        log.debug("Listing patient therapy overview for the current physiotherapist");
+        String physiotherapistId = externalOrganizationService.fetchCurrentPhysiotherapistId()
+                .orElseThrow(() -> new AccessDeniedException("Current physiotherapist profile not found"));
+        ClinicId clinicId = externalIamService.fetchCurrentClinicId()
+                .orElseThrow(() -> new IllegalStateException("Authenticated user has no associated clinic"));
+
+        List<PatientId> patientIds = externalOrganizationService.findPatientIdsByPhysiotherapistAndClinic(
+                physiotherapistId, clinicId.id().toString());
+        if (patientIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<UUID> rawPatientIds = patientIds.stream().map(PatientId::id).toList();
+        Map<UUID, PatientTherapyOverviewRow> aggregates = therapySessionRepository
+                .aggregateTherapyOverviewByPatient(rawPatientIds, clinicId.id(),
+                        SessionStatus.Completed, RepetitionClassification.Good)
+                .stream()
+                .collect(Collectors.toMap(PatientTherapyOverviewRow::patientId, row -> row));
+        Set<UUID> patientsInSession = Set.copyOf(therapySessionRepository.findPatientIdsWithActiveSession(
+                rawPatientIds, clinicId.id(), SessionStatus.ACTIVE_STATUSES));
+        Map<String, String> names = externalOrganizationService.fetchPatientNames(patientIds);
+
+        return rawPatientIds.stream()
+                .map(patientId -> toOverview(patientId, names.get(patientId.toString()),
+                        aggregates.get(patientId), patientsInSession.contains(patientId)))
+                // Never-started patients sort first: an untouched caseload is the point of this list.
+                .sorted(Comparator.comparing(PatientTherapyOverview::lastSessionAt,
+                        Comparator.nullsFirst(Comparator.reverseOrder())))
+                .toList();
+    }
+
+    @Override
+    public TherapySession handle(GetTherapySessionDetailQuery query) {
+        log.debug("Fetching session detail: sessionId={}", query.sessionId());
+        TherapySession session = therapySessionRepository.findById(TherapySessionId.of(query.sessionId()))
+                .orElseThrow(() -> TherapySessionNotFoundException.withId(query.sessionId().toString()));
+        ensureSessionAccess(session);
+        // Pull series + repetitions into the persistence context so the assembler can walk the graph
+        // once this read-only transaction ends. Entity identity makes the Serie instances hanging off
+        // routine.series the very ones loaded here, repetitions included.
+        therapySessionRepository.findSeriesWithRepetitionsBySessionId(query.sessionId());
+        // No StillInProgress guard on purpose: unlike the summary, the detail must answer for a
+        // running session so the clinician can follow it live.
         return session;
     }
 
@@ -128,6 +234,51 @@ public class TherapySessionQueryServiceImpl implements TherapySessionQueryServic
         String serial = KitSerial.toStringOrNull(session.getIotDeviceId());
         String lanUrl = externalIamService.findEdgeLanUrlBySerial(serial).orElse(null);
         return new EdgeConnection(lanUrl, session.getEdgePairingToken(), null);
+    }
+
+    /** A patient with no sessions at all yields no aggregate row, hence the zeroed defaults. */
+    private PatientTherapyOverview toOverview(UUID patientId, String fullName,
+                                              PatientTherapyOverviewRow row, boolean hasActiveSession) {
+        return new PatientTherapyOverview(
+                patientId,
+                fullName,
+                row != null ? Math.toIntExact(row.totalSessions()) : 0,
+                row != null ? Math.toIntExact(row.completedSessions()) : 0,
+                row != null ? Math.toIntExact(row.sessionsRequiringReview()) : 0,
+                row != null ? row.lastSessionAt() : null,
+                row != null ? Math.toIntExact(row.totalRepetitions()) : 0,
+                row != null ? Math.toIntExact(row.goodRepetitions()) : 0,
+                row != null ? row.averageAchievedRom() : null,
+                hasActiveSession
+        );
+    }
+
+    /**
+     * Stitches the three history queries by session id. A session with no series yields no row in
+     * the aggregate queries, hence the null-tolerant defaults.
+     */
+    private TherapySessionHistoryItem toHistoryItem(TherapySessionHistoryRow row,
+                                                    SerieRepetitionAggregateRow aggregates,
+                                                    Long compensatoryMovements) {
+        return new TherapySessionHistoryItem(
+                row.sessionId(),
+                row.status(),
+                row.startedAt(),
+                row.finalizedAt(),
+                row.treatmentPlanId(),
+                row.planningRoutineId(),
+                aggregates != null ? Math.toIntExact(aggregates.totalSeries()) : 0,
+                aggregates != null ? Math.toIntExact(aggregates.completedSeries()) : 0,
+                aggregates != null ? Math.toIntExact(aggregates.totalRepetitions()) : 0,
+                aggregates != null ? Math.toIntExact(aggregates.goodRepetitions()) : 0,
+                aggregates != null ? Math.toIntExact(aggregates.incompleteRepetitions()) : 0,
+                aggregates != null ? Math.toIntExact(aggregates.unsafeRepetitions()) : 0,
+                aggregates != null ? aggregates.averageAchievedRom() : null,
+                row.painLevel(),
+                row.maxReportedPainLevel(),
+                row.requiresClinicalReview(),
+                compensatoryMovements != null ? Math.toIntExact(compensatoryMovements) : 0
+        );
     }
 
     private void ensureSessionAccess(TherapySession session) {
