@@ -3,6 +3,7 @@ package com.kiniot.uflex.api.organization.application.acl;
 import com.kiniot.uflex.api.organization.domain.model.aggregates.Patient;
 import com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.repositories.ClinicRepository;
 import com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.repositories.PatientRepository;
+import com.kiniot.uflex.api.organization.infrastructure.persistence.jpa.repositories.PhysiotherapistRepository;
 import com.kiniot.uflex.api.organization.interfaces.acl.OrganizationContextFacade;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.ClinicId;
 import com.kiniot.uflex.api.shared.domain.model.valueobjects.PatientId;
@@ -20,10 +21,14 @@ public class OrganizationContextFacadeImpl implements OrganizationContextFacade 
 
     private final PatientRepository patientRepository;
     private final ClinicRepository clinicRepository;
+    private final PhysiotherapistRepository physiotherapistRepository;
 
-    public OrganizationContextFacadeImpl(PatientRepository patientRepository, ClinicRepository clinicRepository) {
+    public OrganizationContextFacadeImpl(PatientRepository patientRepository,
+                                         ClinicRepository clinicRepository,
+                                         PhysiotherapistRepository physiotherapistRepository) {
         this.patientRepository = patientRepository;
         this.clinicRepository = clinicRepository;
+        this.physiotherapistRepository = physiotherapistRepository;
     }
 
     @Override
@@ -57,6 +62,13 @@ public class OrganizationContextFacadeImpl implements OrganizationContextFacade 
     }
 
     @Override
+    public String findPhysiotherapistIdByUserId(String userId) {
+        return physiotherapistRepository.findByUserId(new UserId(UUID.fromString(userId)))
+                .map(physiotherapist -> physiotherapist.getId().physiotherapistId().toString())
+                .orElse("");
+    }
+
+    @Override
     public String getPatientFullName(String patientId) {
         if (patientId == null || patientId.isBlank()) {
             return null;
@@ -64,6 +76,21 @@ public class OrganizationContextFacadeImpl implements OrganizationContextFacade 
         return patientRepository.findById(new PatientId(UUID.fromString(patientId)))
                 .map(this::formatPatientName)
                 .orElse(null);
+    }
+
+    @Override
+    public Map<String, String> getPatientNamesByIds(List<String> patientIds) {
+        if (patientIds == null || patientIds.isEmpty()) {
+            return Map.of();
+        }
+        var ids = patientIds.stream()
+                .map(id -> new PatientId(UUID.fromString(id)))
+                .toList();
+        return patientRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(
+                        patient -> patient.getId().patientId().toString(),
+                        this::formatPatientName
+                ));
     }
 
     @Override

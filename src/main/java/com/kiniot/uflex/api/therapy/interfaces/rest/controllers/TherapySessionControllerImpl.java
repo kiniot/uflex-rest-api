@@ -4,6 +4,7 @@ import com.kiniot.uflex.api.therapy.domain.model.queries.GetActiveTherapySession
 import com.kiniot.uflex.api.therapy.domain.model.queries.GetActiveTherapySessionByPatientIdQuery;
 import com.kiniot.uflex.api.therapy.domain.model.queries.GetDailyScheduleQuery;
 import com.kiniot.uflex.api.therapy.domain.model.queries.GetSessionSummaryQuery;
+import com.kiniot.uflex.api.therapy.domain.model.queries.GetTherapySessionDetailQuery;
 import com.kiniot.uflex.api.therapy.domain.services.TherapySessionCommandService;
 import com.kiniot.uflex.api.therapy.domain.services.TherapySessionQueryService;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.ActiveTherapySessionResource;
@@ -12,10 +13,12 @@ import com.kiniot.uflex.api.therapy.interfaces.rest.resources.ConfirmHardwareRea
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.DailyScheduleResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.InitiateTherapyPreparationResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.SessionSummaryResource;
+import com.kiniot.uflex.api.therapy.interfaces.rest.resources.TherapySessionDetailResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.resources.TherapySessionResource;
 import com.kiniot.uflex.api.therapy.interfaces.rest.transform.ActiveTherapySessionResourceFromEntityAssembler;
 import com.kiniot.uflex.api.therapy.interfaces.rest.transform.DailyScheduleResourceFromDtoAssembler;
 import com.kiniot.uflex.api.therapy.interfaces.rest.transform.SessionSummaryResourceFromEntityAssembler;
+import com.kiniot.uflex.api.therapy.interfaces.rest.transform.TherapySessionDetailResourceFromEntityAssembler;
 import com.kiniot.uflex.api.therapy.interfaces.rest.transform.TherapySessionResourceFromEntityAssembler;
 import com.kiniot.uflex.api.therapy.interfaces.rest.transform.CancelTherapySessionCommandFromResourceAssembler;
 import com.kiniot.uflex.api.therapy.interfaces.rest.transform.ConfirmHardwareReadinessCommandFromResourceAssembler;
@@ -103,6 +106,13 @@ public class TherapySessionControllerImpl implements TherapySessionController {
     public ResponseEntity<SessionSummaryResource> getSessionSummary(UUID id) {
         var session = therapySessionQueryService.handle(new GetSessionSummaryQuery(id));
         return ResponseEntity.ok(SessionSummaryResourceFromEntityAssembler.toResponseFromEntity(session));
+    }
+
+    @Override
+    @PreAuthorize("hasAnyAuthority('ROLE_CLINIC_ADMIN', 'ROLE_PHYSIOTHERAPIST')")
+    public ResponseEntity<TherapySessionDetailResource> getSessionDetail(UUID id) {
+        var session = therapySessionQueryService.handle(new GetTherapySessionDetailQuery(id));
+        return ResponseEntity.ok(TherapySessionDetailResourceFromEntityAssembler.toResourceFromEntity(session));
     }
 
     @Override
