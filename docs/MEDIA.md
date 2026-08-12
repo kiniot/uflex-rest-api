@@ -14,6 +14,7 @@ flow to upload images/videos into a **private** Supabase Storage bucket.
    ```dotenv
    SUPABASE_URL=https://<ref>.supabase.co
    SUPABASE_SERVICE_ROLE_KEY=<service_role secret>   # BACKEND ONLY
+   SUPABASE_ANON_KEY=<publishable or anon key>       # returned to clients for signed TUS uploads
    SUPABASE_STORAGE_BUCKET=uflex-media
    ```
 
@@ -44,6 +45,9 @@ media/
 ## Notes
 
 - The `service_role` key is only used here to sign URLs; clients never receive it.
+- The publishable/anon key is returned as the TUS `apikey` header together with the
+  short-lived signed upload token in `x-signature`; never configure `SUPABASE_ANON_KEY`
+  with the `service_role` value.
 - Limits and allowed MIME types live under `supabase.storage.*` (see `application.yaml`).
 - In production (`ddl-auto: validate`) the table must already exist, which is why the SQL creates it.
 - Current integration:

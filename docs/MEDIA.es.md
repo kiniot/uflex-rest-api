@@ -14,6 +14,7 @@ para subir imágenes/videos a un bucket **privado** de Supabase Storage.
    ```dotenv
    SUPABASE_URL=https://<ref>.supabase.co
    SUPABASE_SERVICE_ROLE_KEY=<service_role secret>   # SOLO backend
+   SUPABASE_ANON_KEY=<clave publicable o anon>       # se entrega al cliente para TUS firmado
    SUPABASE_STORAGE_BUCKET=uflex-media
    ```
 
@@ -44,6 +45,9 @@ media/
 ## Notas
 
 - La clave `service_role` se usa solo aquí para firmar URLs; los clientes nunca la reciben.
+- La clave publicable/anon se devuelve como header TUS `apikey` junto con el token de
+  subida temporal en `x-signature`; nunca configures `SUPABASE_ANON_KEY` con el valor de
+  `service_role`.
 - Límites y MIME permitidos en `supabase.storage.*` (ver `application.yaml`).
 - En prod (`ddl-auto: validate`) la tabla debe existir → por eso el SQL la crea.
 - Integración actual:

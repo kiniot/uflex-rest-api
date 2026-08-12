@@ -49,6 +49,8 @@ supabase:
     url: ${SUPABASE_URL:}
     # service_role secret key — SERVER SIDE ONLY, never expose to web/mobile clients
     service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
+    # anon/publishable key — safe for clients, required by TUS resumable uploads
+    anon-key: ${SUPABASE_ANON_KEY:}
     bucket: ${SUPABASE_STORAGE_BUCKET:uflex-media}
     upload-url-expiry-seconds: ${SUPABASE_UPLOAD_URL_EXPIRY_SECONDS:120}
     download-url-expiry-seconds: ${SUPABASE_DOWNLOAD_URL_EXPIRY_SECONDS:3600}
