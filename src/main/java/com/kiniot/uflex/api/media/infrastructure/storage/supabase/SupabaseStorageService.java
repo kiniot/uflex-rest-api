@@ -64,7 +64,7 @@ public class SupabaseStorageService implements MediaStorageService {
             var token = response.token() != null && !response.token().isBlank()
                     ? response.token()
                     : extractToken(response.url());
-            var resumableEndpoint = directStorageUrl() + "/storage/v1/upload/resumable";
+            var resumableEndpoint = directStorageUrl() + "/storage/v1/upload/resumable/sign";
             var preferredStrategy = contentType != null && contentType.toLowerCase().startsWith("video/")
                     ? "TUS_RESUMABLE"
                     : "SIMPLE_PUT";
@@ -75,7 +75,8 @@ public class SupabaseStorageService implements MediaStorageService {
                     preferredStrategy,
                     resumableEndpoint,
                     Map.of(
-                            "Authorization", "Bearer " + (token != null ? token : ""),
+                            "apikey", properties.getAnonKey(),
+                            "x-signature", token != null ? token : "",
                             "x-upsert", "false"
                     ),
                     Map.of(

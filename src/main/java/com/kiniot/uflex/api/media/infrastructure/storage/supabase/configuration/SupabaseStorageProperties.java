@@ -24,6 +24,10 @@ public class SupabaseStorageProperties {
     /** Supabase service_role secret key (server-side only). */
     private String serviceRoleKey = "";
 
+    /** Supabase anon/publishable key. Safe to hand to clients — required by the
+     *  TUS resumable upload protocol as the {@code apikey} header. */
+    private String anonKey = "";
+
     /** Private bucket where all media is stored. */
     private String bucket = "uflex-media";
 

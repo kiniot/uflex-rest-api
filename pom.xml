@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.kiniot.uflex</groupId>
     <artifactId>api</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
     <name>uflex-rest-api</name>
     <description>uflex-rest-api</description>
     <url/>
