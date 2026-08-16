@@ -16,6 +16,20 @@
 
 Backend REST API for the uFlex platform — the central entry point that exposes business logic to web and mobile clients in the KinIoT ecosystem.
 
+## API Tour
+
+The API publishes an interactive Scalar contract for authentication, clinical workflows, devices, therapy, and edge integration.
+
+![uFlex REST API overview in Scalar](docs/screenshots/scalar-overview.png)
+
+![Therapy endpoints in Scalar](docs/screenshots/scalar-therapy.png)
+
+Therapy resources coordinate treatment execution and the session data consumed by the clinical and patient experiences.
+
+![Edge integration endpoints in Scalar](docs/screenshots/scalar-edge.png)
+
+Dedicated Edge operations connect provisioned gateways to the platform while keeping device-facing responsibilities explicit.
+
 ## Tech stack
 
 - Java 25, Spring Boot 4.0.6, Maven
